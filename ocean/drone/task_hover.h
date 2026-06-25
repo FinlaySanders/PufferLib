@@ -4,11 +4,9 @@
 
 // types
 
-// Per-axis tolerances: the spec for a "dialed" hover. score is conjunctive across
-// these (see hover_score), so all three must be met for a high score.
-#define HOVER_SCORE_DIST_SCALE 0.01f   // 1 cm
-#define HOVER_SCORE_VEL_SCALE 0.01f    // 1 cm/s
-#define HOVER_SCORE_OMEGA_SCALE 0.5f   // 0.5 rad/s
+#define HOVER_SCORE_DIST_SCALE 0.01f
+#define HOVER_SCORE_VEL_SCALE 0.01f
+#define HOVER_SCORE_OMEGA_SCALE 0.1f
 
 typedef struct {
     float target_dist;
@@ -78,15 +76,12 @@ static inline float hover_potential(float dist, float vel, float omega, HoverCon
     return -(cfg->k_dist * dist + cfg->k_vel * vel + cfg->k_omega * omega);
 }
 
-// Conjunctive: a product of per-axis closeness, each knee'd at its tolerance. No axis
-// can be ignored — e.g. omega = 1 rad/s caps gw at 0.33, capping the whole score at 0.33
-// no matter how good dist/vel are. Summed over an episode (score), this is integrated
-// "dialed-time": how long *and* how well all three tolerances are held at once.
 static inline float hover_score(float dist, float vel, float omega) {
-    float gd = 1.0f / (1.0f + dist / HOVER_SCORE_DIST_SCALE);
-    float gv = 1.0f / (1.0f + vel / HOVER_SCORE_VEL_SCALE);
-    float gw = 1.0f / (1.0f + omega / HOVER_SCORE_OMEGA_SCALE);
-    return gd * gv * gw;
+    float d = dist / HOVER_SCORE_DIST_SCALE;
+    float v = vel / HOVER_SCORE_VEL_SCALE;
+    float w = omega / HOVER_SCORE_OMEGA_SCALE;
+    float penalty = 0.7f * d + 0.15f * v + 0.15f * w;
+    return 1.0f / (1.0f + 0.05f * penalty);
 }
 
 static void hover_reset_to(DroneEnv* env, Drone* agent, int idx, Vec3 target, float spawn_dist) {
