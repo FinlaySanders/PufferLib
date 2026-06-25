@@ -10,12 +10,9 @@
 
 typedef struct {
     float target_dist;
-    float hover_dist;
-    float hover_omega;
-    float hover_vel;
-    float alpha_hover;
-    float alpha_shaping;
-    float alpha_omega;
+    float k_dist;   // reward weight per meter of progress
+    float k_vel;    // reward weight per m/s of progress
+    float k_omega;  // reward weight per rad/s of progress
     float sphere_radius;
     int horizon;
 } HoverConfig;
@@ -68,11 +65,11 @@ static inline Vec3 random_ball_offset(unsigned int* rng, float radius) {
     return scalmul3(dir, radius * cbrtf(rndf(0.0f, 1.0f, rng)));
 }
 
+// Linear potential. Differencing it (in hover_reward) yields a low-variance progress
+// signal — reward per step = weighted error removed this step — instead of the sharp
+// reciprocal whose huge near-zero gradient made the shaping term explode.
 static inline float hover_potential(float dist, float vel, float omega, HoverConfig* cfg) {
-    float d = 1.0f / (1.0f + dist / cfg->hover_dist);
-    float v = 1.0f / (1.0f + vel / cfg->hover_vel);
-    float w = 1.0f / (1.0f + omega / cfg->hover_omega);
-    return d * (0.7f + 0.15f * v + 0.15f * w);
+    return -(cfg->k_dist * dist + cfg->k_vel * vel + cfg->k_omega * omega);
 }
 
 static inline float hover_score(float dist, float vel, float omega) {
@@ -166,9 +163,7 @@ static float hover_reward(DroneEnv* env, Drone* agent, int idx, StepCache* cache
     HoverState* state = (HoverState*)env->task_state;
 
     float curr = hover_potential(cache->dist, cache->vel, cache->omega, cfg);
-    float reward = cfg->alpha_hover * curr
-                 + cfg->alpha_shaping * (curr - state->prev_potential[idx])
-                 - cfg->alpha_omega * cache->omega;
+    float reward = curr - state->prev_potential[idx];   // progress; weights live in the K's
     state->prev_potential[idx] = curr;
 
     float score = hover_score(cache->dist, cache->vel, cache->omega);
