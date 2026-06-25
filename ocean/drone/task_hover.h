@@ -4,15 +4,18 @@
 
 // types
 
-#define HOVER_SCORE_DIST_SCALE 0.01f
-#define HOVER_SCORE_VEL_SCALE 0.01f
-#define HOVER_SCORE_OMEGA_SCALE 0.1f
+// Per-axis tolerances: the spec for a "dialed" hover. score is conjunctive across
+// these (see hover_score), so all three must be met for a high score.
+#define HOVER_SCORE_DIST_SCALE 0.01f   // 1 cm
+#define HOVER_SCORE_VEL_SCALE 0.01f    // 1 cm/s
+#define HOVER_SCORE_OMEGA_SCALE 0.5f   // 0.5 rad/s
 
 typedef struct {
     float target_dist;
     float k_dist;   // reward weight per meter of progress
     float k_vel;    // reward weight per m/s of progress
     float k_omega;  // reward weight per rad/s of progress
+    float alpha_action;  // penalty on squared action change (smoothness / low omega)
     float sphere_radius;
     int horizon;
 } HoverConfig;
@@ -24,6 +27,7 @@ typedef struct {
     float* ema_dist;
     float* ema_vel;
     float* ema_omega;
+    float* prev_action;  // last action per agent (4 floats each), for the smoothness penalty
 } HoverState;
 
 // lifecycle
@@ -36,6 +40,7 @@ static void hover_init(DroneEnv* env) {
     state->ema_dist = (float*)calloc(env->num_agents, sizeof(float));
     state->ema_vel = (float*)calloc(env->num_agents, sizeof(float));
     state->ema_omega = (float*)calloc(env->num_agents, sizeof(float));
+    state->prev_action = (float*)calloc(env->num_agents * 4, sizeof(float));
     env->task_state = state;
 }
 
@@ -48,6 +53,7 @@ static void hover_close(DroneEnv* env) {
         free(state->ema_dist);
         free(state->ema_vel);
         free(state->ema_omega);
+        free(state->prev_action);
         free(state);
     }
     free(env->task_config);
@@ -72,12 +78,15 @@ static inline float hover_potential(float dist, float vel, float omega, HoverCon
     return -(cfg->k_dist * dist + cfg->k_vel * vel + cfg->k_omega * omega);
 }
 
+// Conjunctive: a product of per-axis closeness, each knee'd at its tolerance. No axis
+// can be ignored — e.g. omega = 1 rad/s caps gw at 0.33, capping the whole score at 0.33
+// no matter how good dist/vel are. Summed over an episode (score), this is integrated
+// "dialed-time": how long *and* how well all three tolerances are held at once.
 static inline float hover_score(float dist, float vel, float omega) {
-    float d = dist / HOVER_SCORE_DIST_SCALE;
-    float v = vel / HOVER_SCORE_VEL_SCALE;
-    float w = omega / HOVER_SCORE_OMEGA_SCALE;
-    float penalty = 0.7f * d + 0.15f * v + 0.15f * w;
-    return 1.0f / (1.0f + 0.05f * penalty);
+    float gd = 1.0f / (1.0f + dist / HOVER_SCORE_DIST_SCALE);
+    float gv = 1.0f / (1.0f + vel / HOVER_SCORE_VEL_SCALE);
+    float gw = 1.0f / (1.0f + omega / HOVER_SCORE_OMEGA_SCALE);
+    return gd * gv * gw;
 }
 
 static void hover_reset_to(DroneEnv* env, Drone* agent, int idx, Vec3 target, float spawn_dist) {
@@ -165,6 +174,21 @@ static float hover_reward(DroneEnv* env, Drone* agent, int idx, StepCache* cache
     float curr = hover_potential(cache->dist, cache->vel, cache->omega, cfg);
     float reward = curr - state->prev_potential[idx];   // progress; weights live in the K's
     state->prev_potential[idx] = curr;
+
+    // Penalize action changes for smooth motor commands. Damps the high-frequency buzzing
+    // that produces omega, orthogonally to position (cleaner sim2real). Skip the first step,
+    // where prev_action is stale from the previous episode.
+    float* action = &env->actions[4 * idx];
+    float* prev_action = &state->prev_action[4 * idx];
+    if (agent->episode_length > 1) {
+        float da = 0.0f;
+        for (int k = 0; k < 4; k++) {
+            float d = action[k] - prev_action[k];
+            da += d * d;
+        }
+        reward -= cfg->alpha_action * da;
+    }
+    for (int k = 0; k < 4; k++) prev_action[k] = action[k];
 
     float score = hover_score(cache->dist, cache->vel, cache->omega);
     state->score[idx] += score;

@@ -18,6 +18,7 @@ static void hover_config(DroneEnv* env, Dict* kwargs) {
     cfg->k_dist = dict_get(kwargs, "k_dist")->value;
     cfg->k_vel = dict_get(kwargs, "k_vel")->value;
     cfg->k_omega = dict_get(kwargs, "k_omega")->value;
+    cfg->alpha_action = dict_get(kwargs, "hover_alpha_action")->value;
     cfg->sphere_radius = dict_get(kwargs, "sphere_radius")->value;
     cfg->horizon = (int)dict_get(kwargs, "hover_horizon")->value;
     env->task_config = cfg;
