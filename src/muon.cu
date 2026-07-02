@@ -83,6 +83,140 @@ static constexpr double ns_coeffs[5][3] = {
     {2.8366, -3.0525, 1.2012},
 };
 
+// Device copy of ns_coeffs — keep in sync with the table above.
+__constant__ float ns_coeffs_dev[5][3] = {
+    {4.0848f, -6.8946f, 2.9270f},
+    {3.9505f, -6.3029f, 2.6377f},
+    {3.7418f, -5.5913f, 2.3037f},
+    {2.8769f, -3.1427f, 1.2046f},
+    {2.8366f, -3.0525f, 1.2012f},
+};
+
+#define MUON_NS_THREADS 256
+#define MUON_NS_MAX_PARAMS 64
+
+// Metadata for the fused Newton-Schulz kernel. Passed by value at launch, so
+// it gets baked into any capturing cudagraph — shapes and offsets are static.
+struct MuonNSParams {
+    long offset[MUON_NS_MAX_PARAMS];
+    int rows[MUON_NS_MAX_PARAMS];
+    int cols[MUON_NS_MAX_PARAMS];
+    int count;
+};
+
+// Fused Newton-Schulz orthogonalization + weight update, one block per
+// parameter. The cuBLAS loop below issues ~28 kernels per parameter; for the
+// small matrices typical of these policies every one of them is dispatch
+// overhead rather than math, and they serialize on the stream. This kernel
+// does normalize + 5 NS iterations + the weight update in shared memory, and
+// parameters run concurrently across blocks. Only parameters whose ping-pong
+// iterates (2*R*C precision_t) plus gram matrices (2*M*M f32) fit in shared
+// memory take this path (planned once in muon_init); larger ones keep cuBLAS.
+// Gram/polynomial intermediates stay in f32 here, where the cuBLAS path
+// rounds them to precision_t between GEMMs — bf16 builds differ in low bits.
+__global__ void muon_ns_fused(
+        float* __restrict__ wb, const precision_t* __restrict__ gc,
+        const float* __restrict__ lr_ptr, float wd, MuonNSParams p) {
+    extern __shared__ char muon_smem[];
+    __shared__ float red[MUON_NS_THREADS];
+
+    long offset = p.offset[blockIdx.x];
+    int R = p.rows[blockIdx.x], C = p.cols[blockIdx.x];
+    int M = min(R, C), N = max(R, C);
+    bool tall = R > C;
+    int RC = R * C;
+    int tid = threadIdx.x;
+
+    precision_t* X = (precision_t*)muon_smem;
+    precision_t* X2 = X + RC;
+    float* G = (float*)(X2 + RC);
+    float* P = G + M * M;
+
+    // Load and Frobenius-normalize: X = g / max(||g||_F, 1e-7)
+    const precision_t* g_src = gc + offset;
+    float ss = 0.0f;
+    for (int i = tid; i < RC; i += MUON_NS_THREADS) {
+        float v = to_float(g_src[i]);
+        X[i] = from_float(v);
+        ss += v * v;
+    }
+    red[tid] = ss;
+    __syncthreads();
+    for (int s = MUON_NS_THREADS / 2; s > 0; s >>= 1) {
+        if (tid < s) {
+            red[tid] += red[tid + s];
+        }
+        __syncthreads();
+    }
+    float inv_norm = 1.0f / fmaxf(sqrtf(red[0]), 1e-7f);
+    for (int i = tid; i < RC; i += MUON_NS_THREADS) {
+        X[i] = from_float(to_float(X[i]) * inv_norm);
+    }
+    __syncthreads();
+
+    for (int it = 0; it < 5; ++it) {
+        float a = ns_coeffs_dev[it][0];
+        float b = ns_coeffs_dev[it][1];
+        float c = ns_coeffs_dev[it][2];
+
+        // G = X^T@X (tall) or X@X^T (wide), (M, M)
+        for (int e = tid; e < M * M; e += MUON_NS_THREADS) {
+            int i = e / M, j = e % M;
+            float acc = 0.0f;
+            if (tall) {
+                for (int k = 0; k < N; ++k) {
+                    acc += to_float(X[k * C + i]) * to_float(X[k * C + j]);
+                }
+            } else {
+                for (int k = 0; k < N; ++k) {
+                    acc += to_float(X[i * C + k]) * to_float(X[j * C + k]);
+                }
+            }
+            G[e] = acc;
+        }
+        __syncthreads();
+
+        // P = c*G@G + b*G
+        for (int e = tid; e < M * M; e += MUON_NS_THREADS) {
+            int i = e / M, j = e % M;
+            float acc = 0.0f;
+            for (int k = 0; k < M; ++k) {
+                acc += G[i * M + k] * G[k * M + j];
+            }
+            P[e] = c * acc + b * G[e];
+        }
+        __syncthreads();
+
+        // X' = X@P + a*X (tall) or P@X + a*X (wide)
+        for (int e = tid; e < RC; e += MUON_NS_THREADS) {
+            int i = e / C, j = e % C;
+            float acc = 0.0f;
+            if (tall) {
+                for (int k = 0; k < M; ++k) {
+                    acc += to_float(X[i * C + k]) * P[k * M + j];
+                }
+            } else {
+                for (int k = 0; k < M; ++k) {
+                    acc += P[i * M + k] * to_float(X[k * C + j]);
+                }
+            }
+            X2[e] = from_float(acc + a * to_float(X[e]));
+        }
+        __syncthreads();
+
+        precision_t* tmp = X; X = X2; X2 = tmp;
+    }
+
+    // Fused muon_weight_update: wb = wb*(1 - lr*wd) - lr*scale*update
+    float lr = *lr_ptr;
+    float wd_scale = 1.0f - lr * wd;
+    float scale = sqrtf(fmaxf(1.0f, (float)R / (float)C));
+    float* w_dst = wb + offset;
+    for (int i = tid; i < RC; i += MUON_NS_THREADS) {
+        w_dst[i] = w_dst[i] * wd_scale - lr * scale * to_float(X[i]);
+    }
+}
+
 struct Muon {
     double momentum, weight_decay, eps;
     float lr_val_init;
@@ -98,6 +232,10 @@ struct Muon {
     Allocator* param_alloc;  // params allocator — shapes used by muon_step
     ncclComm_t nccl_comm;
     int world_size;
+    // Fused Newton-Schulz plan (see muon_ns_fused)
+    MuonNSParams ns_params;
+    size_t ns_fused_smem;
+    bool* ns_fused;  // [param_alloc->num_regs] param handled by fused kernel
 };
 
 void muon_init(Muon* m, Allocator* param_alloc, double lr_val,
@@ -144,6 +282,41 @@ void muon_init(Muon* m, Allocator* param_alloc, double lr_val,
         alloc_register(alloc, &m->x_buf);
         alloc_register(alloc, &m->ns_norm_puf);
     }
+
+    // Plan the fused Newton-Schulz path from static shapes: 2D params whose
+    // shared-memory footprint fits the device get one muon_ns_fused block
+    // each; the rest stay on the cuBLAS loop in muon_step. Decided once here
+    // so cudagraph capture and replay always agree.
+    m->ns_params.count = 0;
+    m->ns_fused_smem = 0;
+    m->ns_fused = (bool*)calloc(param_alloc->num_regs, sizeof(bool));
+    int device = 0, smem_max = 0;
+    cudaGetDevice(&device);
+    cudaDeviceGetAttribute(&smem_max, cudaDevAttrMaxSharedMemoryPerBlockOptin, device);
+    long off = 0;
+    for (int _i = 0; _i < param_alloc->num_regs; _i++) {
+        AllocEntry& e = param_alloc->regs[_i];
+        long ne = numel(e.shape);
+        if (ndim(e.shape) >= 2 && m->ns_params.count < MUON_NS_MAX_PARAMS) {
+            long R = e.shape[0], C = ne / R;
+            long M = min(R, C);
+            size_t smem = 2 * ne * sizeof(precision_t) + 2 * M * M * sizeof(float);
+            // 2KB headroom for the kernel's static shared reduction buffer
+            if (smem + 2048 <= (size_t)smem_max) {
+                int idx = m->ns_params.count++;
+                m->ns_params.offset[idx] = off;
+                m->ns_params.rows[idx] = (int)R;
+                m->ns_params.cols[idx] = (int)C;
+                m->ns_fused[_i] = true;
+                if (smem > m->ns_fused_smem) m->ns_fused_smem = smem;
+            }
+        }
+        off += ne;
+    }
+    if (m->ns_fused_smem > 48 * 1024) {
+        cudaFuncSetAttribute(muon_ns_fused,
+            cudaFuncAttributeMaxDynamicSharedMemorySize, (int)m->ns_fused_smem);
+    }
 }
 
 void muon_post_create(Muon* m) {
@@ -175,12 +348,23 @@ void muon_step(Muon* m, FloatTensor weights, PrecisionTensor grads, float max_gr
     muon_nesterov<<<grid_size(numel(m->mb_puf.shape)), BLOCK_SIZE, 0, stream>>>(
         m->mb_puf.data, grads.data, (float)m->momentum, numel(m->mb_puf.shape));
 
+    // Fused Newton-Schulz for small params: one block per param replaces the
+    // per-param norm/GEMM/copy chain and weight update in the loop below.
+    if (m->ns_params.count > 0) {
+        muon_ns_fused<<<m->ns_params.count, MUON_NS_THREADS, m->ns_fused_smem, stream>>>(
+            weights.data, grads.data, m->lr_ptr, (float)m->weight_decay, m->ns_params);
+    }
+
     long offset = 0;
     for (int _i = 0; _i < m->param_alloc->num_regs; _i++) {
         AllocEntry& e = m->param_alloc->regs[_i];
+        long ne = numel(e.shape);
+        if (m->ns_fused[_i]) {
+            offset += ne;  // handled by muon_ns_fused (incl. weight update)
+            continue;
+        }
         precision_t* gc_ptr = grads.data + offset;
         float* wb_ptr = weights.data + offset;
-        long ne = numel(e.shape);
         const precision_t* update_ptr = gc_ptr;
         float scale = 1.0f;
 
