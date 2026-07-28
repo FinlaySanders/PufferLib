@@ -151,6 +151,7 @@ void rollouts(pybind11::object pufferl_obj) {
         }
     }
 
+    verb_eps_update(pufferl.global_step, pufferl.hypers.total_timesteps);
     static_vec_omp_step(pufferl.vec);
     float sec = (float)(wall_clock() - t0);
     pufferl.profile.accum[PROF_ROLLOUT] += sec * 1000.0f;  // store as ms

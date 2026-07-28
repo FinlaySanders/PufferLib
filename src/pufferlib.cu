@@ -166,6 +166,8 @@ struct PPOKernelArgs {
     int hc_stride;
     int num_atns;
     float clip_coef, vf_clip_coef, vf_coef, ent_coef;
+    const float* verb_eps;   // exploration floor on head 0, nullptr = off
+    float entfloor_lambda;   // extra head-0 entropy bonus below target, 0 = off
     int T_seq, A_total, N;
     int logits_stride_n, logits_stride_t, logits_stride_a;
     int values_stride_n, values_stride_t;
@@ -484,6 +486,52 @@ static const signed char* get_head_consume_dev(int* stride) {
     return g_hc_dev;
 }
 
+// ---- verb-head exploration floor (opt-in via PUFFER_VERB_EPS) ----
+// Mixture policy on the verb head: pi' = (1-eps)*softmax + eps*uniform(legal).
+// eps is constant to 80% of total_timesteps, then linear to 0. The live value
+// sits in device memory so captured CUDA graphs read the annealed value.
+static float* g_veps_dev = nullptr;
+static float g_veps_base = -1.0f;
+static float get_verb_eps_base() {
+    if (g_veps_base < 0.0f) {
+        const char* e = getenv("PUFFER_VERB_EPS");
+        g_veps_base = (e && e[0]) ? (float)atof(e) : 0.0f;
+        if (g_veps_base > 0.0f) {
+            cudaMalloc(&g_veps_dev, sizeof(float));
+            cudaMemcpy(g_veps_dev, &g_veps_base, sizeof(float), cudaMemcpyHostToDevice);
+        }
+    }
+    return g_veps_base;
+}
+static float g_veps_astart = -1.0f;   // anneal start fraction, default 0.8
+static void verb_eps_update(long global_step, long total_timesteps) {
+    float base = get_verb_eps_base();
+    if (base <= 0.0f) return;
+    if (g_veps_astart < 0.0f) {
+        const char* e = getenv("PUFFER_VERB_EPS_ANNEAL_START");
+        g_veps_astart = (e && e[0]) ? (float)atof(e) : 0.8f;
+        if (g_veps_astart > 0.99f) g_veps_astart = 0.99f;
+        if (g_veps_astart < 0.0f) g_veps_astart = 0.0f;
+    }
+    double frac = total_timesteps > 0 ? (double)global_step / (double)total_timesteps : 0.0;
+    float a = g_veps_astart;
+    float eps = frac < a ? base : base * (float)fmax(0.0, (1.0 - frac) / (1.0 - a));
+    cudaMemcpy(g_veps_dev, &eps, sizeof(float), cudaMemcpyHostToDevice);
+}
+
+// ---- verb-head entropy floor (opt-in via PUFFER_VERB_ENTFLOOR = lambda) ----
+// Adds lambda of extra entropy bonus on the verb head only while its per-sample
+// entropy is below VERB_ENTFLOOR_TARGET nats.
+#define VERB_ENTFLOOR_TARGET 0.5f
+static float g_entfloor = -1.0f;
+static float get_entfloor_lambda() {
+    if (g_entfloor < 0.0f) {
+        const char* e = getenv("PUFFER_VERB_ENTFLOOR");
+        g_entfloor = (e && e[0]) ? (float)atof(e) : 0.0f;
+    }
+    return g_entfloor;
+}
+
 __global__ void sample_logits(
         PrecisionTensor dec_out,              // (B, logits_dim + 1 for values)
         PrecisionTensor logstd_puf,           // (1, od) - continuous actions only
@@ -495,7 +543,8 @@ __global__ void sample_logits(
         const precision_t* __restrict__ action_mask, // (B, A_total) or nullptr
         int mask_stride,                      // 0 when action_mask is nullptr
         const signed char* __restrict__ head_consume, // (nverbs, num_atns) or nullptr
-        int hc_stride) {
+        int hc_stride,
+        const float* __restrict__ verb_eps) { // exploration floor on head 0, nullptr = off
     int B = dec_out.shape[0];
     int fused_cols = dec_out.shape[1];
     int num_atns = numel(act_sizes_puf.shape);
@@ -563,6 +612,24 @@ __global__ void sample_logits(
             }
             float logsumexp = max_val + logf(sum_exp);
 
+            // Verb-head exploration floor: sample the mixture
+            // (1-eps)*softmax + eps*uniform(legal) instead of the bare softmax.
+            float eps = 0.0f;
+            float inv_K = 0.0f;
+            if (h == 0 && verb_eps != nullptr) {
+                eps = *verb_eps;
+                if (eps > 0.0f) {
+                    int K = A;
+                    if (action_mask != nullptr) {
+                        K = 0;
+                        for (int a = 0; a < A; ++a)
+                            if (to_float(action_mask[mask_base + logits_offset + a]) != 0.0f) K++;
+                        if (K == 0) K = A;
+                    }
+                    inv_K = 1.0f / (float)K;
+                }
+            }
+
             // Step 3: Generate random value for this action head
             float rand_val = curand_uniform(&state);
 
@@ -573,6 +640,11 @@ __global__ void sample_logits(
             for (int a = 0; a < A; ++a) {
                 float l = masked_logit(logits, logits_base, logits_offset, a, action_mask, mask_base);
                 float prob = expf(l - logsumexp);
+                if (eps > 0.0f) {
+                    float legal = (action_mask == nullptr
+                        || to_float(action_mask[mask_base + logits_offset + a]) != 0.0f) ? 1.0f : 0.0f;
+                    prob = (1.0f - eps) * prob + eps * legal * inv_K;
+                }
                 cumsum += prob;
                 if (rand_val < cumsum) {
                     sampled_action = a;
@@ -596,6 +668,8 @@ __global__ void sample_logits(
             // Step 5: Gather log probability of sampled action
             float sampled_logit = masked_logit(logits, logits_base, logits_offset, sampled_action, action_mask, mask_base);
             float log_prob = sampled_logit - logsumexp;
+            if (eps > 0.0f)
+                log_prob = logf((1.0f - eps) * expf(log_prob) + eps * inv_K);
 
             // Write action for this head
             actions[idx * num_atns + h] = from_float(sampled_action);
@@ -733,7 +807,8 @@ extern "C" void net_callback_wrapper(void* ctx, int buf, int t) {
             dec_puf, p_logstd, pufferl->act_sizes_puf,
             act_b.data, lp_b.data, val_b.data,
             pufferl->rng_states[buf] + bank_off,
-            mask_b.data, mask_stride_b, hc_dev_s, hc_stride_s);
+            mask_b.data, mask_stride_b, hc_dev_s, hc_stride_s,
+            get_verb_eps_base() > 0.0f ? g_veps_dev : nullptr);
 
         cast<<<grid_size(numel(act_b.shape)), BLOCK_SIZE, 0, stream>>>(
                 env.actions.data + (long)sub_start * act_cols,
@@ -893,6 +968,7 @@ __global__ void ppo_loss_compute(
     int mask_base = (a.action_mask != nullptr)
         ? n * a.mask_stride_n + t * a.mask_stride_t : 0;
 
+    float verb_mix_scale = 1.0f;   // d log pi'(a) / d log-softmax path scale for head 0
     if (!a.is_continuous) {
         // consumed-head gating: heads the sampled verb (head 0) does not use
         // contribute no logprob/entropy/gradient (see env_head_consume_map)
@@ -908,6 +984,24 @@ __global__ void ppo_loss_compute(
             float lse, ent, lp;
             ppo_discrete_head(a.logits, logits_base, a.logits_stride_a, logits_offset, A, act,
                               a.action_mask, mask_base, &lse, &ent, &lp);
+            // Verb-head exploration floor: logprob of the sampling mixture
+            // (1-eps)*softmax + eps*uniform(legal); entropy stays on the softmax.
+            if (h == 0 && a.verb_eps != nullptr) {
+                float eps = *a.verb_eps;
+                if (eps > 0.0f) {
+                    int K = A;
+                    if (a.action_mask != nullptr) {
+                        K = 0;
+                        for (int j = 0; j < A; ++j)
+                            if (to_float(a.action_mask[mask_base + logits_offset + j]) != 0.0f) K++;
+                        if (K == 0) K = A;
+                    }
+                    float p_act = __expf(lp);
+                    float p_mix = (1.0f - eps) * p_act + eps / (float)K;
+                    verb_mix_scale = (1.0f - eps) * p_act / p_mix;
+                    lp = __logf(p_mix);
+                }
+            }
             head_logsumexp[h] = lse;
             head_entropy[h] = ent;
             if (used) { total_log_prob += lp; total_entropy += ent; }
@@ -957,14 +1051,20 @@ __global__ void ppo_loss_compute(
             float logsumexp = head_logsumexp[h];
             float ent = head_entropy[h];
 
+            // head 0: mixture-scaled pg gradient + optional entropy-floor hinge
+            float d_lp_h = (h == 0) ? d_new_logp * verb_mix_scale : d_new_logp;
+            float d_ent_h = d_entropy_term;
+            if (h == 0 && a.entfloor_lambda > 0.0f && ent < VERB_ENTFLOOR_TARGET)
+                d_ent_h = dL * (-(a.ent_coef + a.entfloor_lambda));
+
             for (int j = 0; j < A; ++j) {
                 float l = load_logit_masked(a.logits, logits_base, a.logits_stride_a,
                                             logits_offset, j, a.action_mask, mask_base);
                 float logp = l - logsumexp;
                 float p = __expf(logp);
-                float d_logit = (j == act) ? d_new_logp : 0.0f;
-                d_logit -= p * d_new_logp;
-                d_logit += d_entropy_term * p * (-ent - logp);
+                float d_logit = (j == act) ? d_lp_h : 0.0f;
+                d_logit -= p * d_lp_h;
+                d_logit += d_ent_h * p * (-ent - logp);
                 a.grad_logits[grad_logits_base + logits_offset + j] = d_logit;
             }
             logits_offset += A;
@@ -1151,6 +1251,8 @@ PPOKernelArgs args = {
         .num_atns = (int)numel(act_sizes.shape),
         .clip_coef = clip_coef, .vf_clip_coef = vf_clip_coef,
         .vf_coef = vf_coef, .ent_coef = ent_coef,
+        .verb_eps = get_verb_eps_base() > 0.0f ? g_veps_dev : nullptr,
+        .entfloor_lambda = get_entfloor_lambda(),
         .T_seq = T, .A_total = A_total, .N = N,
         .logits_stride_n = T * fused_cols, .logits_stride_t = fused_cols, .logits_stride_a = 1,
         .values_stride_n = T * fused_cols, .values_stride_t = fused_cols,

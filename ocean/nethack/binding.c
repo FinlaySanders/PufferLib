@@ -25,6 +25,8 @@ void my_init(Env* env, Dict* kwargs) {
     env->illegal_penalty = dict_get(kwargs, "illegal_penalty")->value;
     env->death_penalty = dict_get(kwargs, "death_penalty")->value;
     env->ac_coef = dict_get(kwargs, "ac_coef")->value;
+    env->ac_hold_coef = dict_get(kwargs, "ac_hold_coef")->value;
+    env->first_wear_coef = dict_get(kwargs, "first_wear_coef")->value;
     env->heal_coef = dict_get(kwargs, "heal_coef")->value;
     env->status_coef = dict_get(kwargs, "status_coef")->value;
 }

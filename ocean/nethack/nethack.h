@@ -79,6 +79,8 @@ typedef struct Nethack {
     float illegal_penalty;
     float death_penalty;
     float ac_coef;
+    float ac_hold_coef;
+    float first_wear_coef;
     float heal_coef;
     float status_coef;
 
@@ -423,6 +425,9 @@ static float nethack_reward(Nethack* env, int illegal) {
     // ac potential
     long ac = env->blstats[NLE_BL_AC];
     r += env->ac_coef * (float)(env->prev_ac - ac);
+    r += env->ac_hold_coef * (float)(10 - ac);
+    if ((int)ac < env->stats.min_ac)
+        r += env->first_wear_coef * (float)(env->stats.min_ac - (int)ac);
     env->prev_ac = ac;
     env->stats.ac_sum += ac;
     if ((int)ac < env->stats.min_ac) env->stats.min_ac = (int)ac;
