@@ -254,6 +254,7 @@ static void nethack_add_log(Nethack* env, int how) {   // how: nle how_done, -1 
     env->log.illegal_actions += (float)env->stats.illegal_actions;
     env->log.new_tiles       += (float)env->stats.new_tiles;
     env->log.max_depth       += (float)env->stats.max_depth;
+    env->log.floors          += (float)env->stats.floors;
     env->log.enhances        += (float)env->stats.enhances;
     env->log.prayers_low_hp  += (float)env->stats.prayers_low_hp;
     env->log.prayers_starving += (float)env->stats.prayers_starving;
@@ -405,8 +406,18 @@ static float nethack_reward(Nethack* env, int illegal) {
     env->prev_gold = g;
 
     // descent, max-depth only
+    // descent reward: paid per NEW unique floor (dnum, dlevel), branch-aware;
+    // max_depth is tracked for logging only
+    { long dn = env->blstats[NLE_BL_DNUM], dl = env->blstats[NLE_BL_DLEVEL];
+      if (dn >= 0 && dn < 16 && dl >= 1 && dl <= 64) {
+          unsigned long long fb = 1ULL << (dl - 1);
+          if (!(env->stats.floors_bits[dn] & fb)) {
+              env->stats.floors_bits[dn] |= fb;
+              env->stats.floors++;
+              r += env->descent_coef;
+          }
+      } }
     if (depth > env->stats.max_depth) {
-        r += env->descent_coef * (float)(depth - env->stats.max_depth);
         env->stats.max_depth = depth;
     }
 

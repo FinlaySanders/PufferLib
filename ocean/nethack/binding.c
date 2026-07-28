@@ -42,6 +42,7 @@ void my_log(Log* log, Dict* out) {
     dict_set(out, "illegal_actions", log->illegal_actions);
     dict_set(out, "new_tiles", log->new_tiles);
     dict_set(out, "max_depth", log->max_depth);
+    dict_set(out, "floors", log->floors);
     dict_set(out, "enhances", log->enhances);
     dict_set(out, "floor_eats", log->floor_eats);
     dict_set(out, "prayers_low_hp", log->prayers_low_hp);

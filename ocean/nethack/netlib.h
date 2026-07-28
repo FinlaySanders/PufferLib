@@ -196,6 +196,7 @@ typedef struct Log {
     float illegal_actions;    // steps that hit a sub-prompt we ESC'd
     float new_tiles;
     float max_depth;          // deepest level reached (depth under-reports at death)
+    float floors;             // unique (dnum, dlevel) floors visited
     float enhances;           // #enhance presses (skill advancement claims)
     float floor_eats;         // eats that accepted a floor "eat it?" offer
     float prayers_low_hp;     // prayers at <=25% max HP (looser than real trouble)
@@ -249,6 +250,8 @@ typedef struct Stats {
     long damage;
     long ac_sum;            // sum of AC over living steps; mean = ac_sum/length
     int max_depth;
+    int floors;               // unique (dnum, dlevel) count
+    unsigned long long floors_bits[16];   // dnum 0..15, bit dlevel-1
     int max_xp;
     unsigned areas;         // NETHACK_AREA_* bits
     float ret;
