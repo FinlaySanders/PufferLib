@@ -79,9 +79,11 @@ static const signed char nh_obj_armcat[NH_NUM_OBJECTS] = {
 // nle_obs.misc[] prompt-state flags
 enum { NETHACK_MISC_YN = 0, NETHACK_MISC_GETLIN = 1, NETHACK_MISC_XWAIT = 2 };
 
-// action space: verb head (22) + 12 item-slot heads (55) + direction head (8)
+// action space: verb head (22) + 12 item-slot heads (55) + 6 per-verb
+// direction heads (8 each: MOVE RUN KICK THROW ZAP APPLY)
 #define NETHACK_NUM_ACTIONS 22
 #define NETHACK_NUM_DIRS    8
+#define NETHACK_DIR_HEADS   6
 static const int NETHACK_DIR_KEYS[NETHACK_NUM_DIRS] =
     {'k','j','h','l','y','u','b','n'};   // N S W E NW NE SW SE
 static const int NETHACK_DIR_DX[NETHACK_NUM_DIRS] = { 0, 0,-1, 1,-1, 1,-1, 1};
@@ -127,6 +129,19 @@ enum {
     NETHACK_ACT_READ     = 20,
     NETHACK_ACT_DROP     = 21,
 };
+
+// dir-head index (0..NETHACK_DIR_HEADS-1) for verbs that take a direction
+static inline int nethack_dir_head(int verb) {
+    switch (verb) {
+        case NETHACK_ACT_MOVE:  return 0;
+        case NETHACK_ACT_RUN:   return 1;
+        case NETHACK_ACT_KICK:  return 2;
+        case NETHACK_ACT_THROW: return 3;
+        case NETHACK_ACT_ZAP:   return 4;
+        case NETHACK_ACT_APPLY: return 5;
+    }
+    return -1;
+}
 
 // !status_updates skips the status renderer + recalc_mapseen (~25% of engine)
 #define NETHACK_DEFAULT_OPTIONS \
@@ -221,6 +236,11 @@ typedef struct Log {
     float death_adj_monsters; // hostile monsters adjacent on the last obs before death
     float death_maxhp;        // max HP at death (progression measure)
     float truncated;          // hit NETHACK_MAX_EPISODE_STEPS
+    float death_hp_t1;        // HP/maxHP at last obs before death
+    float death_hp_t5;        // HP/maxHP 5 steps before death
+    float death_hunger;       // hunger state at death (0=sat..4=fainting)
+    float death_spike;        // 1 if hp_t5 > 0.6 (sudden death)
+    float death_attrition;    // 1 if hp_t5 <= 0.6 (ground down)
     // 0/1 per episode; the logged mean is the proportion
     float reach_mines;
     float reach_minetown;
@@ -245,6 +265,9 @@ typedef struct Stats {
     long last_maxhp;
     int  last_adj;       // hostile monsters adjacent, last obs
     long prayers_low_hp;
+    long last_pray_turn;      // turn of last PRAY attempt (0 = never)
+    // last-valid blstats snapshot (engine zeroes blstats at death)
+    long last_dnum, last_dlevel, last_hunger, last_cap, last_cond, last_score;
     long prayers_starving;
     long floor_eats;
     long damage;

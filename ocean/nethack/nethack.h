@@ -67,6 +67,10 @@ typedef struct Nethack {
     int prev_depth;
     long prev_ac;
     int prev_bad_cond;
+    float hp_hist[8];    // HP/maxHP ring buffer for death forensics
+    int hp_hist_i;
+    int last_dt;         // game turns elapsed in the most recent step
+    int prev2_action;    // verb of the step before prev_action
 
     // reward coefs
     float gold_coef;
@@ -79,8 +83,6 @@ typedef struct Nethack {
     float illegal_penalty;
     float death_penalty;
     float ac_coef;
-    float ac_hold_coef;
-    float first_wear_coef;
     float heal_coef;
     float status_coef;
 
@@ -143,10 +145,74 @@ static int nethack_slot_usable(const Nethack* env, const Verb* verb, int i) {
     return 1;
 }
 
+// distance to nearest throwable target on the ray (gate-v2 accept-set), 0 = none
+static int nethack_ray_target(Nethack* env, int dx, int dy) {
+    long hx = env->blstats[NLE_BL_X], hy = env->blstats[NLE_BL_Y];
+    for (int k = 1; k <= 8; k++) {
+        long x = hx + dx * k, y = hy + dy * k;
+        if (x < 0 || x >= NH_COLS || y < 0 || y >= NH_ROWS) return 0;
+        int gl = env->glyphs[y * NH_COLS + x];
+        if ((gl >= 0 && gl < NETHACK_NUMMONS)
+            || (gl >= 762 && gl < 1144)
+            || (gl >= 5589 && gl < 5595)) return k;
+    }
+    return 0;
+}
+
+static int nethack_floorpay_on(void) {   // descent pays per new floor (committed
+    static int v = -1;                   // semantics) instead of per depth delta
+    if (v < 0) { const char* e = getenv("NETHACK_FLOOR_PAY"); v = (e && e[0] == '1'); }
+    return v;
+}
+
+static int nethack_search_count(void) {  // macro duration for SEARCH20 (default 20)
+    static int v = -1;
+    if (v < 0) { const char* e = getenv("NETHACK_SEARCH_COUNT");
+                 v = (e && e[0]) ? atoi(e) : 20; if (v < 1 || v > 99) v = 20; }
+    return v;
+}
+static int nethack_run_count(void) {     // 0 = native shift-run; N = count-walk N
+    static int v = -1;
+    if (v < 0) { const char* e = getenv("NETHACK_RUN_COUNT");
+                 v = (e && e[0]) ? atoi(e) : 0; if (v < 0 || v > 99) v = 0; }
+    return v;
+}
+
 static void nethack_compute_mask(Nethack* env) {
     unsigned char* mask = env->action_mask;
     memset(mask, 1, NETHACK_NUM_ACTIONS);
     if (env->blstats[NLE_BL_HUNGER] == 0) mask[NETHACK_ACT_EAT] = 0;   // choke gate
+    { static int s20_off = -1;
+      if (s20_off < 0) { const char* e = getenv("NETHACK_MASK_SEARCH20"); s20_off = (e && e[0] == '1'); }
+      if (s20_off) mask[NETHACK_ACT_SEARCH20] = 0; }
+    { static int thr_off = -1;
+      if (thr_off < 0) { const char* e = getenv("NETHACK_MASK_THROW"); thr_off = (e && e[0] == '1'); }
+      if (thr_off) mask[NETHACK_ACT_THROW] = 0; }
+    { static int wld_off = -1;
+      if (wld_off < 0) { const char* e = getenv("NETHACK_MASK_WIELD"); wld_off = (e && e[0] == '1'); }
+      if (wld_off) mask[NETHACK_ACT_WIELD] = 0; }
+    // THROW target gate: only legal with a non-pet monster on one of the 8
+    // rays within 8 tiles (v1: no obstruction test). Human-fair (screen info).
+    { static int thr_gate = -1;
+      if (thr_gate < 0) { const char* e = getenv("NETHACK_THROW_GATE"); thr_gate = (e && e[0] == '1'); }
+      if (thr_gate && mask[NETHACK_ACT_THROW]) {
+          int found = 0;
+          static const int DX[8] = {-1,-1,-1,0,0,1,1,1}, DY[8] = {-1,0,1,-1,1,-1,0,1};
+          long hx = env->blstats[NLE_BL_X], hy = env->blstats[NLE_BL_Y];
+          for (int d = 0; d < 8 && !found; d++) {
+              for (int k = 1; k <= 8; k++) {
+                  long x = hx + DX[d]*k, y = hy + DY[d]*k;
+                  if (x < 0 || x >= NH_COLS || y < 0 || y >= NH_ROWS) break;
+                  int gl = env->glyphs[y * NH_COLS + x];
+                  // v2 accept: plain monsters, invis marker + detected
+                  // [762,1144), warning glyphs [5589,5595) — all screen info
+                  if ((gl >= 0 && gl < NETHACK_NUMMONS)
+                      || (gl >= 762 && gl < 1144)
+                      || (gl >= 5589 && gl < 5595)) { found = 1; break; }
+              }
+          }
+          if (!found) mask[NETHACK_ACT_THROW] = 0;
+      } }
 
     // underfoot
     long hero_x = env->blstats[NLE_BL_X], hero_y = env->blstats[NLE_BL_Y];
@@ -181,7 +247,9 @@ static void nethack_compute_mask(Nethack* env) {
         if (!floor_food) mask[a] = 0;
     }
 
-    // directions
+    // per-verb direction rows (MOVE RUN KICK THROW ZAP APPLY): wall-derived
+    // legality for all; THROW's row is target rays (all-1 when no target on
+    // any ray). Default on; NETHACK_THROW_DIRMASK=0 disables.
     unsigned char* dirs = mask + NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS;
     memset(dirs, 1, NETHACK_NUM_DIRS);
     int legal_dirs = 0;
@@ -193,6 +261,19 @@ static void nethack_compute_mask(Nethack* env) {
         else legal_dirs++;
     }
     if (!legal_dirs) memset(dirs, 1, NETHACK_NUM_DIRS);
+    for (int h = 1; h < NETHACK_DIR_HEADS; h++)
+        memcpy(dirs + h * NETHACK_NUM_DIRS, dirs, NETHACK_NUM_DIRS);
+    { static int tdm = -1;
+      if (tdm < 0) { const char* e = getenv("NETHACK_THROW_DIRMASK"); tdm = !(e && e[0] == '0'); }
+      if (tdm) {
+          unsigned char* tdirs = dirs + nethack_dir_head(NETHACK_ACT_THROW) * NETHACK_NUM_DIRS;
+          int any = 0;
+          for (int d = 0; d < NETHACK_NUM_DIRS; d++) {
+              tdirs[d] = nethack_ray_target(env, NETHACK_DIR_DX[d], NETHACK_DIR_DY[d]) ? 1 : 0;
+              any |= tdirs[d];
+          }
+          if (!any) memset(tdirs, 1, NETHACK_NUM_DIRS);
+      } }
 }
 
 // observations
@@ -278,11 +359,62 @@ static void nethack_add_log(Nethack* env, int how) {   // how: nle how_done, -1 
     else if (how == NLE_HOW_WRATH) env->log.death_smited += 1.0f;
     else               env->log.death_other    += 1.0f;
     // combat anatomy
+    if (how >= 0) {
+        int i1 = (env->hp_hist_i - 1) & 7, i5 = (env->hp_hist_i - 5) & 7;
+        float t1 = env->hp_hist_i >= 1 ? env->hp_hist[i1] : 1.0f;
+        float t5 = env->hp_hist_i >= 5 ? env->hp_hist[i5] : 1.0f;
+        env->log.death_hp_t1 += t1;
+        env->log.death_hp_t5 += t5;
+        env->log.death_hunger += (float)env->blstats[NLE_BL_HUNGER];
+        if (t5 > 0.6f) env->log.death_spike += 1.0f; else env->log.death_attrition += 1.0f;
+        const char* cf = getenv("NETHACK_DEATH_CENSUS");
+        if (cf && cf[0]) {
+            FILE* f = fopen(cf, "a");
+            if (f) {
+                int suit = 0, heals = 0, food = 0;
+                for (int i = 0; i < NETHACK_INV_SLOTS && env->inv_letters[i]; i++) {
+                    int otyp = env->inv_glyphs[i] - NH_GLYPH_OBJ_OFF;
+                    int worn = env->inv_state[i * NLE_INV_STATE_FIELDS + 5] & 1;
+                    if (worn && otyp >= 82 && otyp <= 114) suit = 1;
+                    if (otyp == 282 || otyp == 283 || otyp == 290)
+                        heals += env->inv_state[i * NLE_INV_STATE_FIELDS + 2];
+                    if (env->inv_oclasses[i] == 7)   // FOOD_CLASS
+                        food += env->inv_state[i * NLE_INV_STATE_FIELDS + 2];
+                }
+                long since_pray = env->stats.last_pray_turn > 0
+                    ? (long)env->prev_time - env->stats.last_pray_turn : -1;
+                fprintf(f, "%d,%d,%d,%ld,%ld,%ld,%d,%d,%ld,%d,%d,%ld,%ld,%ld,%ld,%d,%d,%ld",
+                    how, env->internal[NETHACK_INTERNAL_KILLER_MNUM],
+                    env->internal[NETHACK_INTERNAL_KILLER_MLEV],
+                    env->stats.last_dnum, env->stats.last_dlevel,
+                    (long)env->stats.last_maxhp, env->stats.last_adj,
+                    env->last_dt, (long)env->prev_time, env->prev_action,
+                    env->stats.max_xp, env->stats.last_score,
+                    env->stats.last_hunger, env->stats.last_cap,
+                    env->stats.last_cond, suit, heals, since_pray);
+                for (int k = 7; k >= 0; k--) {
+                    int idx = (env->hp_hist_i - 1 - k) & 7;
+                    fprintf(f, ",%.3f", env->hp_hist_i > k ? env->hp_hist[idx] : -1.0f);
+                }
+                fprintf(f, ",%d\n", food);
+                fclose(f);
+            }
+        }
+    }
     if (how == 0) {
         env->log.death_mon_level    += (float)env->internal[NETHACK_INTERNAL_KILLER_MLEV];
         env->log.death_adj_monsters += (float)env->stats.last_adj;
         env->log.death_maxhp        += (float)env->stats.last_maxhp;
     }
+    { const char* rl = getenv("NETHACK_ROUTE_LOG");
+      if (rl && rl[0]) {
+          FILE* f = fopen(rl, "a");
+          if (f) {
+              fprintf(f, "E,%ld,%ld,%d,%p\n", (long)env->prev_time,
+                      env->stats.last_score, how, (void*)env);
+              fclose(f);
+          }
+      } }
     env->log.reach_mines      += (env->stats.areas & NETHACK_AREA_MINES)      ? 1.0f : 0.0f;
     env->log.reach_minetown   += (env->stats.areas & NETHACK_AREA_MINETOWN)   ? 1.0f : 0.0f;
     env->log.reach_deep_mines += (env->stats.areas & NETHACK_AREA_DEEP_MINES) ? 1.0f : 0.0f;
@@ -414,10 +546,12 @@ static float nethack_reward(Nethack* env, int illegal) {
           if (!(env->stats.floors_bits[dn] & fb)) {
               env->stats.floors_bits[dn] |= fb;
               env->stats.floors++;
-              r += env->descent_coef;
+              if (nethack_floorpay_on()) r += env->descent_coef;
           }
       } }
     if (depth > env->stats.max_depth) {
+        if (!nethack_floorpay_on())
+            r += env->descent_coef * (float)(depth - env->stats.max_depth);
         env->stats.max_depth = depth;
     }
 
@@ -432,13 +566,13 @@ static float nethack_reward(Nethack* env, int illegal) {
         env->stats.heal_hp += hp_delta;
     }
     env->prev_hp = hp;
+    { long mhp = env->blstats[NLE_BL_HPMAX];
+      env->hp_hist[env->hp_hist_i & 7] = mhp > 0 ? (float)hp / (float)mhp : 0.0f;
+      env->hp_hist_i++; }
 
     // ac potential
     long ac = env->blstats[NLE_BL_AC];
     r += env->ac_coef * (float)(env->prev_ac - ac);
-    r += env->ac_hold_coef * (float)(10 - ac);
-    if ((int)ac < env->stats.min_ac)
-        r += env->first_wear_coef * (float)(env->stats.min_ac - (int)ac);
     env->prev_ac = ac;
     env->stats.ac_sum += ac;
     if ((int)ac < env->stats.min_ac) env->stats.min_ac = (int)ac;
@@ -481,9 +615,17 @@ static void nethack_execute(Nethack* env, int verb, int slot, int dirkey, int* b
     case NETHACK_ACT_MOVE:
         nethack_send_key(env, dirkey);
         break;
-    case NETHACK_ACT_RUN:
-        nethack_send_key(env, dirkey - 32);   // uppercase = run
-        break;
+    case NETHACK_ACT_RUN: {
+        int rc = nethack_run_count();
+        if (rc == 0) {
+            nethack_send_key(env, dirkey - 32);   // uppercase = run
+        } else {  // count-walk: bounded, and stops on item-underfoot messages
+            if (rc >= 10) { nethack_send_key(env, '0' + rc / 10);
+                            if (!env->obs.done) nethack_send_key(env, '0' + rc % 10); }
+            else nethack_send_key(env, '0' + rc);
+            if (!env->obs.done) nethack_send_key(env, dirkey);
+        }
+        break; }
     case NETHACK_ACT_DOWN:
         nethack_send_key(env, '>');
         break;
@@ -502,12 +644,20 @@ static void nethack_execute(Nethack* env, int verb, int slot, int dirkey, int* b
         st->verb_uses[verb]++;
         nethack_do_elbereth(env);
         break;
-    case NETHACK_ACT_SEARCH20:
+    case NETHACK_ACT_SEARCH20: {
         st->verb_uses[verb]++;
-        nethack_send_key(env, '2');
-        if (!env->obs.done) nethack_send_key(env, '0');
+        int sc = nethack_search_count();
+        if (sc == 20) {   // dormant path: byte-identical key sequence
+            nethack_send_key(env, '2');
+            if (!env->obs.done) nethack_send_key(env, '0');
+        } else if (sc >= 10) {
+            nethack_send_key(env, '0' + sc / 10);
+            if (!env->obs.done) nethack_send_key(env, '0' + sc % 10);
+        } else {
+            nethack_send_key(env, '0' + sc);
+        }
         if (!env->obs.done) nethack_send_key(env, 's');
-        break;
+        break; }
     case NETHACK_ACT_PICKUP:
         st->verb_uses[verb]++;
         nethack_send_key(env, ',');
@@ -529,10 +679,26 @@ static void nethack_execute(Nethack* env, int verb, int slot, int dirkey, int* b
     case NETHACK_ACT_QUAFF:
         nethack_item_use(env, 'q', "want to drink", "rink from the", slot, &st->verb_uses[verb], bad_pick);
         break;
-    case NETHACK_ACT_THROW:
+    case NETHACK_ACT_THROW: {
+        // aim-assist (NETHACK_THROW_AIM): if the chosen ray has no target,
+        // redirect to the nearest ray that has one (same accept-set as the
+        // gate: monsters + invis/detect + warning). Precedent: APPLY diggers.
+        static int aim = -1;
+        if (aim < 0) { const char* e = getenv("NETHACK_THROW_AIM"); aim = (e && e[0] == '1'); }
+        if (aim) {
+            int di = (int)env->actions[13 + nethack_dir_head(NETHACK_ACT_THROW)];
+            if (!nethack_ray_target(env, NETHACK_DIR_DX[di], NETHACK_DIR_DY[di])) {
+                int bk = 99, bd = -1;
+                for (int d = 0; d < NETHACK_NUM_DIRS; d++) {
+                    int k = nethack_ray_target(env, NETHACK_DIR_DX[d], NETHACK_DIR_DY[d]);
+                    if (k && k < bk) { bk = k; bd = d; }
+                }
+                if (bd >= 0) dirkey = NETHACK_DIR_KEYS[bd];
+            }
+        }
         if (nethack_item_use(env, 't', "want to throw", NULL, slot, &st->verb_uses[verb], bad_pick))
             nethack_answer_direction(env, dirkey);
-        break;
+        break; }
     case NETHACK_ACT_ZAP:
         if (nethack_item_use(env, 'z', "want to zap", NULL, slot, &st->verb_uses[verb], bad_pick))
             nethack_answer_direction(env, dirkey);
@@ -568,6 +734,7 @@ static void nethack_execute(Nethack* env, int verb, int slot, int dirkey, int* b
 }
 
 void c_step(Nethack* env) {
+    int was_reset = env->pending_reset;
     if (env->pending_reset) {
         env->pending_reset = 0;
         nethack_do_reset(env);
@@ -576,19 +743,98 @@ void c_step(Nethack* env) {
     int verb = (int)env->actions[0];
     int head = NETHACK_VERBS[verb].head;
     int slot = (head >= 0) ? (int)env->actions[1 + head] : 0;
-    int dirkey = NETHACK_DIR_KEYS[(int)env->actions[13]];
+    int dh = nethack_dir_head(verb);
+    int dirkey = NETHACK_DIR_KEYS[dh >= 0 ? (int)env->actions[13 + dh] : 0];
 
+    { static const char* da = NULL; static int da_init = 0; static int da_n = 0;
+      static int da_skip = 0;
+      if (!da_init) { da = getenv("NETHACK_DEBUG_ACT"); da_init = 1; }
+      if (da && da[0] && !was_reset && env->stats.length > 2
+          && ++da_skip % 7 == 0 && da_n < 20000) { FILE* f = fopen(da, "a");
+          if (f) { da_n++;
+              fprintf(f, "%d,%d,%d,%d,%d\n", verb, slot,
+                  dh >= 0 ? (int)env->actions[13 + dh] : -1,
+                  env->action_mask ? env->action_mask[verb] : -1,
+                  (head >= 0 && env->action_mask)
+                      ? env->action_mask[NETHACK_NUM_ACTIONS + head * NETHACK_INV_SLOTS + slot] : -1);
+              fclose(f); } } }
+
+    if (verb == NETHACK_ACT_PRAY) env->stats.last_pray_turn = env->blstats[NLE_BL_TIME];
     long time_before = env->blstats[NLE_BL_TIME];
     int bad_pick = 0;
     nethack_execute(env, verb, slot, dirkey, &bad_pick);
 
+    env->prev2_action = env->prev_action;
     env->prev_action = verb;
     int illegal = nethack_handle_prompts(env);
     if (!env->obs.done) nle_obs_refresh(env->ctx, &env->obs);
     nethack_auto_enhance(env);
 
+    { static const char* ccf = NULL; static int ccf_init = 0;
+      if (!ccf_init) { ccf = getenv("NETHACK_CORPSE_CENSUS"); ccf_init = 1; }
+      if (ccf && ccf[0]) {
+          char b[256]; int j = 0;
+          const unsigned char* msg = env->message;
+          for (; j < 255 && msg[j]; j++) b[j] = (msg[j] == ',' || msg[j] == '\n') ? ';' : (char)msg[j];
+          b[j] = 0;
+          int see = strstr(b, "You see here") && strstr(b, " corpse");
+          int kill = !strncmp(b, "You kill", 8) || !strncmp(b, "You destroy", 11);
+          int fin = strstr(b, "finish eating") != NULL;
+          int guilt = strstr(b, "feel guilty") != NULL;
+          if (see || kill || fin || guilt) {
+              FILE* f = fopen(ccf, "a");
+              if (f) {
+                  fprintf(f, "%c,%ld,%ld,%.80s\n",
+                      guilt ? 'G' : fin ? 'F' : see ? 'S' : 'K',
+                      (long)env->blstats[NLE_BL_TIME],
+                      (long)env->blstats[NLE_BL_HUNGER], b);
+                  fclose(f);
+              }
+          }
+      }
+    }
+
     if (bad_pick) { illegal = 1; env->stats.illegal_actions++; }
     if (env->blstats[NLE_BL_TIME] > time_before) env->stats.valid_moves++;
+    if (env->blstats[NLE_BL_TIME] > 0) {   // zeroed blstats = death teardown; keep last valid
+        env->last_dt = (int)(env->blstats[NLE_BL_TIME] - time_before);
+        { static const char* rl = NULL; static int rl_init = 0;
+          if (!rl_init) { rl = getenv("NETHACK_ROUTE_LOG"); rl_init = 1; }
+          if (rl && rl[0]) {
+              FILE* f = NULL;
+              long dn_now = env->blstats[NLE_BL_DNUM], dl_now = env->blstats[NLE_BL_DLEVEL];
+              if (dn_now != env->stats.last_dnum || dl_now != env->stats.last_dlevel) {
+                  f = fopen(rl, "a");
+                  if (f) fprintf(f, "L,%ld,%ld,%ld\n",
+                                 (long)env->blstats[NLE_BL_TIME], dn_now, dl_now);
+              }
+              char rb[256]; int rj = 0;
+              const unsigned char* rm = env->message;
+              for (; rj < 255 && rm[rj]; rj++) rb[rj] = (rm[rj] == ',') ? ';' : (char)rm[rj];
+              rb[rj] = 0;
+              if (strstr(rb, "Unknown direction")) {
+                  if (!f) f = fopen(rl, "a");
+                  if (f) fprintf(f, "X,%ld,%d,%d\n", (long)env->blstats[NLE_BL_TIME],
+                                 env->prev2_action, env->prev_action);
+              }
+              const char* ev = (strstr(rb, "elcome") && !strstr(rb, "experience")) ? "W"
+                             : strstr(rb, "for sale, ") ? "Q"
+                             : strstr(rb, "You bought") ? "B"
+                             : (env->prev_action == NETHACK_ACT_READ) ? "R" : NULL;
+              if (ev) {
+                  if (!f) f = fopen(rl, "a");
+                  if (f) fprintf(f, "%s,%ld,%.70s\n", ev,
+                                 (long)env->blstats[NLE_BL_TIME], rb);
+              }
+              if (f) fclose(f);
+          } }
+        env->stats.last_dnum   = env->blstats[NLE_BL_DNUM];
+        env->stats.last_dlevel = env->blstats[NLE_BL_DLEVEL];
+        env->stats.last_hunger = env->blstats[NLE_BL_HUNGER];
+        env->stats.last_cap    = env->blstats[NLE_BL_CAP];
+        env->stats.last_cond   = env->blstats[NLE_BL_CONDITION];
+        env->stats.last_score  = env->blstats[NLE_BL_SCORE];
+    }
     env->stats.length++;
 
     float reward = nethack_reward(env, illegal);

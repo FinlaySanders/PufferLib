@@ -1,13 +1,15 @@
 #include "nethack.h"
 #define OBS_SIZE NETHACK_OBS_SIZE
-#define NUM_ATNS 14
+#define NUM_ATNS 19
 #define ACT_SIZES {NETHACK_NUM_ACTIONS, \
     NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, \
     NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, \
     NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, \
-    NETHACK_NUM_DIRS}
+    NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, \
+    NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, NETHACK_NUM_DIRS}
 #define OBS_TENSOR_T ByteTensor
-#define MY_ACTION_MASK (NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS + NETHACK_NUM_DIRS)
+// layout: [verbs][12 slot heads][6 per-verb dir heads] — matches logits exactly
+#define MY_ACTION_MASK (NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS)
 
 #define Env Nethack
 #include "vecenv.h"
@@ -25,8 +27,6 @@ void my_init(Env* env, Dict* kwargs) {
     env->illegal_penalty = dict_get(kwargs, "illegal_penalty")->value;
     env->death_penalty = dict_get(kwargs, "death_penalty")->value;
     env->ac_coef = dict_get(kwargs, "ac_coef")->value;
-    env->ac_hold_coef = dict_get(kwargs, "ac_hold_coef")->value;
-    env->first_wear_coef = dict_get(kwargs, "first_wear_coef")->value;
     env->heal_coef = dict_get(kwargs, "heal_coef")->value;
     env->status_coef = dict_get(kwargs, "status_coef")->value;
 }
@@ -64,6 +64,11 @@ void my_log(Log* log, Dict* out) {
     dict_set(out, "death_adj_monsters", log->death_adj_monsters);
     dict_set(out, "death_maxhp", log->death_maxhp);
     dict_set(out, "truncated", log->truncated);
+    dict_set(out, "death_hp_t1", log->death_hp_t1);
+    dict_set(out, "death_hp_t5", log->death_hp_t5);
+    dict_set(out, "death_hunger", log->death_hunger);
+    dict_set(out, "death_spike", log->death_spike);
+    dict_set(out, "death_attrition", log->death_attrition);
     dict_set(out, "reach_mines", log->reach_mines);
     dict_set(out, "reach_minetown", log->reach_minetown);
     dict_set(out, "reach_deep_mines", log->reach_deep_mines);
@@ -73,7 +78,8 @@ void my_log(Log* log, Dict* out) {
 
 // Per-(verb,head) consumption map for PPO consumed-head gating (weak symbol
 // read by src/pufferlib.cu). heads: [0]=verb, [1..12]=slot heads 0..11,
-// [13]=direction. A head is "consumed" iff the sampled verb actually uses it.
+// [13..18]=per-verb dir heads. A head is "consumed" iff the sampled verb
+// actually uses it.
 const signed char* env_head_consume_map(int* n_verbs, int* n_atns) {
     static signed char map[NETHACK_NUM_ACTIONS * NUM_ATNS];
     static int built = 0;
@@ -84,10 +90,8 @@ const signed char* env_head_consume_map(int* n_verbs, int* n_atns) {
             row[0] = 1;                                   // verb head: always
             int sh = NETHACK_VERBS[v].head;               // slot head 0..11 or -1
             if (sh >= 0) row[1 + sh] = 1;
-            if (v == NETHACK_ACT_MOVE || v == NETHACK_ACT_RUN
-                || v == NETHACK_ACT_KICK || v == NETHACK_ACT_THROW
-                || v == NETHACK_ACT_ZAP || v == NETHACK_ACT_APPLY)
-                row[NUM_ATNS - 1] = 1;                    // direction head
+            int dh = nethack_dir_head(v);
+            if (dh >= 0) row[13 + dh] = 1;
         }
         built = 1;
     }

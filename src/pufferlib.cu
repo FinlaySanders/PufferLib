@@ -391,7 +391,7 @@ typedef struct {
 Dict* log_environments_impl(PuffeRL& pufferl) {
     // Capacity raised from 32 to 64 to accommodate chess's per-bank
     // hist_score_bank_<b> / hist_n_bank_<b> entries (16 keys for 8 banks).
-    Dict* out = create_dict(64);
+    Dict* out = create_dict(128);
     static_vec_log(pufferl.vec, out);
     return out;
 }
@@ -462,7 +462,7 @@ __device__ __forceinline__ float masked_logit(const precision_t* logits,
 }
 
 // Expects action logits and values to be in the same contiguous buffer. See default decoder
-// ---- consumed-head gating (opt-in via PUFFER_HEAD_GATING) ----
+// ---- consumed-head gating (default on; PUFFER_HEAD_GATING=0 disables) ----
 extern "C" __attribute__((weak)) const signed char* env_head_consume_map(int*, int*);
 static const signed char* g_hc_dev = nullptr;
 static int g_hc_stride = 0;
@@ -471,7 +471,7 @@ static const signed char* get_head_consume_dev(int* stride) {
     if (!g_hc_init) {
         g_hc_init = true;
         const char* hg = getenv("PUFFER_HEAD_GATING");
-        if (hg && hg[0] && hg[0] != '0' && env_head_consume_map) {
+        if (!(hg && hg[0] == '0') && env_head_consume_map) {
             int nv = 0, na = 0;
             const signed char* host = env_head_consume_map(&nv, &na);
             if (host && nv > 0 && na > 0) {
@@ -486,7 +486,7 @@ static const signed char* get_head_consume_dev(int* stride) {
     return g_hc_dev;
 }
 
-// ---- verb-head exploration floor (opt-in via PUFFER_VERB_EPS) ----
+// ---- verb-head exploration floor (default 0.005; PUFFER_VERB_EPS=0 disables) ----
 // Mixture policy on the verb head: pi' = (1-eps)*softmax + eps*uniform(legal).
 // eps is constant to 80% of total_timesteps, then linear to 0. The live value
 // sits in device memory so captured CUDA graphs read the annealed value.
@@ -495,7 +495,7 @@ static float g_veps_base = -1.0f;
 static float get_verb_eps_base() {
     if (g_veps_base < 0.0f) {
         const char* e = getenv("PUFFER_VERB_EPS");
-        g_veps_base = (e && e[0]) ? (float)atof(e) : 0.0f;
+        g_veps_base = (e && e[0]) ? (float)atof(e) : 0.005f;
         if (g_veps_base > 0.0f) {
             cudaMalloc(&g_veps_dev, sizeof(float));
             cudaMemcpy(g_veps_dev, &g_veps_base, sizeof(float), cudaMemcpyHostToDevice);
@@ -503,19 +503,28 @@ static float get_verb_eps_base() {
     }
     return g_veps_base;
 }
-static float g_veps_astart = -1.0f;   // anneal start fraction, default 0.8
+static float g_veps_astart = -1.0f;   // anneal start fraction, default 0.4
+static float g_veps_aend = -1.0f;     // anneal end fraction, default 1.0 (fade to run end)
 static void verb_eps_update(long global_step, long total_timesteps) {
     float base = get_verb_eps_base();
     if (base <= 0.0f) return;
     if (g_veps_astart < 0.0f) {
         const char* e = getenv("PUFFER_VERB_EPS_ANNEAL_START");
-        g_veps_astart = (e && e[0]) ? (float)atof(e) : 0.8f;
+        g_veps_astart = (e && e[0]) ? (float)atof(e) : 0.4f;
         if (g_veps_astart > 0.99f) g_veps_astart = 0.99f;
         if (g_veps_astart < 0.0f) g_veps_astart = 0.0f;
+        const char* e2 = getenv("PUFFER_VERB_EPS_ANNEAL_END");
+        g_veps_aend = (e2 && e2[0]) ? (float)atof(e2) : 1.0f;
+        if (g_veps_aend > 1.0f) g_veps_aend = 1.0f;
+        if (g_veps_aend < g_veps_astart + 0.01f) g_veps_aend = g_veps_astart + 0.01f;
     }
     double frac = total_timesteps > 0 ? (double)global_step / (double)total_timesteps : 0.0;
-    float a = g_veps_astart;
-    float eps = frac < a ? base : base * (float)fmax(0.0, (1.0 - frac) / (1.0 - a));
+    float a = g_veps_astart, ae = g_veps_aend;
+    // ae==1.0 path must be byte-identical to the pre-knob formula
+    float eps = frac < a ? base
+              : ae >= 1.0f ? base * (float)fmax(0.0, (1.0 - frac) / (1.0 - a))
+              : frac >= ae ? 0.0f
+              : base * (float)((ae - frac) / (ae - a));
     cudaMemcpy(g_veps_dev, &eps, sizeof(float), cudaMemcpyHostToDevice);
 }
 
@@ -599,11 +608,21 @@ __global__ void sample_logits(
         for (int h = 0; h < num_atns; ++h) {
             int A = act_sizes[h];  // size of this action head
 
+            // Shadow dir-mask: when the env appends an extra dir-width row
+            // (mask_stride > logits width) and the sampled verb is THROW,
+            // the LAST head reads the shadow row (base shifted by A). The
+            // dormant env writes shadow == dirs, keeping arithmetic identical.
+            int mb = mask_base;
+            if (action_mask != nullptr && h == num_atns - 1
+                && mask_stride > logits_offset + A
+                && (int)to_float(actions[idx * num_atns]) == 11 /* THROW */)
+                mb = mask_base + A;
+
             // Step 1: Find max and sum for numerical stability (with nan_to_num)
             float max_val = -INFINITY;
             float sum_exp = 0.0f;
             for (int a = 0; a < A; ++a) {
-                float l = masked_logit(logits, logits_base, logits_offset, a, action_mask, mask_base);
+                float l = masked_logit(logits, logits_base, logits_offset, a, action_mask, mb);
                 if (l > max_val) {
                     sum_exp *= expf(max_val - l);
                     max_val = l;
@@ -638,11 +657,11 @@ __global__ void sample_logits(
             int sampled_action = -1;  // sentinel: no action chosen yet
 
             for (int a = 0; a < A; ++a) {
-                float l = masked_logit(logits, logits_base, logits_offset, a, action_mask, mask_base);
+                float l = masked_logit(logits, logits_base, logits_offset, a, action_mask, mb);
                 float prob = expf(l - logsumexp);
                 if (eps > 0.0f) {
                     float legal = (action_mask == nullptr
-                        || to_float(action_mask[mask_base + logits_offset + a]) != 0.0f) ? 1.0f : 0.0f;
+                        || to_float(action_mask[mb + logits_offset + a]) != 0.0f) ? 1.0f : 0.0f;
                     prob = (1.0f - eps) * prob + eps * legal * inv_K;
                 }
                 cumsum += prob;
@@ -657,7 +676,7 @@ __global__ void sample_logits(
                 sampled_action = A - 1;
                 if (action_mask != nullptr) {
                     for (int a = A - 1; a >= 0; --a) {
-                        if (to_float(action_mask[mask_base + logits_offset + a]) != 0.0f) {
+                        if (to_float(action_mask[mb + logits_offset + a]) != 0.0f) {
                             sampled_action = a;
                             break;
                         }
@@ -666,7 +685,7 @@ __global__ void sample_logits(
             }
 
             // Step 5: Gather log probability of sampled action
-            float sampled_logit = masked_logit(logits, logits_base, logits_offset, sampled_action, action_mask, mask_base);
+            float sampled_logit = masked_logit(logits, logits_base, logits_offset, sampled_action, action_mask, mb);
             float log_prob = sampled_logit - logsumexp;
             if (eps > 0.0f)
                 log_prob = logf((1.0f - eps) * expf(log_prob) + eps * inv_K);
@@ -981,9 +1000,15 @@ __global__ void ppo_loss_compute(
             int used = (a.head_consume == nullptr || h == 0)
                      ? 1 : (int)a.head_consume[verb * a.hc_stride + h];
             head_used[h] = used;
+            // shadow dir-mask (see sampler): last head under THROW reads the
+            // extra dirs row; dormant env writes shadow == dirs (bit-exact)
+            int mb = mask_base;
+            if (a.action_mask != nullptr && h == a.num_atns - 1
+                && a.mask_stride_t > a.A_total && verb == 11 /* THROW */)
+                mb = mask_base + A;
             float lse, ent, lp;
             ppo_discrete_head(a.logits, logits_base, a.logits_stride_a, logits_offset, A, act,
-                              a.action_mask, mask_base, &lse, &ent, &lp);
+                              a.action_mask, mb, &lse, &ent, &lp);
             // Verb-head exploration floor: logprob of the sampling mixture
             // (1-eps)*softmax + eps*uniform(legal); entropy stays on the softmax.
             if (h == 0 && a.verb_eps != nullptr) {
@@ -1057,9 +1082,13 @@ __global__ void ppo_loss_compute(
             if (h == 0 && a.entfloor_lambda > 0.0f && ent < VERB_ENTFLOOR_TARGET)
                 d_ent_h = dL * (-(a.ent_coef + a.entfloor_lambda));
 
+            int mb2 = mask_base;
+            if (a.action_mask != nullptr && h == a.num_atns - 1
+                && a.mask_stride_t > a.A_total && head_act[0] == 11 /* THROW */)
+                mb2 = mask_base + A;
             for (int j = 0; j < A; ++j) {
                 float l = load_logit_masked(a.logits, logits_base, a.logits_stride_a,
-                                            logits_offset, j, a.action_mask, mask_base);
+                                            logits_offset, j, a.action_mask, mb2);
                 float logp = l - logsumexp;
                 float p = __expf(logp);
                 float d_logit = (j == act) ? d_lp_h : 0.0f;
@@ -1233,6 +1262,14 @@ void ppo_loss_fwd_bwd(
     bool has_mask = (graph.mb_action_mask.data != nullptr);
             int hc_stride_l = 0;
         const signed char* hc_dev_l = get_head_consume_dev(&hc_stride_l);
+    // per-head stack arrays in the PPO kernel are MAX_ATN_HEADS wide; more
+    // heads than that silently corrupts local memory (gradients garbage
+    // while rollout sampling stays correct)
+    if ((int)numel(act_sizes.shape) > MAX_ATN_HEADS) {
+        fprintf(stderr, "PPO: num_atns %d > MAX_ATN_HEADS %d\n",
+                (int)numel(act_sizes.shape), MAX_ATN_HEADS);
+        exit(1);
+    }
 PPOKernelArgs args = {
         .grad_logits = bufs.grad_logits.data,
         .grad_logstd = is_continuous ? bufs.grad_logstd.data : nullptr,
@@ -1244,8 +1281,11 @@ PPOKernelArgs args = {
         .adv_var = adv_var_ptr,
         .act_sizes = act_sizes.data,
         .action_mask = has_mask ? graph.mb_action_mask.data : nullptr,
-        .mask_stride_n = has_mask ? T * A_total : 0,
-        .mask_stride_t = has_mask ? A_total : 0,
+        // stride by the PHYSICAL mask row width (may exceed A_total when the
+        // env appends shadow rows, e.g. throw-dirs) — was A_total, correct
+        // only while mask rows == logits rows
+        .mask_stride_n = has_mask ? (int)(T * graph.mb_action_mask.shape[2]) : 0,
+        .mask_stride_t = has_mask ? (int)graph.mb_action_mask.shape[2] : 0,
         .head_consume = hc_dev_l,
         .hc_stride = hc_stride_l,
         .num_atns = (int)numel(act_sizes.shape),

@@ -10,9 +10,9 @@ static void env_open(Nethack* env) {
     memset(env, 0, sizeof(*env));
     env->num_agents = 1;
     env->observations = (unsigned char*)calloc(NETHACK_OBS_SIZE, 1);
-    env->actions      = (float*)calloc(14, sizeof(float));   // {verb, 12 per-verb slots, direction}
+    env->actions      = (float*)calloc(19, sizeof(float));   // {verb, 12 per-verb slots, 6 per-verb dirs}
     env->action_mask  = (unsigned char*)calloc(NETHACK_NUM_ACTIONS
-                        + 12 * NETHACK_INV_SLOTS + NETHACK_NUM_DIRS, 1);
+                        + 12 * NETHACK_INV_SLOTS + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS, 1);
     env->rewards      = (float*)calloc(1, sizeof(float));
     env->terminals    = (float*)calloc(1, sizeof(float));
     init(env);
@@ -34,12 +34,12 @@ static void env_close(Nethack* env) {
 #define DEMO_INV_FLAT (NETHACK_INV_SLOTS * DEMO_INV_HID)
 #define DEMO_INV_POOL 128
 #define DEMO_SFEAT 24    // buc4 + known+spe + quan + ero2 + flags7 + tk + armcat7
-#define DEMO_OD (NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS + NETHACK_NUM_DIRS)
-#define DEMO_NUM_HEADS 14
+#define DEMO_OD (NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS)
+#define DEMO_NUM_HEADS 19
 #define DEMO_PTR_HEADS 12
 #define DEMO_QDIM (DEMO_PTR_HEADS * DEMO_INV_HID)
-#define DEMO_DEC_PAD 32
-#define DEMO_DEC_LIN (NETHACK_NUM_ACTIONS + NETHACK_NUM_DIRS + 1)
+#define DEMO_DEC_PAD 72
+#define DEMO_DEC_LIN (NETHACK_NUM_ACTIONS + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS + 1)
 #define DEMO_LOC_IN  (NETHACK_CROP_GRID * DEMO_EMBED)   // 9x9 crop, per-cell embeds
 #define DEMO_LOC_HID 256
 #define DEMO_PW 5
@@ -169,7 +169,8 @@ static NethackNet* make_nethack_net(Weights* w) {
         NETHACK_NUM_ACTIONS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS,
         NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS,
         NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS,
-        NETHACK_INV_SLOTS, NETHACK_NUM_DIRS};
+        NETHACK_INV_SLOTS, NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, NETHACK_NUM_DIRS,
+        NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, NETHACK_NUM_DIRS};
     net->md = make_multidiscrete(1, logit_sizes, DEMO_NUM_HEADS);
     assert(w->idx == w->size - 7);
     // materialize the residual-factorized embedding once (host, load time)
@@ -389,7 +390,7 @@ static int nethack_net_forward(NethackNet* net, const unsigned char* obs) {   //
                 expf(net->dec_tau[h]) * dot / (nq * kn[i]);
         }
     }
-    for (int d = 0; d <= NETHACK_NUM_DIRS; d++)   // 8 dirs + value
+    for (int d = 0; d <= NETHACK_DIR_HEADS * NETHACK_NUM_DIRS; d++)   // 48 dirs + value
         net->logits[NETHACK_NUM_ACTIONS + DEMO_PTR_HEADS * NETHACK_INV_SLOTS + d] =
             tmp[NETHACK_NUM_ACTIONS + d];
     return 0;
@@ -411,8 +412,15 @@ static void run_demo(long max_steps, int frame_ms) {
     srand(seed_env ? (unsigned)strtoul(seed_env, NULL, 10) : (unsigned)time(NULL));
 
     float ep_score = 0, ep_len = 0;   // log totals at last episode end
+    // NH_STATE_MODE: "episode" (default) zeroes state at episode end;
+    // "train" mimics training semantics: zero every 64 steps, never on done.
+    const char* sm = getenv("NH_STATE_MODE");
+    int train_sem = (sm && !strcmp(sm, "train"));
     float acts_f[DEMO_NUM_HEADS];
     for (long t = 0; t < max_steps; t++) {
+        if (train_sem && (t % 64) == 0)
+            memset(net->mingru->state, 0,
+                   (size_t)net->num_layers * net->hidden_size * sizeof(float));
         nethack_net_forward(net, env.observations);
         for (int i = 0; i < DEMO_OD; i++)
             if (!env.action_mask[i]) net->logits[i] = -1e9f;
@@ -428,8 +436,9 @@ static void run_demo(long max_steps, int frame_ms) {
                     env.log.score - ep_score, env.log.episode_length - ep_len);
             ep_score = env.log.score;
             ep_len = env.log.episode_length;
-            memset(net->mingru->state, 0,
-                   (size_t)net->num_layers * net->hidden_size * sizeof(float));
+            if (!train_sem)
+                memset(net->mingru->state, 0,
+                       (size_t)net->num_layers * net->hidden_size * sizeof(float));
         }
     }
     if (env.log.n > 0)
