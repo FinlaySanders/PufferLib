@@ -3221,7 +3221,11 @@ TrainResult run_train(Ini* ini, TrainContext* ctx) {
     if (ctx->artifact_owner && !pool_eval && eval_episodes > 0) {
         EvalResult r = eval_loop(ini, pufferl, EVAL_SCORE, 1, 0, eval_episodes,
             &last_log, (int)pufferl->epoch);
-        result.score = result.scores[result.points - 1] = r.score;
+        // eval_loop.score is always env/score. Protein ranks the eval-board
+        // value of sweep.metric (score sweeps: same key, unchanged).
+        DictItem* ev = dict_find(&last_log, target_key);
+        result.score = result.scores[result.points - 1] =
+            ev ? (float)ev->value : r.score;
         if (wandb_fp) {
             fprintf(wandb_fp, "{\"agent_steps\": %.17g, \"eval/score\": %.17g, \"eval/n\": %d}\n",
                 (double)pufferl->global_step, (double)r.score, r.games);
