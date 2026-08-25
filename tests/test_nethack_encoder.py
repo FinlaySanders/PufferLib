@@ -85,6 +85,7 @@ V5 = True
 # NH_TEST_SPELL2=1: v5.1 spell fix — sum channel over RAW slot inputs + 4
 # doorstep scalars replaces the spk2 max-pool. Implies V5.
 SPELL2 = True
+
 if SPELL2:
     V5 = True
 if V5:
@@ -1313,7 +1314,7 @@ def dec_check(lib, obs_d, glyphs, bl_vals, ex_vals, inv_vals, st_vals, itr_vals,
     kmat = s_k @ k_w.T                                      # (B,55,16)
     qn = q.norm(dim=2) + 1e-6
     kn = kmat.norm(dim=2) + 1e-6
-    cos = torch.einsum('bhk,bik->bhi', q, kmat) / (qn[:, :, None] * kn[:, None, :])
+    cos = torch.einsum('bhk,bik->bhi', q, kmat) / qn[:, :, None]
     slot = torch.exp(tau[:HEADS])[None, :, None] * cos     # (B,HEADS,55) log-tau
     # spell head: dot(q_spell, key_s) / 4 (dot-product pointer, no tau)
     spell = torch.einsum('bk,bsk->bs', qall[:, HEADS, :SK], sp_k) * 0.25  # spell query uses the first SK dims

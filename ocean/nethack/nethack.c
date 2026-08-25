@@ -789,6 +789,9 @@ static int nethack_net_forward(NethackNet* net, const unsigned char* obs) { // f
         for (int k = 0; k < H; k++) acc += net->dec_q[r * H + k] * hs[k];
         q[r] = acc;
     }
+    // NH_DEC_COS=1: legacy full-cosine slot logits (pre-2026-08-25 checkpoints)
+    static int dec_cos = -1;
+    if (dec_cos < 0) { const char* e = getenv("NH_DEC_COS"); dec_cos = e && e[0] && e[0] != '0'; }
     float kmat[DEMO_INV_FLAT], kn[NETHACK_INV_SLOTS];
     for (int i = 0; i < NETHACK_INV_SLOTS; i++) {
         float nk = 0.0f;
@@ -799,7 +802,7 @@ static int nethack_net_forward(NethackNet* net, const unsigned char* obs) { // f
             kmat[i * DEMO_INV_HID + r] = acc;
             nk += acc * acc;
         }
-        kn[i] = sqrtf(nk) + 1e-6f;
+        kn[i] = dec_cos ? sqrtf(nk) + 1e-6f : 1.0f;
     }
     for (int a = 0; a < NETHACK_NUM_ACTIONS; a++) net->logits[a] = tmp[a];
     for (int h = 0; h < DEMO_PTR_HEADS; h++) {

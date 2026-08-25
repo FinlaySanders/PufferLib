@@ -2714,7 +2714,7 @@ struct NethackDecoderActivations {
     Prec dtmp, dq;
     Prec keygrad; // (B, NH_INV_FLAT) -> encoder inv slice
     Prec kmat; // (B, NH_INV_FLAT) projected keys
-    Prec kn, qn; // key norms (B, NH_INV), query norms (B, NH_QHEADS)
+    Prec qn; // query norms (B, NH_QHEADS)
     Prec slot_logits; // (B, NH_SLOT_OD) tau_h * cos
     Prec dkmat; // backward scratch
     Prec spdk; // spell-key grads from the pointer (B, 8*NH_SPKEY)
@@ -2762,10 +2762,12 @@ __global__ void nh_ptr_rownorm_kernel(precision_t* __restrict__ n,
     n[r] = from_float(sqrtf(acc) + 1e-6f);
 }
 
-// slot logit = exp(ltau_h) * cos(q_h, k_i), one thread per (sample, head, slot)
+// slot logit = exp(ltau_h) * (qhat_h . k_i): query-only normalization — key
+// magnitude reaches the logit (decoder lab: composite gear selection +3..21pp
+// vs full cosine; adopted 2026-08-25, pair +386). One thread per (b, head, slot).
 __global__ void nh_ptr3_cos_kernel(precision_t* __restrict__ slot_logits,
     const precision_t* __restrict__ q, const precision_t* __restrict__ qn,
-    const precision_t* __restrict__ kmat, const precision_t* __restrict__ kn,
+    const precision_t* __restrict__ kmat,
     const precision_t* __restrict__ tau, int B) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= B * NH_SLOT_OD) return;
@@ -2777,7 +2779,7 @@ __global__ void nh_ptr3_cos_kernel(precision_t* __restrict__ slot_logits,
     for (int k = 0; k < NH_INV_HID; k++)
         dot += to_float(qb[k]) * to_float(ki[k]);
     slot_logits[idx] = from_float(expf(to_float(tau[h])) * dot /
-        (to_float(qn[(int64_t)b * NH_QHEADS + h]) * to_float(kn[(int64_t)b * NH_INV + i])));
+        to_float(qn[(int64_t)b * NH_QHEADS + h]));
 }
 
 __global__ void nh_dec_dtmp_kernel(precision_t* __restrict__ dtmp,
@@ -2803,7 +2805,7 @@ __global__ void nh_ptr3_dq_kernel(precision_t* __restrict__ dq,
     long long* __restrict__ tau_acc, const precision_t* __restrict__ g,
     const precision_t* __restrict__ out, const precision_t* __restrict__ q,
     const precision_t* __restrict__ qn, const precision_t* __restrict__ kmat,
-    const precision_t* __restrict__ kn, const precision_t* __restrict__ tau, int B) {
+    const precision_t* __restrict__ tau, int B) {
     int bh = blockIdx.x * blockDim.x + threadIdx.x;
     if (bh >= B * NH_HEADS) return;
     int b = bh / NH_HEADS, h = bh % NH_HEADS;
@@ -2822,10 +2824,9 @@ __global__ void nh_ptr3_dq_kernel(precision_t* __restrict__ dq,
         if (gi == 0.0f) continue;
         float cosv = to_float(out[gbase + i]) / tauv;
         dtau += gi * cosv;
-        float knv = to_float(kn[(int64_t)b * NH_INV + i]);
         const precision_t* ki = kmat + ((int64_t)b * NH_INV + i) * NH_INV_HID;
         for (int k = 0; k < NH_INV_HID; k++)
-            dv[k] += tauv * gi * to_float(ki[k]) / knv;
+            dv[k] += tauv * gi * to_float(ki[k]);
     }
     float vdv = 0.0f;
     for (int k = 0; k < NH_INV_HID; k++) vdv += vhat[k] * dv[k];
@@ -2858,7 +2859,7 @@ __global__ void nh_spq_bwd_kernel(precision_t* __restrict__ dq,
 __global__ void nh_ptr3_dkmat_kernel(precision_t* __restrict__ dkmat,
     const precision_t* __restrict__ g, const precision_t* __restrict__ out,
     const precision_t* __restrict__ q, const precision_t* __restrict__ qn,
-    const precision_t* __restrict__ kmat, const precision_t* __restrict__ kn,
+    const precision_t* __restrict__ kmat,
     const precision_t* __restrict__ tau, int B) {
     int64_t idx = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= (int64_t)B * NH_INV_FLAT) return;
@@ -2866,20 +2867,17 @@ __global__ void nh_ptr3_dkmat_kernel(precision_t* __restrict__ dkmat,
     int64_t b = bi / NH_INV;
     int i = (int)(bi % NH_INV);
     int k = (int)(idx % NH_INV_HID);
-    float knv = to_float(kn[bi]);
-    float uk = to_float(kmat[idx]) / knv;
     float acc = 0.0f;
     for (int h = 0; h < NH_HEADS; h++) {
         int64_t gi_idx = b * (NH_DEC_OD + 1) + NH_ACTIONS + h * NH_INV + i;
         float gi = to_float(g[gi_idx]);
         if (gi == 0.0f) continue;
         float tauv = expf(to_float(tau[h]));
-        float cosv = to_float(out[gi_idx]) / tauv;
         float vk = to_float(q[((int64_t)b * NH_QHEADS + h) * NH_INV_HID + k])
                  / to_float(qn[(int64_t)b * NH_QHEADS + h]);
-        acc += tauv * gi * (vk - uk * cosv);
+        acc += tauv * gi * vk;
     }
-    dkmat[idx] = from_float(acc / knv);
+    dkmat[idx] = from_float(acc);
 }
 
 
@@ -2896,10 +2894,8 @@ static Prec nethack_decoder_forward(void* w, void* activations, Prec input, cuda
     puf_mm(&sflat, &dw->k_w, &kflat, stream);
     nh_ptr_rownorm_kernel<<<grid_size(B * NH_QHEADS), BLOCK_SIZE, 0, stream>>>(
         a->qn.data, a->q.data, B * NH_QHEADS);
-    nh_ptr_rownorm_kernel<<<grid_size(B * NH_INV), BLOCK_SIZE, 0, stream>>>(
-        a->kn.data, a->kmat.data, B * NH_INV);
     nh_ptr3_cos_kernel<<<grid_size(B * NH_SLOT_OD), BLOCK_SIZE, 0, stream>>>(
-        a->slot_logits.data, a->q.data, a->qn.data, a->kmat.data, a->kn.data, dw->tau.data, B);
+        a->slot_logits.data, a->q.data, a->qn.data, a->kmat.data, dw->tau.data, B);
     nh_dec_assemble_kernel<<<grid_size(B * (NH_DEC_OD + 1)), BLOCK_SIZE, 0, stream>>>(
         a->out.data, a->tmp.data, a->slot_logits.data, a->q.data, ea->spk_keys.data, B);
     return a->out;
@@ -2919,14 +2915,14 @@ static Prec nethack_decoder_backward(void* w, void* activations,
     cudaMemsetAsync(a->tau_acc.data, 0, NH_TAU_PAD * sizeof(long long), stream);
     nh_ptr3_dq_kernel<<<grid_size(B * NH_HEADS), BLOCK_SIZE, 0, stream>>>(
         a->dq.data, (long long*)a->tau_acc.data, a->grad_out.data, a->out.data,
-        a->q.data, a->qn.data, a->kmat.data, a->kn.data, dw->tau.data, B);
+        a->q.data, a->qn.data, a->kmat.data, dw->tau.data, B);
     nh_fxp_to_precision_kernel<<<1, 32, 0, stream>>>(
         a->tau_grad.data, (long long*)a->tau_acc.data, NH_TAU_PAD);
     nh_spq_bwd_kernel<<<grid_size(B * NH_SPKEY), BLOCK_SIZE, 0, stream>>>(
         a->dq.data, a->spdk.data, a->grad_out.data, a->q.data, ea->spk_keys.data, B);
     nh_ptr3_dkmat_kernel<<<grid_size((int64_t)B * NH_INV_FLAT), BLOCK_SIZE, 0, stream>>>(
         a->dkmat.data, a->grad_out.data, a->out.data, a->q.data, a->qn.data,
-        a->kmat.data, a->kn.data, dw->tau.data, B);
+        a->kmat.data, dw->tau.data, B);
     // dK = dkmat^T @ s ; keygrad (ds, into the encoder inv slice) = dkmat @ K
     Prec dkflat = {.data = a->dkmat.data, .shape = {B * NH_INV, NH_INV_HID}};
     Prec sflat = {.data = ea->inv_out.data, .shape = {B * NH_INV, NH_INV_HID}};
@@ -2982,7 +2978,6 @@ static void nethack_decoder_reg_train(void* w, void* activations, Allocator* act
     a->dq = {.shape = {B_TT, NH_QDIM}};
     a->keygrad = {.shape = {B_TT, NH_INV_FLAT}};
     a->kmat = {.shape = {B_TT, NH_INV_FLAT}};
-    a->kn = {.shape = {B_TT, NH_INV}};
     a->qn = {.shape = {B_TT, NH_QHEADS}};
     a->slot_logits = {.shape = {B_TT, NH_SLOT_OD}};
     a->dkmat = {.shape = {B_TT, NH_INV_FLAT}};
@@ -2997,7 +2992,7 @@ static void nethack_decoder_reg_train(void* w, void* activations, Allocator* act
     alloc_register(acts,&a->grad_input);  alloc_register(acts,&a->grad_input2);
     alloc_register(acts,&a->grad_out);    alloc_register(acts,&a->dtmp);
     alloc_register(acts,&a->dq);          alloc_register(acts,&a->keygrad);
-    alloc_register(acts,&a->kmat);        alloc_register(acts,&a->kn);
+    alloc_register(acts,&a->kmat);
     alloc_register(acts,&a->qn);          alloc_register(acts,&a->slot_logits);
     alloc_register(acts,&a->dkmat);       alloc_register(acts,&a->tau_acc);
     alloc_register(acts,&a->spdk);
@@ -3016,14 +3011,12 @@ static void nethack_decoder_reg_rollout(void* w, void* activations, Allocator* a
     a->tmp = {.shape = {B, NH_DEC_PAD}};
     a->q = {.shape = {B, NH_QDIM}};
     a->kmat = {.shape = {B, NH_INV_FLAT}};
-    a->kn = {.shape = {B, NH_INV}};
     a->qn = {.shape = {B, NH_QHEADS}};
     a->slot_logits = {.shape = {B, NH_SLOT_OD}};
     alloc_register(alloc,&a->out);
     alloc_register(alloc,&a->tmp);
     alloc_register(alloc,&a->q);
     alloc_register(alloc,&a->kmat);
-    alloc_register(alloc,&a->kn);
     alloc_register(alloc,&a->qn);
     alloc_register(alloc,&a->slot_logits);
 }
