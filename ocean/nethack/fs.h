@@ -109,11 +109,28 @@ static void nethack_rm_vardir(const char* dir) {
 
 // options rc
 
+// NH_NLE_OPTS=1: NLE's default option string (pickup_types:$?!/, NetHack's pile_limit, no autopickup exception)
+// in place of the training defaults (autopickup of every class but corpses, pile_limit:0); challenge-interface arm
+static int nethack_nle_opts(void) { static int v = -1; if (v < 0) v = getenv("NH_NLE_OPTS") != NULL; return v; }
+static const char* nethack_opts_effective(const char* options, char* buf, size_t bufsz) {
+    if (!nethack_nle_opts()) return options;
+    const char* key = "pile_limit:0,"; const char* at = strstr(options, key);
+    // NH_KEEP_PILELIMIT=1: adopt NLE's autopickup set but KEEP pile_limit:0 (both engines still list every pile).
+    // Ablation only: it separates "the agent picks up less" from "the game stops telling us what is in a pile".
+    int keep_pl = getenv("NH_KEEP_PILELIMIT") != NULL;
+    if (!at) snprintf(buf, bufsz, "%s", options);
+    else if (keep_pl) snprintf(buf, bufsz, "%.*spile_limit:0,pickup_types:$?!/,%s", (int)(at - options), options, at + strlen(key));
+    else snprintf(buf, bufsz, "%.*spickup_types:$?!/,%s", (int)(at - options), options, at + strlen(key));
+    static int once = 0; if (!once) { once = 1; fprintf(stderr, "NH_NLE_OPTS active: OPTIONS=%s (no autopickup exception)\n", buf); }
+    return buf;
+}
+
 // one rc per process: AUTOPICKUP_EXCEPTION is a config-file-only directive, so
 // the options string becomes "@<this file>"; written atomically (tmp + rename),
 // concurrent env inits write identical content
 // content-addressed rc: distinct options content never shares a file
 static const char* nethack_rc_path_opts(char* buf, size_t bufsz, const char* options) {
+    char ob[1024]; options = nethack_opts_effective(options, ob, sizeof ob);
     unsigned h = 2166136261u;
     for (const char* c = options; *c; c++) h = (h ^ (unsigned char)*c) * 16777619u;
     snprintf(buf, bufsz, "%s/nhrc_%08x", nethack_vardir_base(), h);
@@ -123,7 +140,7 @@ static const char* nethack_rc_path_opts(char* buf, size_t bufsz, const char* opt
         FILE* f = fopen(tmp, "w");
         if (f) {
             fprintf(f, "OPTIONS=%s\n", options);
-            fprintf(f, "AUTOPICKUP_EXCEPTION=\">corpse\"\n");
+            if (!nethack_nle_opts()) fprintf(f, "AUTOPICKUP_EXCEPTION=\">corpse\"\n");
             fclose(f);
             rename(tmp, buf);
         }
@@ -134,6 +151,7 @@ static const char* nethack_rc_path_opts(char* buf, size_t bufsz, const char* opt
 static const char* nethack_rc_path(const char* default_options) {
     static char path[512] = "";
     if (path[0]) return path;
+    char ob[1024]; default_options = nethack_opts_effective(default_options, ob, sizeof ob);
     char p[512], tmp[560];
     snprintf(p, sizeof(p), "%s/nhrc", nethack_vardir_base());
     if (access(p, R_OK) != 0) {
@@ -143,7 +161,7 @@ static const char* nethack_rc_path(const char* default_options) {
             fprintf(f, "OPTIONS=%s\n", default_options);
             // corpses are never AUTO-picked: acquiring one is a deliberate
             // PICKUP, and eating carried corpses stays policy-learnable
-            fprintf(f, "AUTOPICKUP_EXCEPTION=\">corpse\"\n");
+            if (!nethack_nle_opts()) fprintf(f, "AUTOPICKUP_EXCEPTION=\">corpse\"\n");
             fclose(f);
             rename(tmp, p);
         }

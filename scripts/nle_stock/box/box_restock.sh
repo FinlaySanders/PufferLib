@@ -1,0 +1,9 @@
+#!/bin/bash
+# rebuild the stock backend with the fixed derive, restart the 4 stock cert arms (they were 1 h in on the pre-fix derive)
+cd /workspace/PufferLib; R=/workspace/sweeps/certq/results.log; ulimit -n 65536
+for pid in $(pgrep -f "puffer_nethack_stock eval"); do echo "$(date +%T) killing stock arm pid $pid ($(tr '\0' '\n' < /proc/$pid/environ | grep -o 'NH_EPLOG=[^ ]*' | sed 's#.*/##'))" >> $R; kill $pid; done; sleep 3
+bash /workspace/nle_stock_src/build_vec_stock_box2.sh > /workspace/sweeps/certq/build_stock2.log 2>&1; echo "$(date +%T) stock backend rebuilt (gem fixes) $(nm -D puffer_nethack_stock | grep -c ' T tmt_write')" >> $R
+CH=/workspace/PufferLib/resources/nethack/nethack_t1122_2B_weights.bin; B4=$(ls /workspace/sweeps/nh/checkpoints/nethack/rt_4B_1122_s204/*.bin | sort | tail -1); P1=$(ls /workspace/sweeps/nh/checkpoints/nethack/rt_1B_1122pub_s301/*.bin | sort | tail -1)
+run() { id=$1; gpu=$2; f=$3; seed=$4; A="eval --headless --base.load_model_path=$f --policy.hidden_size=1024 --policy.num_layers=4 --base.eval_agents=512 --base.eval_episodes=14000 --base.seed=$seed"; rm -f /workspace/sweeps/certq/$id.ep; echo "$(date +%T) START $id gpu$gpu (fixed derive)" >> $R
+  NETHACKDIR=/workspace/nle-stock/build/nethackdir NLE_STOCK_LIB=/workspace/nle-stock/build/libnethack.so NH_STOCK_LAZYMAP= NH_STOCK_TERRAIN_PROBE=1 NH_STOCK_STALLCAP=1000000 NH_EPLOG=/workspace/sweeps/certq/$id.ep CUDA_VISIBLE_DEVICES=$gpu timeout 28800 ./puffer_nethack_stock $A > /workspace/sweeps/certq/$id.out 2> /workspace/sweeps/certq/$id.err; echo "$(date +%T) DONE $id rc=$? $(python3 /workspace/sweeps/certq/analyze.py /workspace/sweeps/certq/$id.ep 2>&1 | cut -c1-160)" >> $R; }
+run stock2b_s7 7 $CH 7 & run stock2b_s11 3 $CH 11 & run stock4b_s7 5 $B4 7 & run stockpub301_s7 6 $P1 7 & wait; echo "$(date +%T) RESTOCK_DONE" >> $R

@@ -100,6 +100,8 @@ struct Env {
 
     // reward-delta trackers
     int prev_action;
+    int cant_hold; // polymorphed into a form that cannot hold objects: the engine refuses WIELD/THROW/ENGRAVE for FREE,
+                   // so an unmasked policy re-picks them forever. Learned from the refusal message, which is a public channel.
     int enh_ready;
     long prev_score;
     long prev_exp;
@@ -213,7 +215,15 @@ void init(Nethack* env) {
 // masking
 
 
+static void nethack_track_cant_hold(Nethack* env) {
+    const char* m = (const char*) env->message;
+    if (!m || !*m) return;
+    if (strstr(m, "can't even hold anything") || strstr(m, "Don't be ridiculous")) env->cant_hold = 1;
+    // any return to normal form, or a fresh polymorph, clears it; the next refusal will set it again if it still applies
+    else if (strstr(m, "You return to ") || strstr(m, "You turn into ") || strstr(m, "You break out of your cocoon")) env->cant_hold = 0;
+}
 static int nethack_slot_usable(const Nethack* env, const Verb* verb, int i) {
+    if (env->cant_hold && (verb == &NETHACK_VERBS[NETHACK_ACT_WIELD] || verb == &NETHACK_VERBS[NETHACK_ACT_THROW])) return 0;
     if (!(verb->item_classes & (1u << env->inv_oclasses[i]))) return 0;
     // APPLY on a container (box/bag) is a silent zero-turn no-op: the macro
     // drives no put-in/take-out menus, so it is an absorbing spam loop, not a
@@ -293,6 +303,7 @@ static int nethack_ray_target(Nethack* env, int dx, int dy) {
 }
 
 static void nethack_compute_mask(Nethack* env) {
+    nethack_track_cant_hold(env);
     unsigned char* mask = env->action_mask;
     memset(mask, 1, NETHACK_NUM_ACTIONS);
     if (env->mask_search20 != 0.0f) mask[NETHACK_ACT_SEARCH20] = 0;
@@ -339,6 +350,7 @@ static void nethack_compute_mask(Nethack* env) {
     int tg = terrain - 2359;
     if (tg == 31 || tg == 32 || tg == 34 || tg == 39 || tg == 40 || tg == 41)
         mask[NETHACK_ACT_ELBERETH] = 0;
+    if (env->cant_hold) mask[NETHACK_ACT_ELBERETH] = 0; // same free refusal: "You can't even hold anything!"
     if ((env->blstats[NLE_BL_CONDITION] & 0x400L) || (env->internal[6] & 4))
         mask[NETHACK_ACT_ELBERETH] = 0;
 
@@ -359,7 +371,10 @@ static void nethack_compute_mask(Nethack* env) {
     // CAST zero-turn refusal mirror (engine predicate: stun, chant, freehand,
     // too-weak, hunger): a free refusal never advances the clock, so the
     // blocking condition can never expire -- self-sealing wedge
-    if (!castable || env->internal[7] <= 10 || nle_cast_blocked(env->ctx))
+    // hunger: the engine refuses at uhunger <= 10, but the status line shows one word ("Weak") across 1..50,
+    // so an exact-counter test is finer than anything a player can see. Gate on the public band instead
+    // (blstats HUNGER >= WEAK): slightly conservative, and it still seals the free-refusal wedge.
+    if (!castable || env->blstats[NLE_BL_HUNGER] >= 3 || nle_cast_blocked(env->ctx))
         mask[NETHACK_ACT_CAST] = 0;
     // shop goods we can't pay for: picking them up incurs a bill the agent
     // has no way to settle, so gate on affordability (price is quoted to the
@@ -692,6 +707,8 @@ static void nethack_add_log(Nethack* env, int how) { // how: nle how_done, -1 = 
     // perf is normalized depth progress (Gehennom ~50); score stays raw BL_SCORE.
     env->log.perf += (float)env->stats.max_depth / 50.0f;
     env->log.score += (float)env->prev_score;
+    { static FILE* eplog; static int eplog_init; if (!eplog_init) { eplog_init = 1; const char* v = getenv("NH_EPLOG"); if (v) eplog = fopen(v, "a"); } // NH_EPLOG=<file>: one line per finished episode in completion order (score, how, game turn) for burn-in-adjusted re-certs
+      if (eplog) { fprintf(eplog, "%ld %d %ld\n", (long)env->prev_score, how, (long)env->blstats[NLE_BL_TIME]); fflush(eplog); } }
     env->log.valid_moves += (float)env->stats.valid_moves;
     env->log.illegal_actions += (float)env->stats.illegal_actions;
     env->log.new_tiles += (float)env->stats.new_tiles;
@@ -789,6 +806,7 @@ static void nethack_do_reset(Nethack* env) {
     env->disc0 = nle_discoveries(env->ctx);
     env->engid_tested = 0;
     env->enh_ready = 0;
+    env->cant_hold = 0; // belief from the previous game's messages must not mask this one
     memset(&env->stats, 0, sizeof(env->stats));
     memset(env->obj_mem, 0, sizeof(env->obj_mem));
     env->terr_floor = 0xFFFFFFFFu;

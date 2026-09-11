@@ -1,0 +1,6 @@
+#!/bin/bash
+S=${S:-/puffertank/pufferlib}
+# vec train/eval binary for NetHack on STOCK NLE: the fork engine is replaced by nh_stock_backend.o
+cd $S
+clang -O0 -g -fPIC -c -I. -Ivendor/fast-nle/include -Ivendor/fast-nle/build/_deps/deboost_context-src/include $S/scripts/nle_stock/nh_stock_backend.c -o $S/scripts/nle_stock/nh_stock_backend.o || exit 1
+ccache /usr/local/cuda/bin/nvcc -O2 --threads 0 -arch=native -std=c++17 -I. -Isrc -Iocean/nethack -Ivendor -I./raylib-5.5_linux_amd64/include -I./src -I./vendor -I./vendor/fast-nle/include -I./vendor/fast-nle/build/_deps/deboost_context-src/include -I/usr/local/cuda/include -I/usr/local/cuda/include/cccl -I/usr/include -Iraylib-5.5_linux_amd64/include '-DENV_HEADER="ocean/nethack/nethack.h"' -DENV_NAME=nethack '-DPUFFER_ENV_NAME="nethack"' -DPUFFERLIB_BUILD_MAIN -Xcompiler=-DPLATFORM_DESKTOP -Xcompiler=-fopenmp -Xcompiler=-Wno-narrowing --diag-suppress=2361 -DPUFFER_NETHACK -DPUFFER_NETHACK src/pufferl.cu raylib-5.5_linux_amd64/lib/libraylib.a -L/usr/local/cuda/lib64 -L/usr/lib/x86_64-linux-gnu $S/scripts/nle_stock/nh_stock_backend.o -ldl -lcudart -lnccl -lnvidia-ml -lcublas -lcusolver -lcurand -lm -lpthread -lomp5 -lGL -Xlinker --export-dynamic-symbol=create_fcontext_stack -Xlinker --export-dynamic-symbol=tmt_write -o puffer_nethack_stock
