@@ -106,7 +106,8 @@ struct Env {
     // zero-time memory: the exact actions (verb, slot, dir) the engine refused for free since the world last changed
     // (hero position, level, game clock). Repeating an identical action in an identical world is never useful in
     // NetHack, so they stay masked until something changes. This is what the challenge's no-progress rule punishes.
-    int zt_n, zt_verb[32], zt_slot[32], zt_dir[32];
+    int zt_n, zt_verb[32], zt_slot[32], zt_dir[32], zt_cnt[32]; // cnt: a fast hero gets ONE extra action per turn, so an
+                                                                 // action that is zero-time twice running is a refusal, not speed
     long zt_x, zt_y, zt_d, zt_t;
     int noprog_run, noprog_max; // consecutive policy steps with no game-clock advance, and the episode's worst run (logged; the challenge aborts on this)
     int enh_ready;
@@ -239,13 +240,14 @@ static int nethack_zt_world_same(const Nethack* env) {
     return env->blstats[NLE_BL_X] == env->zt_x && env->blstats[NLE_BL_Y] == env->zt_y
         && env->blstats[NLE_BL_DEPTH] == env->zt_d && env->blstats[NLE_BL_TIME] == env->zt_t;
 }
-// NH_ZT_MASK=1 turns the zero-time memory into a mask (opt-in). v1 read (x, y, depth, clock) as "the world": a hero
-// with extra speed acts between clock ticks, so a landed attack looked like a refusal and got masked -- 2026-09-11
-// A/B: aborts 3.7% -> 1.6%, score -8%. Off by default until the unchanged test covers the whole observation.
+// NH_ZT_MASK=1 turns the zero-time memory into a mask (opt-in). v1 masked on the first zero-time step; a hero with
+// extra speed acts between clock ticks, so a landed attack looked like a refusal and got masked -- 2026-09-11 A/B:
+// aborts 3.7% -> 1.6%, score -8%. v2 masks on the SECOND identical zero-time step (zt_cnt >= 2): at most one extra
+// action per turn exists, so two in a row is a refusal. Still opt-in until v2 is measured against A.
 static int nethack_zt_mask_on(void) { static int v = -1; if (v < 0) v = getenv("NH_ZT_MASK") != NULL; return v; }
 static int nethack_zt_blocked(const Nethack* env, int verb, int slot) { // item verbs: was (verb, slot) refused for free in this world?
     if (!nethack_zt_mask_on() || nethack_no_refusal_masks() || !env->zt_n || !nethack_zt_world_same(env)) return 0;
-    for (int k = 0; k < env->zt_n; k++) if (env->zt_verb[k] == verb && env->zt_slot[k] == slot) return 1;
+    for (int k = 0; k < env->zt_n; k++) if (env->zt_verb[k] == verb && env->zt_slot[k] == slot && env->zt_cnt[k] >= 2) return 1;
     return 0;
 }
 static int nethack_slot_usable(const Nethack* env, const Verb* verb, int i) {
@@ -472,10 +474,10 @@ static void nethack_compute_mask(Nethack* env) {
     if (nethack_zt_mask_on() && !nethack_no_refusal_masks() && env->zt_n && nethack_zt_world_same(env)) {
         for (int k = 0; k < env->zt_n; k++) {
             int v = env->zt_verb[k];
-            if (NETHACK_VERBS[v].head >= 0) continue;
+            if (env->zt_cnt[k] < 2 || NETHACK_VERBS[v].head >= 0) continue;
             int dh = nethack_dir_head(v);
             int same_verb = 0;
-            for (int j = 0; j < env->zt_n; j++) same_verb += (env->zt_verb[j] == v);
+            for (int j = 0; j < env->zt_n; j++) same_verb += (env->zt_verb[j] == v && env->zt_cnt[j] >= 2);
             // a wall blocks one direction; "no shape for kicking" blocks them all. Refused in several
             // directions, or with no direction head at all, means the verb itself is off in this world.
             if (dh >= 0 && env->zt_dir[k] >= 0 && same_verb < 3) {
@@ -1189,8 +1191,8 @@ void puf_step(Nethack* env) {
         if (!env->zt_n || !nethack_zt_world_same(env)) { env->zt_n = 0; env->zt_x = hx0; env->zt_y = hy0; env->zt_d = hd0; env->zt_t = time_before; }
         int dup = 0;
         for (int k = 0; k < env->zt_n; k++)
-            if (env->zt_verb[k] == verb && env->zt_slot[k] == slot && env->zt_dir[k] == env->prev_dir) dup = 1;
-        if (!dup && env->zt_n < 32) { env->zt_verb[env->zt_n] = verb; env->zt_slot[env->zt_n] = slot; env->zt_dir[env->zt_n] = env->prev_dir; env->zt_n++; }
+            if (env->zt_verb[k] == verb && env->zt_slot[k] == slot && env->zt_dir[k] == env->prev_dir) { dup = 1; env->zt_cnt[k]++; }
+        if (!dup && env->zt_n < 32) { env->zt_verb[env->zt_n] = verb; env->zt_slot[env->zt_n] = slot; env->zt_dir[env->zt_n] = env->prev_dir; env->zt_cnt[env->zt_n] = 1; env->zt_n++; }
     } else env->zt_n = 0;
     nethack_auto_enhance(env);
 
