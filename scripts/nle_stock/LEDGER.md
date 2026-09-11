@@ -23,7 +23,7 @@ The "15% repo-vs-box gap" (11,394 vs 13,081) compared row 2 against row 1. It wa
 |---|---|---|---|---|---|---|---|
 | box `/workspace/PufferLib` | `44dd5b181dc3` | `7a7ca8b29459` (`c803625c00d6` for nleopts lanes) | `f9619728ec1d` | nle_abl + gem_canon; **no** `internal[5]=0`; engr_blind partial | no | no | trained `rt_1B_1122new/pub/nleopts`; certq/attr2 certs of the t1122 champion |
 | box `/workspace/PufferLib_pkg` | `bdb9896bd881` | `feb7d8c938b0` | `db21b1101083` | all four | **no** | yes | **the claim tree** — trained `pkg_s40x`, `iso_s4xx`, `pkgnle_s406/407`, `claim2b_s50x`; all challenge certs |
-| local `/puffertank/pufferlib` | `c9760f9998eb` | `7d46d3ba7e56` | `d459afc05cb8` | all four | **yes (7 sites)** | yes | HEAD `c7590188` + every claim-tree hand edit (all 9, see Consolidation) + cant_hold. Rebuilt 18:47; `NH_EPLOG` verified working. **Dev tree. Nothing was trained on it yet; quote no cert numbers from it until a lane is promoted from it.** |
+| **branch `nle-stock`** — local `/puffertank/pufferlib` and box **`/workspace/pufferlib`** (clean clone) | `e54561117397` local / `9886d5df82f0` box (both engine `dfbdc84c8`, identical to the training engine on 34/34 goldens) | `ae85c117d61f` / `6689a4bb9aec` | `12376464d70c` / `6b529125580c` | all four | **yes (8 sites, reset per episode)** | yes | pufferlib `5dee1bd4` = HEAD `c7590188` + every claim-tree hand edit + cant_hold + `scripts/nle_stock/`. **The one tree from 2026-09-11 20:10.** Box also has `/workspace/nle-venv` (stock NLE 0.9.0 installed from the untouched `/workspace/nle-stock`, gym 0.23) for rung 4. Nothing has trained on it yet; the first lane from it produces the first same-tree weights. |
 
 Stock NLE package: box `/workspace/nle-stock` and local `/puffertank/nle-stock` are byte-identical
 (537 `.c/.h`, `84c24e5a811b3298`, build dirs excluded); local is git-clean at upstream `862a439a8`.
@@ -70,6 +70,8 @@ Numbers are burn-in-adjusted **mean / median**; `(n)` = post-burn-in episodes wh
 | **claim2b_s503** | **pkg** | `fork_claim2b_s503_s11` | **16,417 / 9,623** (Δ −162) |
 | **claim2b_s502** | **pkg** | `fork_claim2b_s502_s7` | **16,795 / 10,248** (panel final 16,618, Δ +177) |
 | **claim2b_s501** | **pkg** | `fork_claim2b_s501_s7` | **16,440 / 9,922** (panel final 15,977, Δ +463) |
+| **pkgnle_s406** | **nle-stock `/workspace/pufferlib`** (equiv) | `r1_pkgnle_s406_s7` | **13,337 / 8,908** — one-tree run, with `cant_hold` |
+| **pkgnle_s406** | **nle-stock `/workspace/pufferlib`** (equiv) | `r1_pkgnle_s406_s11` | **13,613 / 8,943** — matches `PufferLib_pkg` rung 1 (13,350 / 13,260); `cant_hold` neutral on the fork |
 | pkgnle_s406 | local repo | `fork_s101/s102` | 11,394 / 10,959 **raw CUDA_EVAL means, no .ep — not certs** |
 
 ### Rung 2 — stock harness, non-strict (`puffer_nethack_stock`, reconstruction + probe crutches)
@@ -98,7 +100,7 @@ Numbers are burn-in-adjusted **mean / median**; `(n)` = post-burn-in episodes wh
 | pkgnle_s406 | `claim_406_s11` | 12,111 / 7,424 | (1,871) killed |
 | pkgnle_s407 | `claim_407_s11` | 11,617 / 6,612 | (1,849) killed |
 | pkgnle_s407 | `claim_407_s7` | 3,586 eps only | killed |
-| claim2b_s504 @1.57B | `chal2b_claim2b_s504` | **RUNNING** (gpu5, since 18:05) | `chalcert2b.log` |
+| claim2b_s504 @1.57B | `chal2b_claim2b_s504` | **11,813 / 6,957** (6,015 post) | done 21:20; aborted 1,514 / 10,015 = **15.1%** (no `cant_hold` on this tree) |
 | **claim2b_s503** | `chal2b_claim2b_s503` | **RUNNING** (gpu3, since 18:44) | |
 | **claim2b_s502** | `chal2b_claim2b_s502` | **RUNNING** (gpu2, since 19:05) | |
 | **claim2b_s501** | `chal2b_claim2b_s501` | **RUNNING** (gpu1, since 19:24) | all three 2B lanes now in both rung 1 and rung 3 |
@@ -114,6 +116,8 @@ Analyse with `gym_analyze.py <dir>` (equal-k headline; `plen` is cumulative per 
 | pkgnle_s406 | `pkgnle`, `pkgours`, `run4` | 187–317 | 1.4–2.2K | invalid, same ratchet (all built from `wt_gate`, which had `cant_hold` without the reset) |
 | pkgnle_s406 | `fixed_reset_pkgnle` (16 × 20) | 320 | **8,270** (mean 12,260) | **DONE 20:07**, local repo tree (has `cant_hold`) — a mechanics check, not a claim-tree number. Leak gone: 0/16 collapses, eps 1–10 vs 11–20 P=0.49. Aborted by the challenge env **3.4%** (rung 3 on the box, no `cant_hold`: 11–14%). Episode 1 alone reads high (13,000, n=16, P=0.65 vs rest, ~2σ) — unresolved, not accumulating. Our C-side `maxnoprog` field is read after the auto-reset and is wrong for aborted rows; NLE's `end_status` is the trustworthy field. |
 
+| pkgnle_s406 | **equiv `r4_pkgnle_s406`** (24 × 20, box `/workspace/pufferlib` + `/workspace/nle-venv`) | 480 | **7,033** (mean 10,777) | **one-tree run, done 21:03.** Same tree as the equiv rung 1 (13,337 / 8,908; 13,613 / 8,943) → one-tree fork→Python gap **−19% mean, −21% median**. Episode-1 median 3,640 (n=24): the earlier "episode 1 high" was noise. |
+
 Smoke on the rebuilt library (19:00): one real challenge episode, 749 policy steps, 7,157 env steps, 5,132 probes, no faults.
 
 Reference: AutoAscend, 2021 NetHack Challenge winner, **median 5,300** (4,096-episode test phase).
@@ -123,6 +127,33 @@ Reference: AutoAscend, 2021 NetHack Challenge winner, **median 5,300** (4,096-ep
 - Rung 1 vs panel final: **≈ equal** — **confirmed 2026-09-11 18:39** for `pkgnle_s406/407`: four arms within −155…+282 of their panel finals (se ~160), real `rc=0`. Tree, weights and protocol are coherent; there is no cert regression.
 - Rung 2 vs rung 1: t1122_2B shows **−10 %** (15.5K → 13.5–14.1K). Reconstruction imperfections + probe steps.
 - Rung 3 vs rung 1: pkgnle_s406 challenge sits at 11.2–11.5K against a 13.4K panel final, **≈ −15 %**. Probe budget (~10–14 env steps per policy step) against the 1e6 cap and the 10K stall abort (9–11 % of episodes abort).
+
+## Loop census and mask A/B (local 4090, one tree, 2026-09-11 evening)
+
+Strict challenge configuration, `pkgnle_s406`, seed 21, 6,000 episodes per arm, burn-in adjusted:
+
+| arm | masks | mean (se) | median | aborted |
+|---|---|---|---|---|
+| A | `cant_hold` only (pre-mask binary) | 10,503 (275) | 6,128 | 3.7% |
+| B | + per-message WEAR/THROW/KICK/bump | 10,938 (287) | 6,586 | 1.5% |
+| C | general zero-time rule v1 + extended `cant_hold` | **below A**: at equal completion (5,372 eps) post-burn-in mean 9,621 vs A 10,416, all-episodes 8,915 vs 10,055, P(C>A) = 0.475 (≈3σ) | | 1.6% |
+| D | = A, with the toplines-restore crutch ON (message-channel probe) | ≈ A or slightly below (P = 0.479) | | **5.7%** |
+
+Readings: **the per-message masks are neutral (ship: B's extended `cant_hold`)**; **the general zero-time rule v1 costs ~8%** —
+its "world unchanged" test (x, y, depth, clock) misreads a fast hero's extra-speed actions as refusals and masks a landed
+attack until the turn ends; kept in the tree **opt-in only** (`NH_ZT_MASK=1`) until the unchanged test covers the whole
+observation (v2). **D rules out the message channel**: restoring the engine's toplines across probes does not reduce
+loops (aborts 5.7% vs 3.7%), so the stock-induced loops come from the observation content, not from hidden refusal text.
+
+P(B > A) = 0.509: the masks cut aborts without moving the score — aborts are worth ~2–4 % of mean, as the
+abort arithmetic predicted (0.116 × (11,083 − 9,056) ≈ 235 on the old rung 3).
+
+**Rung-1 loop census** (fork, training interface, same masks as A, 4,046 eps, new `.ep` column = worst run of
+zero-time policy steps): runs ≥ 1,000 steps (≈ the challenge's 10K-env-step abort) in **0.5 %** of games;
+≥ 500 in 0.8 %; ≥ 100 in 1.9 %; p99 = 314. Stock with identical masks aborts 3.7 %, without `cant_hold` 11–14 %.
+**The stock interface induces zero-time loops 7–25× more often than the fork does.** The loops are a symptom of
+reconstruction error (observation, post-probe message channel, or derived mask inputs), and the abort rule is
+only the part of it the referee makes visible.
 
 ## Gotchas that produced the mess
 
