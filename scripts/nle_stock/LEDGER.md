@@ -43,6 +43,7 @@ Stock NLE package: box `/workspace/nle-stock` and local `/puffertank/nle-stock` 
 | **`claim2b_s503`** | 2B (1,999,896,576) | pkg | NLE opts | `0000001999896576.bin` `a87dd4f2445c` | 16,579 |
 | **`claim2b_s502`** | 2B (1,999,896,576) | pkg | NLE opts | `0000001999896576.bin` `dd9cc983bbac` | 16,618 |
 | **`claim2b_s501`** | 2B (1,999,896,576) | pkg | NLE opts | `0000001999896576.bin` `ed679c6…` | 15,977 |
+| **`nlestock4b_s601/602/603/604`** | **4B, TRAINING** (s601/s602 started 23:00 on gpu5/gpu3; s603/s604 start when gpu2/gpu1 free) | **nle-stock `423ced55`** (`/workspace/pufferlib`, engine `dfbdc84c8`, lib `9886d5df82f0`, puffer `2bd99678fe40`) | NLE opts, extended `cant_hold` (zero-time mask OFF) | — | ETA ~14:30 2026-09-12 |
 | `claim2b_s504` | **segfaulted at 1.57B** | pkg | NLE opts | `0000001572864000.bin` | 13,815 |
 
 ## Certs — by interface
@@ -154,6 +155,22 @@ zero-time policy steps): runs ≥ 1,000 steps (≈ the challenge's 10K-env-step 
 **The stock interface induces zero-time loops 7–25× more often than the fork does.** The loops are a symptom of
 reconstruction error (observation, post-probe message channel, or derived mask inputs), and the abort rule is
 only the part of it the referee makes visible.
+
+## Overnight 2026-09-11 → 12 (what runs where, and why)
+
+| machine / GPUs | job | why | lands |
+|---|---|---|---|
+| box gpu1,2,3,5 | **4B × 4** `nlestock4b_s601-604`, nle-stock `423ced55` | the claim weights on the one tree; priority job | ~14:30 |
+| box gpu0,7 | rung 2 `pkgnle_s406` (non-strict stock) | integrated reconstruction+probe cost, holds the referee fixed | readable ~01:00, done ~05:30 |
+| box gpu4,6 | one-tree rung 3 `pkgnle_s406` (with `cant_hold`) | same-tree rung 3 vs rung 4; `cant_hold` A/B on rung 3 | ~01:00 |
+| box gpu4,6 after | **reconstruction ablation, seed 32** (21 arms, harness `b7c061bf0a47`) | doubles the power of the per-channel cost table | ~08:00 |
+| box gpu0,7 after | rung 3 of the old 4B `rt_4B_1122_s204` on the one tree | what a 4B does on stock today: the reference for the new 4B's rung 3 | ~09:30 |
+| local 4090 | **reconstruction ablation, seed 21** (21 arms, harness `9d2114095b40`) | the per-channel cost table | ~06:00 |
+
+The first local ablation attempt (23:00–23:07) ran a harness linked against the scratchpad worktree's engine
+(`3a3fd3811e7f`, the parked perf build) — the wrong-library trap for the second time today — and was discarded
+(`/tmp/ablate_WRONGLIB_2307`). The stock binaries link no fork library (they dlopen stock), so no cert was affected.
+Build scripts now fail if the linked `libnethack.so` is not this tree's.
 
 ## Gotchas that produced the mess
 
