@@ -112,7 +112,7 @@ Analyse with `gym_analyze.py <dir>` (equal-k headline; `plen` is cumulative per 
 | pkgnle_s406 | `single` (24 × 1) | 24 | **7,210** | one episode per process — the only earlier run free of the ratchet below |
 | pkgnle_s406 | `fixed_pkgnle` (16 × 20) | 320 | 1,479 | **invalid**: ep1 median 6,462, ep2+ 1,394; 14/16 workers collapse permanently — `cant_hold` ratchet |
 | pkgnle_s406 | `pkgnle`, `pkgours`, `run4` | 187–317 | 1.4–2.2K | invalid, same ratchet (all built from `wt_gate`, which had `cant_hold` without the reset) |
-| pkgnle_s406 | `fixed_reset_pkgnle` (16 × 20) | **RUNNING**; at k=8 (19:45): equal-k n=128 **median 8,108**, mean 11,746 | ≈ rung 3 | fixed library `ed0012710ee1`; no permanent collapses; per-index medians at n=16 swing 3.3K–14.6K by chance (bootstrap 5–95%), so only the equal-k pooled number is readable |
+| pkgnle_s406 | `fixed_reset_pkgnle` (16 × 20) | 320 | **8,270** (mean 12,260) | **DONE 20:07**, local repo tree (has `cant_hold`) — a mechanics check, not a claim-tree number. Leak gone: 0/16 collapses, eps 1–10 vs 11–20 P=0.49. Aborted by the challenge env **3.4%** (rung 3 on the box, no `cant_hold`: 11–14%). Episode 1 alone reads high (13,000, n=16, P=0.65 vs rest, ~2σ) — unresolved, not accumulating. Our C-side `maxnoprog` field is read after the auto-reset and is wrong for aborted rows; NLE's `end_status` is the trustworthy field. |
 
 Smoke on the rebuilt library (19:00): one real challenge episode, 749 policy steps, 7,157 env steps, 5,132 probes, no faults.
 
