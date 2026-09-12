@@ -422,3 +422,11 @@ and will be the first cert with the census columns.
 p90 28,610, max 162,710. Ends: died 85.6 %, poisoned 10.9 %, stoned 2.0 %, starved 1.3 %.
 Caveats: one seed, 2,008 kept games (se 2.6 %); the fork reference is another seed and protocol. The same-seed, same-protocol
 fork arm (`rung1_s21`) runs next; the 2B cert on the current tree (`claim2b_s503_r3_local`, 10,000 eps) started 12:38.
+
+**Harness `real0` (local, old derive, mode 0 = probes sent, real observation shown, seed 21, 3,018 eps): raw mean 7,173 (se 156)
+vs log-only 11,377 (se 234) = −37 %**, worst zero-time run 91,691. On the stock engine probes *plus* reconstruction cost ≤ 4 %
+(canary 12,785 vs fork 13,350), so this is a **harness artefact**: the fork harness's probe mechanics perturb the game where
+the stock backend's do not (cause unknown; suspects: the out-of-band `nle_obs_refresh` after each probe, fork-side prompt/
+occupation handling of probe keys). Together with the −48 % `derived` arm this closes the question: **no harness score arm is
+a stock measurement**; the harness is kept for recording (bench) and mismatch tables only. Its old-derive live mismatch table
+under probe perturbation: capacity 10.1 %, food_underfoot 32 %, weight 2.5 %, path 2.1 %, intrinsics 1.5 %, peaceful 0.29 %.
