@@ -17,7 +17,7 @@
 enum { C_TERR, C_FOOD, C_CONT, C_PRICE, C_SHOP, C_PEACE, C_SPELLS, C_LNC, C_WT, C_CAP, C_INTR, C_CAST, C_PATH, C_ENGR, C_HERO, C_INVST, C_INVTRUE, C_IDENT, C_DISC, C_RANGE, C_MAPRANGE, C_N };
 static const char* C_NAMES[C_N] = {"terrain", "food_underfoot", "container_at", "shop_price", "inside_shop", "peaceful_at", "spells", "lnc_bits", "weight", "capacity", "intrinsics", "cast_blocked", "path", "engraving_bits", "hero_tile", "inv_state", "inv_true_glyph", "identity", "discovered_set", "shuffle_range", "map_shuffle_range"};
 static long M_q[C_N], M_bad[C_N];
-static int g_examples = 5, g_all; static int E_n[C_N]; static int g_watch = -1;
+static int g_examples = 5, g_all; static int E_n[C_N]; static int g_watch = -1; static long g_min_turn = 0; // --min-turn N: count only hooks/boundaries at game turn >= N (late-game error rates)
 
 typedef struct {
     DRecR r; DObs d; DState S; DRecObs work; DRecObs* o; signed char inv_state[55 * 8]; short inv_true[55]; // work = the buffers the derive reads and may write (dr_restore); r.cur stays the pristine recorded state the deltas apply to
@@ -25,7 +25,7 @@ typedef struct {
     long watch_last; int watch_init; char mring[6][96]; long mring_t[6]; int mring_n; // --watch: last messages seen on env keys
 } Rep;
 
-static void note(int c, int bad) { M_q[c]++; if (bad) M_bad[c]++; }
+static long g_cur_turn; static void note(int c, int bad) { if (g_cur_turn < g_min_turn) return; M_q[c]++; if (bad) M_bad[c]++; }
 static void example(Rep* R, int c, const char* fmt, ...) __attribute__((format(printf, 3, 4)));
 static void example(Rep* R, int c, const char* fmt, ...) {
     if (!g_all && E_n[c] >= g_examples) return; E_n[c]++;
@@ -51,7 +51,7 @@ static void identity_try(Rep* R) { if (R->S.ident_seen) return; dr_identity_from
 static void inv_text(const DRecObs* o, int i, char* t) { memcpy(t, o->inv_strs + i * 80, 80); t[80] = 0; }
 
 static void boundary_checks(Rep* R) {
-    DState* S = &R->S; DRecObs* o = R->o;
+    DState* S = &R->S; DRecObs* o = R->o; g_cur_turn = o->blstats[20];
     if (S->d_valid) { int k = S->d_r * 79 + S->d_c; int under = S->top >= 0 ? S->top : S->terrain; if (under < 0) under = CMAP_OFF + 19;
         int engulfed = 0; for (int q = 0; q < DR_CELLS; q++) if (o->glyphs[q] >= SWALLOW_OFF && o->glyphs[q] < SWALLOW_HI) { engulfed = 1; break; }
         // the stock backend keeps the raw hero glyph while blind, hallucinating or engulfed (the fork's own rule); on fork truth that raw glyph IS the export, so only the sighted case is a reconstruction test
@@ -82,7 +82,7 @@ static void watch(Rep* R, int chan, long real, long der) {
     R->watch_last = real; R->watch_init = 1;
 }
 static void hook_check(Rep* R, int chan, int nargs, const long* a, int nvals, const long* v) {
-    DState* S = &R->S; long r = nvals ? v[0] : 0; (void)nargs;
+    DState* S = &R->S; long r = nvals ? v[0] : 0; (void)nargs; g_cur_turn = R->o->blstats[20];
     if (g_watch >= 0) { if (chan == C_WT) { watch(R, C_WT, v[0], S->wt); watch(R, C_CAP, v[1], S->cap); } else if (chan == g_watch) watch(R, chan, r, chan == C_TERR ? S->terrain : chan == C_INTR ? S->intr : chan == C_LNC ? S->lnc : chan == C_PRICE ? S->price : -1); }
     switch (chan) {
     case C_TERR: note(C_TERR, r != S->terrain); if (r != S->terrain) example(R, C_TERR, "real=%ld derived=%d prev_terr=%d", r, S->terrain, S->prev_terr); break;
@@ -144,6 +144,7 @@ static void replay_path(const char* p) {
 int main(int argc, char** argv) {
     const char* baseline = NULL; const char* out = NULL; int first = 1;
     for (int i = 1; i < argc; i++) { if (!strcmp(argv[i], "--examples") && i + 1 < argc) g_examples = atoi(argv[++i]); else if (!strcmp(argv[i], "--all")) g_all = 1;
+        else if (!strcmp(argv[i], "--min-turn") && i + 1 < argc) g_min_turn = atol(argv[++i]);
         else if (!strcmp(argv[i], "--watch") && i + 1 < argc) { const char* w = argv[++i]; for (int c = 0; c < C_N; c++) if (!strcmp(w, C_NAMES[c])) g_watch = c; if (g_watch < 0) { fprintf(stderr, "unknown channel %s\n", w); return 2; } }
         else if (!strcmp(argv[i], "--baseline") && i + 1 < argc) baseline = argv[++i]; else if (!strcmp(argv[i], "--out") && i + 1 < argc) out = argv[++i]; else { replay_path(argv[i]); first = 0; } }
     if (first) { fprintf(stderr, "usage: nh_derive_replay [--examples N] [--all] [--watch channel] [--baseline rates.txt] [--out rates.txt] <file.drec.gz | dir> ...\n"); return 2; }

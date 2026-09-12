@@ -3,9 +3,9 @@
 # merged per-channel mismatch table, divergence counts and the first EX examples per channel.
 #   bash derive_replay.sh /tmp/drec            (J=cores, EX=3, OUT=<dir>/replay)
 #   BASE=<rates file> ...                       also diff against a saved merged table (from a previous OUT/merged.rates)
-S=${S:-/puffertank/pufferlib}; D=${1:?recording dir}; J=${J:-$(nproc)}; EX=${EX:-3}; OUT=${OUT:-$D/replay}
+S=${S:-/puffertank/pufferlib}; D=${1:?recording dir}; J=${J:-$(nproc)}; EX=${EX:-3}; OUT=${OUT:-$D/replay}; MT=${MT:-0}   # MT=<turn>: late-game rates only
 mkdir -p $OUT; rm -f $OUT/*.rates $OUT/*.mis
-ls $D/*.drec.gz | xargs -P $J -I{} sh -c 'f={}; b=$(basename $f .drec.gz); '$S'/scripts/nle_stock/nh_derive_replay --examples 50 --out '$OUT'/$b.rates $f > '$OUT'/$b.mis 2>&1'
+ls $D/*.drec.gz | xargs -P $J -I{} sh -c 'f={}; b=$(basename $f .drec.gz); '$S'/scripts/nle_stock/nh_derive_replay --min-turn '$MT' --examples 50 --out '$OUT'/$b.rates $f > '$OUT'/$b.mis 2>&1'
 grep -h '^DERIVE_REPLAY' $OUT/*.mis | awk '{for(i=2;i<=NF;i++){split($i,a,"="); s[a[1]]+=a[2]}} END{printf "DERIVE_REPLAY"; for (k in s) printf " %s=%d", k, s[k]; print ""}'
 awk '{b[$1]+=$2; q[$1]+=$3} END{for (c in b) printf "%s %d %d\n", c, b[c], q[c]}' $OUT/*.rates | sort > $OUT/merged.rates
 printf "  %-18s %10s %10s %9s\n" channel queries mismatch rate; awk '{printf "  %-18s %10d %10d %8.3f%%\n", $1, $3, $2, 100*$2/($3?$3:1)}' $OUT/merged.rates
