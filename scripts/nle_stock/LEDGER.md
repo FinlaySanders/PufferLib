@@ -390,3 +390,10 @@ Left: weight 1.3 % (an unidentified appearance whose true type weighs more — g
 unknowable from public text; would need the fork to export appearance-canonical weight), path 5.2 % (BFS shortest path vs the
 actual run: the run turns corners orthogonally where BFS cuts the diagonal), peaceful_at 0.6 % (a monster angered between the
 farlook and the hook), hero_tile 0.1 %.
+
+**`path` is not an observation channel.** `nle_path_drain` feeds only the first-visit exploration reward
+(`nethack_tile_claim`); `stats.visited` is never read into the observation. Its 5.2 % mismatch cannot move a stock eval
+(the policy never sees it and rewards do not act at eval time); it only matters for training, which is exact on the fork.
+`keep_path` dropped from the ablation; `keep_cast_blocked` dropped too (0 mismatches in 107K queries: identical to `derived`).
+Observation channels the policy reads and their residual error after `0cf32001`: peaceful_at 0.66 %, hero_tile 0.22 %,
+capacity 0.19 %, intrinsics 0.08 %, weight 1.5 % (hidden information), everything else ≤ 0.02 %.
