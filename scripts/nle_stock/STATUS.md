@@ -1,4 +1,4 @@
-# NetHack on stock NLE — status, 2026-09-12 17:45
+# NetHack on stock NLE — status, 2026-09-12 19:40
 
 Companion to `LEDGER.md` (every number with its arm name, tree and interface) and `ENGINE.txt` (engine pin).
 This is the narrative: the goal, what is established, what is running, what comes next.
@@ -145,31 +145,28 @@ number taken before it carries the penalty: rung 2 both seeds, the 2B Python run
   pick up armour — the same roles that lose 20–27 %. Two direct tests are running (§4). If confirmed, it is a fork-side export bug: the
   training signal was privileged, and the Monday claim carries it as a residual until a retrain on an appearance-canonical weight.
 
-## 4. Running now (17:45)
+## 4. Running now (19:40)
 
-**The weight leak is fixed in the fork (`f7d8749ab`) and leak-fixed lanes are training.** Audit of every export the env consumes found
-weight to be the only channel reading hidden state (LEDGER 17:40); two dead hooks that read hidden corpse age were removed.
+**Settled this evening (LEDGER 19:00–19:40):** the 2B's −13 % on stock is the weight leak — the old 2B with the engine's leaked weight injected scores
+16,354 / 9,790 on stock, equal to its fork 16,520 / 9,839 (canary with the honest weight: 14,559 / 8,730). Guard +5 % (keep), form mask 0, derive fixes 0,
+new-moon clock 0. The fork's weight export is fixed (`f7d8749ab`), the reconstruction matches it exactly, and every observation channel is now
+exact or ≤ 0.14 % (peaceful 0.017 %, capacity 0.022 %, hero tile 0.11 %, intrinsics 0.14 %).
 
-**Drone (leak-fixed tree `/workspace/pufferlib_fix`, driver `nh_fixwt.sh`, claim config, seeds 701–706):**
-- `fixwt4b_s705` training on gpu 0 since 17:35 (≈ 20 h → Sunday ≈ 14:00). Queue, longest first, one lane per GPU as it falls idle:
-  `fixwt4b_s706`, `fixwt2b_s703/704` (≈ 10 h), `fixwt1b_s701/702` (≈ 5 h). GPUs 1/2/3/5 free 18:15–18:50 (masked leaky 4B lanes finish
-  and stay as the baseline), gpu 7 after `stock_wtreal_s21` (≈ 19:40). GPUs 4/6 keep the nomask leaky 4B lanes (≈ 03:00).
-- `stock_wtreal_s21` (gpu 7): the old 2B with the engine's (pre-fix) weight in the observation — how much the leaky 2B loses on stock to the
-  weight channel. Pairs with `canary3_2b_s21` 14,559 / 8,730. ≈ 19:40.
+**Drone (all eight GPUs training):** leak-fixed lanes `fixwt1b_s701/702` (land ≈ 23:15 / 00:30), `fixwt2b_s703/704` (≈ 03:30 / 04:00),
+`fixwt4b_s705/706` (Sunday ≈ 13:00 / 14:00); leaky no-mask `nlestock4b_nomask_s607/608` (≈ 04:00). Two cert queues wait for idle GPUs:
+own-engine fork certs of the four finished leaky 4B lanes, and fork + stock certs of each fixed lane as it lands.
 
-**Local (4090):**
-- `claim2b_fakeclock_s21`: canary3's configuration with the backend's seeded fake date instead of today's new moon → the calendar cost. ≈ 18:40.
-- `rung1_fixwt_smoke`: the old 1B on the leak-fixed engine (sanity: engine runs, score sane; pairs with rung1_s21 13,060 / 8,618). ≈ 17:50.
-- Fixed-engine 2B corpus (363 games) replaying: weight mismatch should fall to hallucination steps only.
+**Local:** `stock_leaky4b_s602_s21` (leaky 4B on stock, 10,000, ≈ 21:00; the fixed-engine fork eval of the same checkpoint read 20,141 / 10,396) and
+`r4_leaky4b_s602` (the real NetHackChallenge-v0, 480 games, ≈ 20:45): the first claimable 4B numbers.
 
 ## 5. Next
 
-1. Read the two attribution arms (weight cost on stock; calendar cost) and put the decomposition of the 2B's −13 % in the ledger.
-2. As leak-fixed lanes land: rung-1 fork cert (14,000), stock strict seeds 21/32 (derive v3, expect weight mismatch ≈ 0), Python rung 4 for the
-   best; the 1B pair lands first (≈ 23:00 tonight) and is the first end-to-end check that the fixed channel closes the gap.
-3. Sunday: same for the 2B pair (≈ 05:00) and the 4B pair (≈ 14:00–16:00); the leaky masked 4B lanes get rung-1 + stock certs as the baseline.
-4. Article per ARTICLE_PLAN.md: results table with leaky vs fixed policies, the ladder, the bug table (identity newline, weight export leak,
-   `shuffled_glyph`, new-moon calendar), the export audit as a section.
+1. Tonight: leaky 4B stock + rung 4 land → the fallback claim for Monday. Fixed 1B pair lands and certs itself → first end-to-end test of the fix (parity
+   between its fork and stock certs).
+2. Sunday morning: fixed 2B pair certs (≈ 07:00), leaky 4B own-engine certs (the size of the leak at 4B), rung 4 of the best fixed 2B; afternoon: fixed 4B.
+3. Article per ARTICLE_PLAN.md: three policy generations (leaky masked, leaky no-mask, leak-fixed), the ladder, the attribution table, the export audit,
+   the bug table (weight export, identity newline, `shuffled_glyph`, tty pile window, thrown-miss anger, new moon).
+4. Engine follow-ups for the next training round: `nle_peaceful_at` should not answer for unseen monsters (the `I` marker); ^X fallback in the derive.
 
 ## 6. Things that bit us, now guarded
 
