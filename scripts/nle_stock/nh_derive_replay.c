@@ -23,9 +23,63 @@ typedef struct {
     DRecR r; DObs d; DState S; DRecObs work; DRecObs* o; signed char inv_state[55 * 8]; short inv_true[55]; // work = the buffers the derive reads and may write (dr_restore); r.cur stays the pristine recorded state the deltas apply to
     int diverged; int div_want, div_type, div_key; long probes, keys, bounds; unsigned long seed; long step;
     long watch_last[C_N]; int watch_init[C_N]; char mring[6][96]; long mring_t[6]; int mring_n; // --watch: last messages seen on env keys
+    int che, chs, che_truth, poly, tform, fp_e_seen, fp_s_seen; long che_t, fpT_e, fpT_s; // --canthold audit state (expiry variant, sticky variant, truth form)
 } Rep;
 
 static long g_cur_turn; static void note(int c, int bad) { if (g_cur_turn < g_min_turn) return; M_q[c]++; if (bad) M_bad[c]++; }
+
+// --canthold: audit the env's form mask (ocean/nethack/nethack.h nethack_track_cant_hold) against the hero's actual form, key by key.
+// Truth = the polymorph messages ("You turn into <mon>!", "You feel like a new <mon>!" re-poly, "You return to <race> form!"), the form
+// looked up in the monster tables: cantwield = M1_NOHANDS (0x2000) || msize == MZ_TINY (0). A key with HD > 0 in blstats and no polymorph
+// message seen counts as an unknown form (skipped). Both the shipped 100-turn expiry and the never-expiring belief (leaky 4B lanes) run side by side.
+static int g_canthold; static long CH_keys, CH_polykeys, CH_unknown, CH_truth, CH_miss_hd, CH_sets, CH_sets_true, CH_sets_false, CH_sets_unknown, CH_clears, CH_expiries;
+static long CH_on_e, CH_fp_e, CH_fpstale_e, CH_fn_e, CH_fpT_e, CH_fpeps_e, CH_on_s, CH_fp_s, CH_fn_s, CH_fpT_s, CH_fpeps_s, CH_eps, CH_poly_eps; static int CH_ex;
+static int ch_mon_lookup(const char* p) {
+    if (!strncmp(p, "an ", 3)) p += 3; else if (!strncmp(p, "a ", 2)) p += 2; else if (!strncmp(p, "the ", 4)) p += 4;
+    char name[64]; int n = 0; while (p[n] && p[n] != '!' && p[n] != '.' && n < 63) { name[n] = p[n]; n++; } name[n] = 0;
+    for (int i = 0; i < NHT_NUMMONS; i++) if (!strcmp(name, NHT_MON_NAME[i])) return i; return -1;
+}
+static long CH_rev_probe, CH_silent_revert, CH_ambig; // polymorph entries/reverts whose message reached the recording only in a probe reply (a --More-- page the derive dismissed): in training there are no probes and the env sees them
+static void canthold_msg(Rep* R, const char* m, long T, int from_probe) { // every message the game printed, env key or probe reply = what the training env sees
+    const char* p; int before = R->poly;
+    if (m[0]) {
+        if ((p = strstr(m, "You turn into "))) { R->poly = 1; R->tform = ch_mon_lookup(p + 14); }
+        else if (strstr(m, "You feel like a new ")) { R->poly = 0; R->tform = -1; } // newman(): natural form again; the same-form re-poly says "You feel like a <mon>!" and changes nothing
+        if ((p = strstr(m, "You return to ")) && strstr(p, " form")) { R->poly = 0; R->tform = -1; }
+        if (from_probe && R->poly != before) CH_rev_probe++;
+    }
+    if (R->che && T - R->che_t > 100) { R->che = 0; CH_expiries++; }
+    int set = m[0] && (strstr(m, "can't even hold anything") || strstr(m, "Don't be ridiculous") || strstr(m, "can't throw or shoot without hands") || strstr(m, "Don't even bother") || strstr(m, "can't wear any armor in your current form"));
+    int clr = m[0] && (strstr(m, "You return to ") || strstr(m, "You turn into ") || strstr(m, "You break out of your cocoon"));
+    if (set) {
+        if (!R->che) { int truth = !R->poly ? 0 : (R->tform >= 0 ? (((NHT_MON_M1[R->tform] & 0x2000u) != 0) || NHT_MON_SIZE[R->tform] == 0) : -1);
+            CH_sets++; R->che_truth = truth; if (truth == 1) CH_sets_true++; else if (truth == 0) { CH_sets_false++; if (CH_ex < 12) { CH_ex++; printf("CANTHOLD false-set seed=%lx T=%ld poly=%d form=%d msg=\"%.110s\"\n", R->seed, T, R->poly, R->tform, m); } } else CH_sets_unknown++; }
+        R->che = 1; R->che_t = T; R->chs = 1;
+    } else if (clr) { if (R->che) CH_clears++; R->che = 0; R->chs = 0; }
+}
+static void canthold_step(Rep* R) {
+    const char* m = (const char*)R->o->message; long T = R->o->blstats[20]; int was_poly = R->poly;
+    canthold_msg(R, m, T, 0);
+    long hd = R->o->blstats[17];
+    if (hd > 0 && !R->poly) { CH_miss_hd++; R->poly = 1; R->tform = -1; } // polymorphed with no message seen: form unknown
+    if (R->poly && R->tform < 0 && R->S.form >= 0) R->tform = R->S.form; // the derive's own self-look identified the form
+    // a form with mlevel > 0 shows HD > 0; HD back at 0 means the hero reverted even if the "You return to" message was lost
+    // (topline overflow: several messages in one step, only the last page survives -- the training env loses it the same way)
+    if (hd == 0 && R->poly && R->tform >= 0 && NHT_MON_LEVEL[R->tform] > 0) { R->poly = 0; R->tform = -1; CH_silent_revert++; }
+    if (R->poly && !was_poly) CH_poly_eps++;
+    int truth = !R->poly ? 0 : (R->tform >= 0 && (hd > 0 || NHT_MON_LEVEL[R->tform] == 0) ? (((NHT_MON_M1[R->tform] & 0x2000u) != 0) || NHT_MON_SIZE[R->tform] == 0) : -1);
+    if (R->poly && R->tform >= 0 && hd == 0 && NHT_MON_LEVEL[R->tform] == 0) CH_ambig++; // mlevel-0 form (newt, jackal...): HD cannot confirm it is still on; the message truth is used as is
+    CH_keys++; if (R->poly) { CH_polykeys++; if (truth < 0) CH_unknown++; } if (truth == 1) CH_truth++;
+    if (truth < 0) return;
+    if (R->che) { CH_on_e++; if (!truth) { CH_fp_e++; if (R->che_truth == 1) CH_fpstale_e++; if (T != R->fpT_e) { CH_fpT_e++; R->fpT_e = T; }
+            if (!R->fp_e_seen) { R->fp_e_seen = 1; CH_fpeps_e++; if (CH_ex < 12) { CH_ex++; printf("CANTHOLD wrong-on(expiry) seed=%lx T=%ld set_T=%ld form=%d msg=\"%.110s\"\n", R->seed, T, R->che_t, R->tform, m); } } } }
+    else if (truth) CH_fn_e++;
+    if (R->chs) { CH_on_s++; if (!truth) { CH_fp_s++; if (T != R->fpT_s) { CH_fpT_s++; R->fpT_s = T; } if (!R->fp_s_seen) { R->fp_s_seen = 1; CH_fpeps_s++; } } } else if (truth) CH_fn_s++;
+}
+static void canthold_report(void) {
+    printf("CANTHOLD_RAW %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n", CH_eps, CH_poly_eps, CH_keys, CH_polykeys, CH_unknown, CH_truth, CH_miss_hd, CH_sets, CH_sets_true, CH_sets_false, CH_sets_unknown, CH_clears, CH_expiries,
+           CH_on_e, CH_fp_e, CH_fpstale_e, CH_fn_e, CH_fpT_e, CH_fpeps_e, CH_on_s, CH_fp_s, CH_fn_s, CH_fpT_s, CH_fpeps_s, CH_rev_probe, CH_silent_revert, CH_ambig);
+}
 static void example(Rep* R, int c, const char* fmt, ...) __attribute__((format(printf, 3, 4)));
 static void example(Rep* R, int c, const char* fmt, ...) {
     if (!g_all && E_n[c] >= g_examples) return; E_n[c]++;
@@ -39,7 +93,10 @@ static int mock_send(void* ctx, int key) {
     if (!drec_next(&R->r, &h)) { R->diverged = 2; return 0; }
     if (h.type != R_PROBE || h.key != key) { drec_unread(&R->r, &h); R->diverged = 1; R->div_want = key; R->div_type = h.type; R->div_key = h.key; return 0; }
     if (!drec_read_obs(&R->r)) { R->diverged = 2; return 0; }
-    R->work = R->r.cur; R->probes++; return h.done;
+    R->work = R->r.cur; R->probes++;
+    if (g_canthold) canthold_msg(R, (const char*)R->o->message, R->o->blstats[20], 1);
+    if (g_msgs && R->o->message[0]) printf("PMSG T=%ld step=%ld key=%d %.150s\n", R->o->blstats[20], R->step, key, (const char*)R->o->message);
+    return h.done;
 }
 static void bind(Rep* R) {
     DRecObs* o = R->o; DObs* d = &R->d; memset(d, 0, sizeof *d);
@@ -121,12 +178,12 @@ static void replay_file(const char* path) {
         if (h.type == R_HOOK) { int na, nv; long a[8], v[DREC_MAXVALS]; if (!drec_read_hook(&R->r, &na, a, &nv, v)) { R->diverged = 2; break; } if (started) hook_check(R, h.key, na, a, nv, v); continue; }
         if (!drec_read_obs(&R->r)) { R->diverged = 2; break; }
         R->work = R->r.cur;
-        if (h.type == R_START) { dr_reset(&R->S, &R->d, (unsigned)R->seed); identity_try(R); { char msg[256]; dr_msg(&R->d, msg, sizeof msg); dr_update_memory(&R->S, &R->d, msg); dr_track_path(&R->S, &R->d, -1); } started = 1; g_eps++; continue; }
+        if (h.type == R_START) { dr_reset(&R->S, &R->d, (unsigned)R->seed); identity_try(R); { char msg[256]; dr_msg(&R->d, msg, sizeof msg); dr_update_memory(&R->S, &R->d, msg); dr_track_path(&R->S, &R->d, -1); } started = 1; g_eps++; R->tform = -1; R->fpT_e = R->fpT_s = -1; CH_eps++; continue; }
         if (h.type == R_PROBE) { if (g_msgs) printf("PROBE T=%ld step=%ld key=%d\n", R->o->blstats[20], R->step, h.key); R->diverged = 1; R->div_want = -1; R->div_type = R_PROBE; R->div_key = h.key; break; } // the recorded derive probed here, the replayed one did not
         if (h.type == R_KEY) { R->keys++; R->step++;
             if (g_msgs && R->o->message[0]) printf("MSG T=%ld step=%ld %.150s\n", R->o->blstats[20], R->step, (const char*)R->o->message);
             if (g_watch >= 0 && R->o->message[0]) { int j = R->mring_n % 6; snprintf(R->mring[j], sizeof R->mring[j], "%.90s", (const char*)R->o->message); R->mring_t[j] = R->o->blstats[20]; R->mring_n++; }
-            dr_after_key(&R->S, &R->d, R, mock_send, h.key, h.done); continue; }
+            dr_after_key(&R->S, &R->d, R, mock_send, h.key, h.done); if (g_canthold) canthold_step(R); continue; }
         if (h.type == R_BOUNDARY) { R->bounds++; identity_try(R); dr_boundary(&R->S, &R->d, R, mock_send); if (!R->diverged) boundary_checks(R); continue; }
     }
     if (R->diverged == 1) { g_eps_div++; g_div_by_type[R->div_type & 7]++; if (g_eps_div <= 5) fprintf(stderr, "DIVERGED seed=%lx step=%ld T=%ld: replayed derive wanted probe key %d, recording has type %d key %d\n", R->seed, R->step, R->o->blstats[20], R->div_want, R->div_type, R->div_key); skip_to_end(R); }
@@ -147,6 +204,7 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; i++) { if (!strcmp(argv[i], "--examples") && i + 1 < argc) g_examples = atoi(argv[++i]); else if (!strcmp(argv[i], "--all")) g_all = 1;
         else if (!strcmp(argv[i], "--min-turn") && i + 1 < argc) g_min_turn = atol(argv[++i]);
         else if (!strcmp(argv[i], "--msgs")) g_msgs = 1;
+        else if (!strcmp(argv[i], "--canthold")) g_canthold = 1;
         else if (!strcmp(argv[i], "--log")) dr_log_this = 1;
         else if (!strcmp(argv[i], "--watch") && i + 1 < argc) { const char* w = argv[++i]; for (int c = 0; c < C_N; c++) if (!strcmp(w, C_NAMES[c])) g_watch = c; if (g_watch < 0) { fprintf(stderr, "unknown channel %s\n", w); return 2; } }
         else if (!strcmp(argv[i], "--baseline") && i + 1 < argc) baseline = argv[++i]; else if (!strcmp(argv[i], "--out") && i + 1 < argc) out = argv[++i]; else { replay_path(argv[i]); first = 0; } }
@@ -154,6 +212,7 @@ int main(int argc, char** argv) {
     printf("DERIVE_REPLAY files=%ld episodes=%ld diverged=%ld truncated=%ld\n", g_files, g_eps, g_eps_div, g_eps_trunc);
     printf("  %-18s %10s %10s %9s\n", "channel", "queries", "mismatch", "rate");
     for (int c = 0; c < C_N; c++) printf("  %-18s %10ld %10ld %8.3f%%\n", C_NAMES[c], M_q[c], M_bad[c], 100.0 * (double)M_bad[c] / (double)(M_q[c] ? M_q[c] : 1));
+    if (g_canthold) canthold_report();
     if (out) { FILE* f = fopen(out, "w"); if (f) { for (int c = 0; c < C_N; c++) fprintf(f, "%s %ld %ld\n", C_NAMES[c], M_bad[c], M_q[c]); fclose(f); } }
     int rc = 0;
     if (baseline) { FILE* f = fopen(baseline, "r"); if (!f) { fprintf(stderr, "no baseline %s\n", baseline); return 2; } char name[64]; long bb, bq;

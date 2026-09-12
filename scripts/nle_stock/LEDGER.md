@@ -617,3 +617,24 @@ mask queries because the marker glyph is in its monster range — hidden state, 
 the `I` marker and 74 visible monsters; weight 0, identity 0, capacity 0.022 %, hero_tile 0.107 %, intrinsics 0.136 %, spells 0.033 % (T=1), food 60 / 10,150.**
 Every observation channel is now exact or ≤ 0.14 %, with the residuals named: blessed see-invisible potion, invisible-hero self-look, unseen-monster
 marker, first-step spells, piles changed without a look.
+
+### 21:15 — form-mask (cant_hold) audit: not poisoning training; the stale case is the SILENT revert, the expiry is its cap
+`nh_derive_replay --canthold` (new; `/tmp/reg/canthold_audit.py` shards it) replays the env's rule (`nethack_track_cant_hold`) over a recording, key by key, against the hero's
+real form: polymorph messages incl. probe replies, form looked up in `NHT_MON_M1`/`NHT_MON_SIZE` (cantwield = nohands || verysmall), and the HD field (`NLE_BL_HD` = mlevel while
+polymorphed) which flags a revert whose text never reached the observation. Corpus 5 = 2B claim policy, fixed engine, 376 games, 2.85M keys; corpus 2 = 1B, 176 games.
+| | 2B corpus | 1B corpus |
+|---|---|---|
+| polymorph entries / keys in a handless form | 210 / 18,402 (0.65 % of keys) | 10 / 115 |
+| reverts whose message was LOST (HD fell to 0, no text) | 137 of 210 | 5 of 10 |
+| mask set events (all with the hero truly handless) | 15 | 0 |
+| cleared by "You return to/turn into" | 5 | 0 |
+| expired at 100 turns / re-set after expiry | 7 / 1 | 0 |
+| WRONG-ON, 100-turn expiry (legal verbs masked) | 49 keys = 0.0017 %, 12 turns, 4 games, all after a lost revert | 0 |
+| WRONG-ON, never-expiring (leaky 4B lanes) | 65 keys = 0.0023 %, 17 turns, 7 games | 0 |
+| handless but unmasked (no refusal ever tried) | 17,390 keys | 115 |
+Reading: the trigger texts never fire on a hero with hands (15/15). The mask is on for 0.04 % of keys and wrong for 0.0017 %: it cannot move a training run. The only wrong-on
+mechanism is a revert whose message is lost — 65 % of reverts print inside a multi-turn key (prayer curing lycanthropy, fights with several messages a turn, a form's HP reaching 0)
+and only the first page of that step survives in `message`, for the training env exactly as for the recording. After such a revert the belief stays until the 100-turn expiry;
+the 4 affected games were fights right after the revert (Elbereth/WIELD masked for a few turns before death). The expiry is the cap on that, not the cause; without it (leaky 4B
+lanes) the same 7 games carried it to the end. A cheaper, exact clear for the next env round: drop the belief when `blstats[HD]` falls from >0 to 0 (forms with mlevel > 0;
+newt/jackal/sewer-rat-class forms stay message-only). Leaky 4B vs fixwt lanes differ on this axis by ~7 events per 376 games: not a confound.
