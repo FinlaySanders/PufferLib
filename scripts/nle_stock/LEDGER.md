@@ -575,3 +575,12 @@ truth check per channel.
 **18:35 — 4B lanes end with rc=134:** training completes and the final checkpoint is saved (s602: 0000003999793152.bin), then the trainer's built-in
 10,000-game final eval fails `cudaMalloc` beside the trainer's own buffers on this box. That number was never a cert; rung-1 certs run separately.
 Expect the same exit code from every 4B lane here, fixed ones included; the checkpoint is the deliverable. `fixwt4b_s706` took gpu 3 at 18:32:43.
+
+## 2026-09-12 19:00 — THE 2B GAP IS THE WEIGHT CHANNEL
+**`stock_wtreal_s21` final (old 2B on stock strict, seed 21, the engine's pre-fix true-type weight fed to the policy; 6,027 eps, 2,027 kept, 0 aborts):
+16,354 (se 450) / 9,790** vs canary3 (same tree/seed, reconstructed weight) 14,559 / 8,730 → **+12.3 % / +12.1 %**; vs the fork 16,520 / 9,839 → −1.0 % / −0.5 %.
+The weight channel accounts for the whole −13 %; guard (+5 %, keep), form mask (0), derive v3 (0) and calendar (0) were the other suspects.
+WTCHECK over the run: the true-type weight differed from the reconstructed one on 7.4 % of 22.0M boundaries (late-game heavy), capacity on 0.13 %.
+**Leaky 4B `nlestock4b_s602` (4.0B) on the FIXED engine f7d8749ab (honest weight), rung 1 seed 7, 10,000 kept: 20,141 (se 278) / 10,396** — the
+prediction for its stock cert (`stock_leaky4b_s602_s21`, local, ≈ 21:00). Its own-engine fork cert is queued on the drone (overnight).
+Fixed lanes: `fixwt2b_s703` (gpu 5, 18:43) and `fixwt2b_s704` (gpu 7, 18:56) started; `fixwt1b_s701/702` queued for gpus 1/2 (leaky s604/s603 finishing).
