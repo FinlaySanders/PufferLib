@@ -17,12 +17,12 @@
 enum { C_TERR, C_FOOD, C_CONT, C_PRICE, C_SHOP, C_PEACE, C_SPELLS, C_LNC, C_WT, C_CAP, C_INTR, C_CAST, C_PATH, C_ENGR, C_HERO, C_INVST, C_INVTRUE, C_IDENT, C_DISC, C_RANGE, C_MAPRANGE, C_N };
 static const char* C_NAMES[C_N] = {"terrain", "food_underfoot", "container_at", "shop_price", "inside_shop", "peaceful_at", "spells", "lnc_bits", "weight", "capacity", "intrinsics", "cast_blocked", "path", "engraving_bits", "hero_tile", "inv_state", "inv_true_glyph", "identity", "discovered_set", "shuffle_range", "map_shuffle_range"};
 static long M_q[C_N], M_bad[C_N];
-static int g_examples = 5, g_all; static int E_n[C_N]; static int g_watch = -1; static long g_min_turn = 0; // --min-turn N: count only hooks/boundaries at game turn >= N (late-game error rates)
+static int g_examples = 5, g_all, g_msgs; static int E_n[C_N]; static int g_watch = -1; static long g_min_turn = 0; // --min-turn N: count only hooks/boundaries at game turn >= N (late-game error rates)
 
 typedef struct {
     DRecR r; DObs d; DState S; DRecObs work; DRecObs* o; signed char inv_state[55 * 8]; short inv_true[55]; // work = the buffers the derive reads and may write (dr_restore); r.cur stays the pristine recorded state the deltas apply to
     int diverged; int div_want, div_type, div_key; long probes, keys, bounds; unsigned long seed; long step;
-    long watch_last; int watch_init; char mring[6][96]; long mring_t[6]; int mring_n; // --watch: last messages seen on env keys
+    long watch_last[C_N]; int watch_init[C_N]; char mring[6][96]; long mring_t[6]; int mring_n; // --watch: last messages seen on env keys
 } Rep;
 
 static long g_cur_turn; static void note(int c, int bad) { if (g_cur_turn < g_min_turn) return; M_q[c]++; if (bad) M_bad[c]++; }
@@ -76,10 +76,10 @@ static void boundary_checks(Rep* R) {
     }
 }
 static void watch(Rep* R, int chan, long real, long der) {
-    if (chan != g_watch) return; if (R->watch_init && real == R->watch_last) return;
-    printf("WATCH %-12s seed=%lx step=%ld T=%ld real %ld -> %ld (derived %ld) cond=%lx recent:", C_NAMES[chan], R->seed, R->step, R->o->blstats[20], R->watch_init ? R->watch_last : -1L, real, der, (unsigned long)R->o->blstats[25]);
+    if (chan != g_watch && !(g_watch == C_WT && chan == C_CAP)) return; if (R->watch_init[chan] && real == R->watch_last[chan]) return;
+    printf("WATCH %-12s seed=%lx step=%ld T=%ld real %ld -> %ld (derived %ld) cond=%lx recent:", C_NAMES[chan], R->seed, R->step, R->o->blstats[20], R->watch_init[chan] ? R->watch_last[chan] : -1L, real, der, (unsigned long)R->o->blstats[25]);
     for (int i = 0; i < R->mring_n && i < 6; i++) { int j = (R->mring_n - 1 - i) % 6; printf(" [T%ld \"%s\"]", R->mring_t[j], R->mring[j]); } printf("\n");
-    R->watch_last = real; R->watch_init = 1;
+    R->watch_last[chan] = real; R->watch_init[chan] = 1;
 }
 static void hook_check(Rep* R, int chan, int nargs, const long* a, int nvals, const long* v) {
     DState* S = &R->S; long r = nvals ? v[0] : 0; (void)nargs; g_cur_turn = R->o->blstats[20];
@@ -97,7 +97,7 @@ static void hook_check(Rep* R, int chan, int nargs, const long* a, int nvals, co
     case C_PEACE: { long x = a[0], y = a[1]; int d = (x >= 1 && x < 80 && y >= 0 && y < 21) ? S->peace[y * 79 + (x - 1)] : 0; note(C_PEACE, r != d);
         if (r != d) { int k = y * 79 + (x - 1); example(R, C_PEACE, "cell=%ld,%ld real=%ld derived=%d glyph=%d cached_g=%d cached_t=%ld", y, x - 1, r, d, (k >= 0 && k < DR_CELLS) ? R->o->glyphs[k] : -1, (k >= 0 && k < DR_CELLS) ? S->peace_g[k] : -1, (k >= 0 && k < DR_CELLS) ? S->peace_t[k] : -1L); } } break;
     case C_WT: { long rw = v[0], rc = v[1]; int bw = labs(rw - S->wt) > 10, bc = rc != S->cap; note(C_WT, bw); note(C_CAP, bc);
-        if (bw) example(R, C_WT, "real=%ld derived=%d", rw, S->wt); if (bc) example(R, C_CAP, "real=%ld derived=%d weight_real=%ld weight_der=%d wlegs=%d", rc, S->cap, rw, S->wt, S->wlegs); } break;
+        if (bw) { char inv[700]; int q = 0; for (int i = 0; i < 55 && R->d.inv_letters && R->d.inv_letters[i] && q < 640; i++) q += snprintf(inv + q, sizeof inv - q, " %c:%.28s", R->d.inv_letters[i], (const char*)R->d.inv_strs + i * 80); if (q == 0) inv[0] = 0; example(R, C_WT, "real=%ld derived=%d cond=%lx inv:%s", rw, S->wt, R->d.blstats[25], inv); } if (bc) { char r23[128] = ""; if (R->d.tty_chars) { char row[DR_TTY_CO + 1]; dr_row(&R->d, 23, row); snprintf(r23, sizeof r23, "%.60s", row); } example(R, C_CAP, "real=%ld derived=%d weight_real=%ld weight_der=%d wlegs=%d form=%d hd=%ld r23=[%s]", rc, S->cap, rw, S->wt, S->wlegs, S->form, R->d.blstats[17], r23); } } break;
     case C_SPELLS: { int rn = (int)v[0]; int bad = rn != S->nsp; for (int i = 0; i < rn && i < S->nsp && i < 8; i++) bad |= v[1 + i] != S->sp_ids[i] || v[9 + i] != S->sp_levs[i] || (v[25 + i] > 0) != (S->sp_knows[i] > 0);
         note(C_SPELLS, bad); if (bad) example(R, C_SPELLS, "real_n=%d derived_n=%d real0=%ld/%ld/%ld der0=%d/%d/%d", rn, S->nsp, v[1], v[9], v[25], S->sp_ids[0], S->sp_levs[0], S->sp_knows[0]); } break;
     case C_PATH: { int rn = (int)v[0]; const long* rp = v + 1; int bad = 0;
@@ -122,8 +122,9 @@ static void replay_file(const char* path) {
         if (!drec_read_obs(&R->r)) { R->diverged = 2; break; }
         R->work = R->r.cur;
         if (h.type == R_START) { dr_reset(&R->S, &R->d, (unsigned)R->seed); identity_try(R); { char msg[256]; dr_msg(&R->d, msg, sizeof msg); dr_update_memory(&R->S, &R->d, msg); dr_track_path(&R->S, &R->d, -1); } started = 1; g_eps++; continue; }
-        if (h.type == R_PROBE) { R->diverged = 1; R->div_want = -1; R->div_type = R_PROBE; R->div_key = h.key; break; } // the recorded derive probed here, the replayed one did not
+        if (h.type == R_PROBE) { if (g_msgs) printf("PROBE T=%ld step=%ld key=%d\n", R->o->blstats[20], R->step, h.key); R->diverged = 1; R->div_want = -1; R->div_type = R_PROBE; R->div_key = h.key; break; } // the recorded derive probed here, the replayed one did not
         if (h.type == R_KEY) { R->keys++; R->step++;
+            if (g_msgs && R->o->message[0]) printf("MSG T=%ld step=%ld %.150s\n", R->o->blstats[20], R->step, (const char*)R->o->message);
             if (g_watch >= 0 && R->o->message[0]) { int j = R->mring_n % 6; snprintf(R->mring[j], sizeof R->mring[j], "%.90s", (const char*)R->o->message); R->mring_t[j] = R->o->blstats[20]; R->mring_n++; }
             dr_after_key(&R->S, &R->d, R, mock_send, h.key, h.done); continue; }
         if (h.type == R_BOUNDARY) { R->bounds++; identity_try(R); dr_boundary(&R->S, &R->d, R, mock_send); if (!R->diverged) boundary_checks(R); continue; }
@@ -145,6 +146,8 @@ int main(int argc, char** argv) {
     const char* baseline = NULL; const char* out = NULL; int first = 1;
     for (int i = 1; i < argc; i++) { if (!strcmp(argv[i], "--examples") && i + 1 < argc) g_examples = atoi(argv[++i]); else if (!strcmp(argv[i], "--all")) g_all = 1;
         else if (!strcmp(argv[i], "--min-turn") && i + 1 < argc) g_min_turn = atol(argv[++i]);
+        else if (!strcmp(argv[i], "--msgs")) g_msgs = 1;
+        else if (!strcmp(argv[i], "--log")) dr_log_this = 1;
         else if (!strcmp(argv[i], "--watch") && i + 1 < argc) { const char* w = argv[++i]; for (int c = 0; c < C_N; c++) if (!strcmp(w, C_NAMES[c])) g_watch = c; if (g_watch < 0) { fprintf(stderr, "unknown channel %s\n", w); return 2; } }
         else if (!strcmp(argv[i], "--baseline") && i + 1 < argc) baseline = argv[++i]; else if (!strcmp(argv[i], "--out") && i + 1 < argc) out = argv[++i]; else { replay_path(argv[i]); first = 0; } }
     if (first) { fprintf(stderr, "usage: nh_derive_replay [--examples N] [--all] [--watch channel] [--baseline rates.txt] [--out rates.txt] <file.drec.gz | dir> ...\n"); return 2; }

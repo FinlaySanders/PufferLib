@@ -82,7 +82,7 @@ typedef struct {
     short path[2 * DR_PATH]; int path_n;
     // derived scalar hook values (valid for the next decision)
     int terrain, top, food, cont, engr_bits, inshop; long price;
-    int lnc, wt, cap, castblk, intr, intr_gained; long fast_until;
+    int lnc, wt, cap, castblk, intr, intr_gained, intr_lost; long fast_until; long form_hd; // intr_lost: bits removed by a loss message until re-gained; form_hd: last HD: value seen
     int nsp; short sp_ids[8]; signed char sp_levs[8], sp_fails[8]; int sp_knows[8];
     int spells_dirty; long probe_turn, disc_turn;
     // discoveries / appearance bijection
@@ -96,7 +96,7 @@ typedef struct {
     int disc_time_probed; long terrain_probes; int prev_terr;
     int count_pending; long probes_deferred; // the env's last game key was a count digit: any probe key would cancel the count
     int cell_dirty; long last_look_turn; int last_skip; int meal_flag, took_flag; // eating / pickup seen on any key since the last boundary
-    int drop_top; long drop_turn; int was_blind; int was_engulfed; int key_blind; int disc_rows; int engr_known_cell; // the square whose engraving the policy last wrote, read or felt (the fork remembers one) // rows the discoveries list showed last time (>= 20: full-screen window) // blind state after the previous key (per key, not per boundary: sight can return inside a multi-key step) // the previous boundary was blind: things may have landed under the hero unseen, re-look when sight returns
+    int drop_top; long drop_turn; int prev_dex; int was_blind; int was_engulfed; int key_blind; int disc_rows; int engr_known_cell; // the square whose engraving the policy last wrote, read or felt (the fork remembers one) // rows the discoveries list showed last time (>= 20: full-screen window) // blind state after the previous key (per key, not per boundary: sight can return inside a multi-key step) // the previous boundary was blind: things may have landed under the hero unseen, re-look when sight returns
     int land_top; long land_turn; // a projectile that just landed under the hero, from its message
     int arr_win_open, arr_win_col; // the game's own pile window (arrival) can page across keys: later pages carry no header // "You drop X": X is the new chain head (the fork's underfoot tile); the look lists big piles unreliably
     short pile[8]; short pile_qty[8]; int npile; // the hero-cell pile (top first) from the last sighted look, for blind bookkeeping
@@ -428,6 +428,8 @@ static void dr_update_memory(DState* S, const DObs* o, const char* msg) {
 // ---------------------------------------------------------------- engraving / anger / intrinsics per key
 static const char* DR_ENGR_REFUSE[] = {"can't even hold", "can't reach the floor", "unable to", "can't write", "not going to get anywhere", "no free hand", "too hard", "can't engrave", "can't even"};
 static const char* DR_MELEE[] = {"You hit", "You miss", "You kill", "You destroy", "You smite", "You strike", "You punch", "You bite", "You butt", "You kick"};
+// intrinsic losses: attrcurse() (gremlin at night) and u_slow_down(); the bit stays off until a gain message re-sets it
+static const struct { const char* pat; int bit; } DR_LOSE[] = {{"slowing down", 128}, {"slow down", 128}, {"You feel slower", 128}, {"feel warmer", 2}, {"feel cooler", 4}, {"a little sick", 1}, {"You feel tired", 8}, {"senses fail", 32}, {"thought you saw something", 64}};
 static const struct { const char* pat; int bit; } DR_GAIN[] = {{"healthy.", 1}, {"momentary chill", 2}, {"full of hot air", 4}, {"wide awake", 8}, {"feels amplified", 16}, {"strange mental acuity", 32}, {"in touch with the cosmos", 32}, {"seem faster", 128}, {"You speed up", 128}, {"quickness feels more natural", 128}};
 static int dr_read_engr(const char* msg, int* bits) { // 'You read: "X"' -> 2 elbereth / 1 other
     const char* p = strstr(msg, "You read: \""); if (!p) return 0; p += 11;
@@ -459,17 +461,28 @@ static void dr_track_engraving(DState* S, const DObs* o, int key, const char* ms
     if (hitwipe && cell >= 0 && L->engr[cell] == 2) { // (legacy rule, off) a monster's hit on the hero wipes dust letters too
         static const char* HIT[] = {" hits!", " bites!", " stings!", " kicks!", " butts!", " touches you", " claws", " punches", " pricks", "You get zapped", " gores", " hugs", " engulfs", " lashes"};
         for (size_t r = 0; r < sizeof HIT / sizeof HIT[0]; r++) if (strstr(msg, HIT[r])) { L->engr[cell] = 1; break; } }
-    for (size_t r = 0; r < sizeof DR_GAIN / sizeof DR_GAIN[0]; r++) if (strstr(msg, DR_GAIN[r].pat)) S->intr_gained |= DR_GAIN[r].bit;
+    { const char* dm = strstr(msg, "You dream that "); const char* mm = dm ? dm + 15 : msg; // asleep: the engine wraps the message, the effect is real
+      for (size_t r = 0; r < sizeof DR_GAIN / sizeof DR_GAIN[0]; r++) if (strstr(mm, DR_GAIN[r].pat)) { S->intr_gained |= DR_GAIN[r].bit; S->intr_lost &= ~DR_GAIN[r].bit; }
+      if (strstr(mm, "slowing down a bit") || strstr(mm, "slow down a bit")) S->fast_until = 0; // Very_fast ended, intrinsic Fast remains (timeout.c)
+      else for (size_t r = 0; r < sizeof DR_LOSE / sizeof DR_LOSE[0]; r++) if (strstr(mm, DR_LOSE[r].pat)) { S->intr_lost |= DR_LOSE[r].bit; S->intr_gained &= ~DR_LOSE[r].bit; if (DR_LOSE[r].bit == 128) S->fast_until = 0; } }
     if (strstr(msg, "suddenly moving") && strstr(msg, "faster")) S->fast_until = o->blstats[20] + 120;
     if (strstr(msg, " gets angry") || strstr(msg, "You hear the shrieks") || strstr(msg, "turns to flee")) S->peace_dirty = 1; // re-classify visible monsters
+    if (strstr(msg, "You hit ") || strstr(msg, "You miss ") || strstr(msg, "You kill ") || strstr(msg, " hits the ") || strstr(msg, " misses the ") || strstr(msg, "You smite") || strstr(msg, "You strike")) { // the hero attacked: a peaceful of that name is peaceful no more
+        int melee = strstr(msg, "You hit ") || strstr(msg, "You miss ") || strstr(msg, "You smite") || strstr(msg, "You strike"); int hr = (int)o->blstats[1], hc = (int)o->blstats[0];
+        int cand = 0, ck = -1; for (int k = 0; k < DR_CELLS; k++) { int g = o->glyphs[k]; if (g >= 0 && g < NUMMONS && strstr(msg, NHT_MON_NAME[g])) { cand++; ck = k; } }
+        for (int k = 0; k < DR_CELLS; k++) { int g = o->glyphs[k]; if (!S->peace[k] || g < 0 || g >= NUMMONS || !strstr(msg, NHT_MON_NAME[g])) continue;
+            int adj = abs(k / DR_COLS - hr) <= 1 && abs(k % DR_COLS - hc) <= 1;
+            if (cand == 1 || (melee && adj)) { S->peace[k] = 0; S->peace_g[k] = (short)g; S->peace_t[k] = o->blstats[20]; } } (void)ck; }
     if (dr_shop_welcome(msg) || strstr(msg, "for sale") || strstr(msg, "zorkmid") || strstr(msg, "You sold") || strstr(msg, "Usage fee") || strstr(msg, "for shopping")) S->shop_pending = 1; // greetings and transactions (shops entered without a greeting: dead/absent shopkeeper, level revisit)
     if (msg[0]) S->msg_pending = 1;
-    { long T = o->blstats[20];
-      if (strstr(msg, "You strain a muscle")) { if (S->wlegs < 1) S->wlegs = 1; S->wlegs_t = T + 10; } // set_wounded_legs(RIGHT_SIDE, 5 + rnd(5))
-      if (strstr(msg, "bear trap closes on your")) { if (S->wlegs < 1) S->wlegs = 1; if (S->wlegs_t < T + 19) S->wlegs_t = T + 19; } // rn1(10, 10)
-      if (strstr(msg, "pricks your")) { if (S->wlegs < 1) S->wlegs = 1; if (S->wlegs_t < T + 60) S->wlegs_t = T + 60; } // xan: rnd(60 - Dex)
-      if (strstr(msg, "in no shape for")) { if (strstr(msg, "legs are")) S->wlegs = 2; else if (S->wlegs < 1) S->wlegs = 1; if (S->wlegs_t < T + 10) S->wlegs_t = T + 10; } // the kick refusal itself reveals the wound
-      if (strstr(msg, "land mine")) { S->wlegs = 2; S->wlegs_t = T + 75; } } // rn1(35, 41)
+    { long T = o->blstats[20]; int dexdrop = S->prev_dex > 0 && (int)o->blstats[4] == S->prev_dex - 1; // set_wounded_legs: ATEMP(A_DEX)-- when the legs were sound
+      // set_wounded_legs(side, t): EWounded_legs = side (REPLACES the mask, weight_cap -100 per side), HWounded_legs = t (replaced while timed); heal_legs prints "somewhat better"
+      if (strstr(msg, "You strain a muscle")) { S->wlegs = 1; S->wlegs_t = T + 10; } // RIGHT_SIDE, 5 + rnd(5)
+      if (strstr(msg, "Ouch!  That hurts!") && dexdrop) { S->wlegs = 1; S->wlegs_t = T + 10; } // kicking something solid: 1 in 3, told apart by the Dex drop
+      if (strstr(msg, "bear trap closes on your")) { S->wlegs = 1; S->wlegs_t = T + 19; } // one side, rn1(10, 10)
+      if (strstr(msg, "pricks your")) { S->wlegs = 1; S->wlegs_t = T + 60; } // xan: one side, rnd(60 - Dex)
+      if (strstr(msg, "in no shape for")) { S->wlegs = strstr(msg, "legs are") ? 2 : 1; if (S->wlegs_t < T + 10) S->wlegs_t = T + 10; } // the kick refusal names the wounded side(s)
+      if (strstr(msg, "KAABLAMM") && strstr(msg, "land mine")) { S->wlegs = 2; S->wlegs_t = T + 75; } } // "You triggered a land mine!": both sides, rn1(35, 41); seeing/disarming one does not
     // "Ouch!  That hurts!" (kicking a wall) wounds only 1 in 3 and is not used; 6.7% of capacity queries were wrong before the strain rule (2026-09-12)
     if (strstr(msg, "somewhat better") || (strstr(msg, "Your ") && strstr(msg, "feel") && strstr(msg, " better")) || strstr(msg, "You turn into") || strstr(msg, "new man") || strstr(msg, "new woman")) S->wlegs = 0; // heal_legs in 3.6.6: "Your leg feels better." / "Your legs feel better." ("somewhat better" is the 3.4 text and never fired)
     if (strstr(msg, "You turn into") || strstr(msg, "You return to") || strstr(msg, "new man") || strstr(msg, "new woman") || strstr(msg, "feel like a new") || strstr(msg, "You feel a change coming over") || strstr(msg, "You feel purified") || strstr(msg, "You finish your prayer") || strstr(msg, "You begin praying")) S->form_dirty = 1; // prayer can cure lycanthropy and rehumanize inside its pages
@@ -528,7 +541,7 @@ static void dr_restore(DObs* o, const DSave* s) { memcpy(o->message, s->message,
 
 static const struct { const char* name; int off; } DR_FEATURES[] = {{"staircase up", 23}, {"staircase down", 24}, {"ladder up", 25}, {"ladder down", 26}, {"fountain", 31}, {"sink", 30}, {"grave", 28}, {"throne", 29}, {"tree", 18},
     {"doorway", 12}, {"broken door", 12}, {"open door", 13}, {"pool of water", 32}, {"water", 41}, {"molten lava", 34}, {"ice", 33}, {"air", 39}, {"cloud", 40}, {"cloudy area", 40}, {"fog/vapor cloud", 40}, {"set of iron bars", 17}, {"open drawbridge portcullis", 35}};
-typedef struct { int terrain; int nobj; char objs[16][120]; short qty[16]; int engr; long price; char raw[3][DR_TTY_CO + 1]; int nraw; } DLook;
+typedef struct { int terrain; int nobj; char objs[16][120]; short qty[16]; int engr; long price; char raw[3][DR_TTY_CO + 1]; int nraw; int partial; } DLook;
 static int dr_wall_at(const short* g, int r, int c) { if (r < 0 || r >= DR_ROWS || c < 0 || c >= DR_COLS) return 0; int v = g[r * DR_COLS + c]; return v >= CMAP_OFF + 1 && v <= CMAP_OFF + 11; }
 static __thread int g_door_prev_r, g_door_prev_c, g_door_prev_valid; // hero position at the previous boundary (door orientation fallback)
 static void dr_parse_look_line(const DObs* o, const char* l, DLook* res) {
@@ -595,7 +608,7 @@ static int dr_look_here(DState* S, DObs* o, void* ctx, dr_send_fn send, DLook* r
     if (dr_prompt_open(o)) { S->probe_skip_prompt++; S->last_skip = 5; return 0; }
     DSave sv; dr_save(o, &sv);
     memset(res, 0, sizeof *res); res->terrain = -1; res->price = -1;
-    char lines[24][DR_TTY_CO + 1]; int nl = 0; char win[64][120]; int nw = 0; int win_started = 0, win_col = 0;
+    char lines[24][DR_TTY_CO + 1]; int nl = 0; char win[64][120]; int nw = 0; int win_started = 0, win_col = 0; int paged_no_hdr = 0, hdr_empty = 0;
     // (a ^P/^R "park the cursor" prep was tried here and refuted: it wedges the headless port, and both keys
     //  are outside the NetHack Challenge action set. Removed 2026-09-10 so no debug switch can leave that set.)
     if (o->rawout && o->rawlen) *o->rawlen = 0;
@@ -608,14 +621,16 @@ static int dr_look_here(DState* S, DObs* o, void* ctx, dr_send_fn send, DLook* r
             // the pile window: an overlay (header row, then item rows at the header's column until "(end)"/"--More--")
             // or, when it does not fit, a paged window whose later pages carry item rows from the top until the mark
             int any = 0, hdr_row = -1;
-            for (int r = 0; r < DR_TTY_LI; r++) { char row[DR_TTY_CO + 1]; dr_row(o, r, row); const char* h = strstr(row, "Things that are here"); if (!h) h = strstr(row, "that you feel here"); if (h) { any = 1; hdr_row = r; win_col = (int)(h - row); win_started = 1; break; } } // the overlay window sits at the header's column; the map may fill the columns to its left
-            if (any || win_started) {
+            for (int r = 0; r < DR_TTY_LI; r++) { char row[DR_TTY_CO + 1]; dr_row(o, r, row); const char* h = strstr(row, "Things that are here"); if (!h) h = strstr(row, "that you feel here"); if (h) { any = 1; hdr_row = r; win_col = (int)(h - row); win_started = 1; break; } }
+            if (!any && !win_started) paged_no_hdr = 1; // a later page of a pile window whose first page the tty already dropped (> ~16 objects): the list we read is incomplete // the overlay window sits at the header's column; the map may fill the columns to its left
+            if (any || win_started) { int nw0 = nw;
                 for (int r = (any ? hdr_row + 1 : 0); r < DR_TTY_LI; r++) { char row[DR_TTY_CO + 1]; dr_row(o, r, row);
                     const char* rr = row + (win_col < (int)strlen(row) ? win_col : (int)strlen(row)); while (*rr == ' ') rr++;
                     if (!*rr) { if (any) break; else continue; }
                     if (!strncmp(rr, "--More--", 8) || !strcmp(rr, "(end)")) break;
                     char t[120]; snprintf(t, sizeof t, "%s", rr); dr_replace_all(t, "--More--", ""); { char* e = t + strlen(t); while (e > t && e[-1] == ' ') *--e = 0; }
                     if (*t && nw < 64) snprintf(win[nw++], 120, "%s", t); }
+                if (any && nw == nw0) hdr_empty = 1; // header page without a single item row: the tty anchored a too-tall window at the bottom and the item pages are shown one line at a time (only the last survives in the observation)
             } else {
                 for (int r = 0; r < 2; r++) { char row[DR_TTY_CO + 1]; dr_row(o, r, row); dr_replace_all(row, "--More--", ""); char* s = row; while (*s == ' ') s++; if (*s && nl < 24) snprintf(lines[nl++], DR_TTY_CO + 1, "%s", s); }
             }
@@ -625,6 +640,7 @@ static int dr_look_here(DState* S, DObs* o, void* ctx, dr_send_fn send, DLook* r
         break;
     }
     if (dr_window_open(o)) { send(ctx, 27); S->probe_keys++; } // marker-based, not flag-based (see dr_window_open)
+    res->partial = hdr_empty; (void)paged_no_hdr; // only the observed signature: a header page with no item rows; a header-less paged text (engraving + "no objects") is not a pile window
     { static long dump = -2; if (dump == -2) { const char* v = getenv("NH_STOCK_LOOKDUMP"); dump = v ? atol(v) : -1; } if (dump >= 0 && dr_log_this && o->blstats[20] == dump) { // diagnostic: the pickup menu lists the pile too
         send(ctx, ','); for (int it = 0; it < 6; it++) { fprintf(stderr, "pickupdump it=%d misc=%d%d%d msg=\"%.70s\"\n", it, o->misc[0], o->misc[1], o->misc[2], (const char*)o->message); for (int r = 0; r < DR_TTY_LI; r++) { char row[DR_TTY_CO + 1]; dr_row(o, r, row); int nb = 0; for (int c = 0; row[c]; c++) if (row[c] != ' ') nb++; if (nb) fprintf(stderr, "  prow%02d: %s\n", r, row); } if (!(o->misc[0] || o->misc[1] || o->misc[2])) break; send(ctx, ' '); } send(ctx, 27); } }
     dr_restore(o, &sv);
@@ -913,7 +929,7 @@ static void dr_derive_inventory(DState* S, const DObs* o, const DItem* items, in
         int mi = dr_corpse_mon_from_text(t);
         if (mi < 0 && !hallu && items[i].g >= BODY_OFF && items[i].g < BODY_OFF + NUMMONS) mi = items[i].g - BODY_OFF;
         if (mi >= 0) { wt += (NHT_MON_CWT[mi] * q) / half; continue; }
-        int idx = dr_name_index(t);
+        int idx; { char tl[256]; dr_lower(tl, t, sizeof tl); idx = dr_name_index_lower_c(tl, items[i].oc); } // class-aware: food "tin"/"orange" are not the wand/potion appearances
         if (idx < 0 && !hallu) idx = items[i].idx;
         if (idx < 0) { char tl[256]; dr_lower(tl, t, sizeof tl); dr_strip_parens(tl); int j = dr_appearance_descr_c(tl, items[i].oc); if (j >= 0) idx = dr_gem_canon(j); }
         if (idx >= 0) wt += (NHT_OBJ_WT[idx] * q) / half;
@@ -921,9 +937,10 @@ static void dr_derive_inventory(DState* S, const DObs* o, const DItem* items, in
     int cap = 25 * ((int)o->blstats[2] + (int)o->blstats[5]) + 50;
     int form = S->form;
     if (form >= 0) { // polymorphed: no msize/mflags in the tables here; nymphs and heavy forms approximated by corpse weight
-        const char* mn = NHT_MON_NAME[form]; size_t L = strlen(mn);
+        const char* mn = NHT_MON_NAME[form]; size_t L = strlen(mn); // weight_cap(): S_NYMPH -> MAX; cwt 0 -> * msize / MZ_HUMAN; else scale by cwt unless a strong monster no heavier than a human
         if (L >= 5 && !strcmp(mn + L - 5, "nymph")) cap = 1000;
-        else if (NHT_MON_CWT[form] > 0 && NHT_MON_CWT[form] != 1450) cap = cap * NHT_MON_CWT[form] / 1450;
+        else if (NHT_MON_CWT[form] == 0) cap = cap * NHT_MON_SIZE[form] / 2;
+        else if (!(NHT_MON_M2[form] & 0x04000000u) || NHT_MON_CWT[form] > 1450) cap = cap * NHT_MON_CWT[form] / 1450;
     }
     if (S->wlegs && S->wlegs_t && o->blstats[20] > S->wlegs_t) S->wlegs = 0; // maximum duration passed: the heal message was lost
     if (cond & 0x400) cap = 1000; else { if (cap > 1000) cap = 1000; if (!(cond & 0x800)) cap -= 100 * S->wlegs; }
@@ -944,7 +961,7 @@ static int dr_intrinsics(const DState* S, const DObs* o) {
         unsigned mr = NHT_MON_MR[S->form]; if (mr & 32) b |= 1; if (mr & 1) b |= 2; if (mr & 2) b |= 4; if (mr & 4) b |= 8; if (mr & 16) b |= 16;
         if (NHT_MON_M1[S->form] & 0x01000000u) b |= 64;
         const char* mn = NHT_MON_NAME[S->form]; if (!strcmp(mn, "floating eye") || !strcmp(mn, "mind flayer") || !strcmp(mn, "master mind flayer")) b |= 32; }
-    return b;
+    return b & ~S->intr_lost;
 }
 
 // ---------------------------------------------------------------- shops
@@ -1160,6 +1177,19 @@ static int dr_hero_moved(DState* S, DObs* o) { // the hero's cell changed since 
     if (!o->blstats) return 0; DLevel* L = dr_level(S, o); int col = (int)o->blstats[0], row = (int)o->blstats[1];
     return !S->d_valid || S->d_r != row || S->d_c != col || S->d_lv_dn != L->dnum || S->d_lv_dl != L->dlevel;
 }
+// polymorph state from the status line: "HD:" replaces "Xp:" while Upolyd (botl.c); exact and immediate, unlike the messages
+// ("You turn into"/"You return to" fall behind --More-- or a getlin prompt). -1 = neither shown (fall back to blstats[17] > 0).
+static int dr_poly_status(const DState* S, const DObs* o) {
+    if (o->tty_chars) { char r[DR_TTY_CO + 1]; for (int row = 23; row >= 22; row--) { dr_row(o, row, r); if (strstr(r, "HD:")) return 1; if (strstr(r, "Xp:")) return 0; } }
+    { long hd = o->blstats[17]; if (hd > 0) return 1; if (S->form >= 0 && S->form_hd > 0) return 0; return -1; } // no status text (fork recordings): HD alone, ambiguous for level-0 forms
+}
+static void dr_apply_drop(DState* S, DLevel* L, int k, long T) { // "You drop X": dropz -> place_object heads the chain, then stackobj merges X into an existing stack of its type (which keeps its place lower down)
+    if (S->drop_turn != T || S->drop_top < 0) return;
+    int merged = -1; for (int pi = 0; pi < S->npile; pi++) if (S->pile[pi] == S->drop_top) merged = pi;
+    if (merged < 0) { S->top = S->drop_top; L->objm[k] = (short)S->top; if (S->npile < 8) { memmove(S->pile + 1, S->pile, (size_t)S->npile * sizeof S->pile[0]); memmove(S->pile_qty + 1, S->pile_qty, (size_t)S->npile * sizeof S->pile_qty[0]); S->npile++; } S->pile[0] = (short)S->top; S->pile_qty[0] = 1; }
+    else S->pile_qty[merged]++;
+    S->drop_top = -1;
+}
 static void dr_boundary(DState* S, DObs* o, void* ctx, dr_send_fn send) {
     DLevel* L = dr_level(S, o);
     int col = (int)o->blstats[0], row = (int)o->blstats[1]; int inb = row >= 0 && row < DR_ROWS && col >= 0 && col < DR_COLS; int k = inb ? row * DR_COLS + col : 0;
@@ -1208,12 +1238,15 @@ static void dr_boundary(DState* S, DObs* o, void* ctx, dr_send_fn send) {
             else { int nb = 0, corr = 1; for (int r = row - 1; r <= row + 1; r++) for (int c = col - 1; c <= col + 1; c++) { if (r < 0 || r >= DR_ROWS || c < 0 || c >= DR_COLS || (r == row && c == col)) continue; int v = L->terr[r * DR_COLS + c]; if (v < 0) continue; nb++; int vv = v - CMAP_OFF; if (vv != 21 && vv != 22) corr = 0; } t = (nb && corr) ? 21 : 19; }
         }
         if (t == 21 && inb && L->litmark[k]) t = 22; // lit corridor under the hero (see dr_mark_lit)
-        top = -1; S->npile = 0;
+        if (res.partial && !moved && S->d_valid && S->npile > 0 && res.nobj < S->npile) { dr_apply_drop(S, L, k, o->blstats[20]); top = S->top; food = 0; cont = 0; for (int pi = 0; pi < S->npile; pi++) { food |= dr_is_food(S->pile[pi]); cont |= dr_is_cont(S->pile[pi]); } }
+        else { top = -1; S->npile = 0;
         for (int i = 0; i < res.nobj; i++) { int f, c; int gl = dr_resolve_item(S, res.objs[i], L->objm[k], &f, &c); if (i == 0) top = gl; food |= f; cont |= c; if (S->npile < 8) { S->pile_qty[S->npile] = res.qty[i]; S->pile[S->npile++] = (short)gl; } }
         if (getenv("NH_STOCK_DROPTOP") && S->drop_turn == o->blstats[20] && S->drop_top >= 0 && !moved) { /* refuted: a dropped stack merges into an existing floor stack lower in the chain (3 episodes diverged earlier); off by default */ top = S->drop_top; food = dr_is_food(top); cont = dr_is_cont(top); if (S->npile < 8) { memmove(S->pile + 1, S->pile, (size_t)S->npile * sizeof S->pile[0]); S->npile++; } S->pile[0] = (short)top; }
+        }
         L->objm[k] = (short)top;
         terrain = CMAP_OFF + t; engr = res.engr; price = (int)res.price; L->engr[k] = (unsigned char)res.engr;
     } else if (!moved && S->d_valid && inb) {
+        dr_apply_drop(S, L, k, o->blstats[20]);
         if (S->land_turn == o->blstats[20] && S->land_top >= 0) { S->top = S->land_top; L->objm[k] = (short)S->top; if (S->npile < 8) { memmove(S->pile + 1, S->pile, (size_t)S->npile * sizeof S->pile[0]); memmove(S->pile_qty + 1, S->pile_qty, (size_t)S->npile * sizeof S->pile_qty[0]); S->npile++; } S->pile[0] = (short)S->top; S->pile_qty[0] = 1; }
         int ate = S->meal_flag || strstr(m0, "You finish eating") || strstr(m0, "You feel that eating") || strstr(m0, "Rotten food");
         int took = S->took_flag || (strstr(m0, " - ") != NULL && !strstr(m0, "What do you want")); // pickup letter assignment
@@ -1252,6 +1285,11 @@ static void dr_boundary(DState* S, DObs* o, void* ctx, dr_send_fn send) {
     S->terrain = terrain; S->top = top; S->food = food; S->cont = cont; S->engr_bits = engr; S->inshop = inshop; S->price = price;
     S->meal_flag = 0; S->took_flag = 0;
     S->d_lv_dn = L->dnum; S->d_lv_dl = L->dlevel; S->d_r = row; S->d_c = col; S->d_valid = inb;
+    { int ps = dr_poly_status(S, o); long hd = o->blstats[17];
+      if (ps == 0 && S->form >= 0) { S->form = -1; S->form_dirty = 0; }              // reverted to the natural form: no probe needed
+      else if (ps == 1 && (S->form < 0 || hd != S->form_hd)) S->form_dirty = 1;      // entered a form, or the form changed (different HD)
+      S->form_hd = hd;
+      if (S->form_dirty && ps != 0) dr_probe_self(S, o, ctx, send); }                 // before inventory/capacity/intrinsics use the form
     DItem items[DR_INV]; int n = dr_inv_items(o, items);
     for (int i = 0; i < n; i++) dr_learn_named(S, items[i].g, items[i].t, items[i].oc);
     if (o->sdesc) for (int k = 0; k < DR_CELLS; k++) { int g = o->glyphs[k]; if (g >= OBJ_OFF && g < CMAP_OFF) dr_learn_named(S, g, (const char*)o->sdesc + (size_t)k * 80, -1); }
@@ -1267,6 +1305,7 @@ static void dr_boundary(DState* S, DObs* o, void* ctx, dr_send_fn send) {
         if (o->inv_state) memcpy(o->inv_state + i * 8, st, 8);
         if (o->inv_true) o->inv_true[i] = tg;
     }
+    S->prev_dex = (int)o->blstats[4];
     dr_probe_peaceful(S, o, ctx, send);
     if (S->form >= 0 && !S->form_dirty && o->blstats[20] - S->form_t >= 40) S->form_dirty = 1; // periodic re-check while polymorphed
     if (S->form_dirty) dr_probe_self(S, o, ctx, send);

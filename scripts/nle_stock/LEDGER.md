@@ -584,3 +584,24 @@ WTCHECK over the run: the true-type weight differed from the reconstructed one o
 **Leaky 4B `nlestock4b_s602` (4.0B) on the FIXED engine f7d8749ab (honest weight), rung 1 seed 7, 10,000 kept: 20,141 (se 278) / 10,396** — the
 prediction for its stock cert (`stock_leaky4b_s602_s21`, local, ≈ 21:00). Its own-engine fork cert is queued on the drone (overnight).
 Fixed lanes: `fixwt2b_s703` (gpu 5, 18:43) and `fixwt2b_s704` (gpu 7, 18:56) started; `fixwt1b_s701/702` queued for gpus 1/2 (leaky s604/s603 finishing).
+
+## 2026-09-12 19:15 — derive round 2: every observation channel ≤ 0.3 %, weight/identity/cast/discoveries exact
+Fixed-engine corpus 4 (359 games, 1.45M boundaries, recorded and replayed with the same derive): weight 0, identity 0, cast_blocked 0, discovered
+set 0, inv_state 0.001 %, capacity 0.016 %, spells 0.026 % (all at T=1 before the first menu probe), hero_tile 0.106 %, intrinsics 0.100 %,
+peaceful_at 0.295 %, food_underfoot 60 of 8,991. Fixes, each from a divergence trace (`--watch`, `--msgs`, `--log` + PILELOG on the replayer):
+- weight: inventory text priced first (names are never hallucinated; glyphs are), class-aware lookup (food "tin"/"orange" ≠ wand/potion appearances),
+  corpse monster from the text; the hold is gone → 0 mismatches.
+- polymorph: state from the status line ("HD:" replaces "Xp:" while Upolyd), probed before the inventory/capacity/intrinsics pass; HD > 0 → form,
+  HD back to 0 after > 0 → reverted (fork recordings carry no status text). Capacity 0.228 % → 0.016 %.
+- capacity: a new wound REPLACES the side mask (set_wounded_legs), "Ouch!  That hurts!" wounds 1 in 3 — told by the Dex −1 tell on the status line;
+  land mine only on "KAABLAMM"; weight_cap's polymorph rule exact (S_NYMPH → max, cwt 0 → msize/2, else cwt/1450 unless strong ≤ human) with new
+  NHT_MON_M2 / NHT_MON_SIZE tables.
+- intrinsics: loss messages (attrcurse, u_slow_down), "You dream that …" unwrapped, "slowing down a bit" ends only the temporary speed. 0.77 % → 0.10 %;
+  the rest is the blessed potion of see invisible ("This tastes like fruit juice": inherent) and the invisible-hero self-look (needs ^X, deferred).
+- peaceful: the hero's hit/miss message angers the named monster when it is the unique one visible or adjacent in melee (the first version angered
+  every same-named peaceful in sight: Mines regression, fixed).
+- hero tile: "You drop X" heads the chain unless a stack of X's type is already in the pile (stackobj merges into it, lower down); a 17-object pile
+  window is shown by the tty as a header page with no items and then one item per page — the observation keeps only the last, so a header page
+  without items now means "keep the pile memory". The 3,046-mismatch pile game → 0.
+Bench tooling: `--msgs` (every message and probe key with T), `--log` (derive's own PILELOG/MSGLOG), per-channel `--watch` state, weight examples
+carry the inventory. Recording needs the GPU to itself: beside two 512-agent evals the recorder dies on cudaMalloc (rc 139), not a derive bug.
