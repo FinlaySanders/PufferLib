@@ -43,7 +43,9 @@ Stock NLE package: box `/workspace/nle-stock` and local `/puffertank/nle-stock` 
 | **`claim2b_s503`** | 2B (1,999,896,576) | pkg | NLE opts | `0000001999896576.bin` `a87dd4f2445c` | 16,579 |
 | **`claim2b_s502`** | 2B (1,999,896,576) | pkg | NLE opts | `0000001999896576.bin` `dd9cc983bbac` | 16,618 |
 | **`claim2b_s501`** | 2B (1,999,896,576) | pkg | NLE opts | `0000001999896576.bin` `ed679c6…` | 15,977 |
-| **`nlestock4b_s601/602/603/604`** | **4B, TRAINING** (s601/s602 started 23:00 on gpu5/gpu3; s603/s604 start when gpu2/gpu1 free) | **nle-stock `423ced55`** (`/workspace/pufferlib`, engine `dfbdc84c8`, lib `9886d5df82f0`, puffer `2bd99678fe40`) | NLE opts, extended `cant_hold` (zero-time mask OFF) | — | ETA ~14:30 2026-09-12 |
+| **`nlestock4b_s601/602/603/604`** | **4B, TRAINING** (started 23:00–23:09 2026-09-11) | **nle-stock `423ced55`** (`/workspace/pufferlib`, engine `dfbdc84c8`, lib `9886d5df82f0`, puffer `2bd99678fe40`) | NLE opts, **sticky** extended `cant_hold` (the version later found to cost 12 % on stock certs; fork-side cost bounded ≤ 2–3 % by rung 1), zero-time mask OFF | — | ETA ~18:00 2026-09-12 |
+| `nlestock4b_s605/606` | stopped at 393M (09:12) | same as above | | — | replaced below |
+| **`nlestock4b_nomask_s607/608`** | **4B, TRAINING** (started 09:12 2026-09-12 on gpu4/gpu6) | nle-stock `a51b1953` (puffer `6b833e79cb08`) | NLE opts, **`NH_NO_CANT_HOLD=1` — no form mask at all**; otherwise identical | — | ETA ~01:00 2026-09-13; 4-vs-2 = training-side cost of the form mask |
 | `claim2b_s504` | **segfaulted at 1.57B** | pkg | NLE opts | `0000001572864000.bin` | 13,815 |
 
 ## Certs — by interface
