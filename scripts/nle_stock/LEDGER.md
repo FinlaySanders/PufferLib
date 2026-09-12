@@ -454,3 +454,8 @@ the Monk and the casters → weapon/inventory verbs on stock. Isolation arms que
 ~1,500 steps each) shows every observed channel ≤ 0.5 %; a 25-minute corpus is recording for late-game rates.
 **2B seed 21, fixed derive + guard, final (14:30): 14,357 (se 232) / 8,398, 0 aborted** vs old derive, mask off, no guard 14,289 / 8,160 (11 % aborts):
 +0.5 % / +2.9 %. Same-seed fork (today's tree) reads ~16.8K / 9.7K at 4,131 kept → stock gap ≈ −14 % for the 2B.
+**Same-seed fork reference for the 2B (today's tree, seed 21, 6,060 kept): 16,520 (se 266) / 9,839**, would-be aborts 66 (0.7 %).
+Stock fixed derive, same seed: 14,357 / 8,398 → **−13.1 % / −14.6 %**. Per-role (both seed 21): Valkyrie −27 %, Barbarian −26 %,
+Caveman −24 %, Rogue −19 %, Ranger −13 %, Archeologist −12 %, Knight −7 %, Wizard −5 %, Tourist −3 %, Healer 0, Samurai +3 %,
+Priest +4 %, Monk +4 %. Losing roles die 20–25 % earlier in turns at the same depth. Stoning ends 3.5 % of stock games vs 1.3 %
+on the fork (poison/starvation unchanged). Isolation arms: guard off (running), form mask off (queued), fork mask off (drone).
