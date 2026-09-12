@@ -172,6 +172,32 @@ The first local ablation attempt (23:00–23:07) ran a harness linked against th
 (`/tmp/ablate_WRONGLIB_2307`). The stock binaries link no fork library (they dlopen stock), so no cert was affected.
 Build scripts now fail if the linked `libnethack.so` is not this tree's.
 
+## CERT REGRESSION FOUND — 2026-09-12 09:05: the sticky `cant_hold` cost ~12% mean / ~19% median on stock
+
+Same tree, same weights, seed 21, strict challenge configuration, 6,000 episodes, burn-in adjusted:
+
+| arm | `cant_hold` | mean | median | aborted |
+|---|---|---|---|---|
+| A | sticky (as shipped 2026-09-11) | 10,503 | 6,128 | 3.7% |
+| **X1** | **off** (`NH_NO_CANT_HOLD=1`) | **11,956** | **7,540** | 11.1% |
+| X4 | expires after 100 turns (`a51b1953`, now default) | running, tracking X1 | | |
+| old tree `PufferLib_pkg`, no `cant_hold` (box, 10,000 eps) | — | 11,376 | 7,138 | 11.6% |
+
+Mechanism: the flag is set from form-refusal messages (all engine sites are form tests, so sets are sound) but
+cleared only by "You return to…" / "You turn into…". On the fork that message is always seen; on stock a probe or a
+`--More--` can eat it, and a hero back in human form keeps WIELD/THROW/WEAR/ENGRAVE masked for the rest of the game.
+Rung 1 was equal across trees (13,337 vs 13,350) and the fork loop census with the shipped masks is 0.42%, so the
+**4B lanes' training interface is unaffected**; the damage was to the stock cert only. Everything else was ruled out
+byte-for-byte first: derive/backend/tables identical between builds, build flags identical, switch sets and engine
+banners identical, upstream `ocean/nethack` drift is demo rendering plus an obs-buffer refactor.
+
+Also closed: **E** — zero-time mask v2 (masks on the second identical zero-time step): **1 abort in 6,062**, score
+neutral vs A (P=0.499; post-burn-in 11,143 / 6,491). Candidate for default once re-measured on top of the expiring
+`cant_hold` (E2). All one-tree rung-3 numbers recorded above (10,229 / 10,310) carry the sticky-flag penalty.
+
+Lesson (now in memory): a belief learned from a message channel that can drop messages must expire or be
+re-verified; and a cert canary (fixed-seed strict rung 3 against the previous build) gates env/derive changes.
+
 ## Reconstruction ablation — morning of 2026-09-12 — **INVALID, superseded** (kept for the record)
 
 **Retracted 07:20.** These arms ran the harness **without `NLE_GETPOS_NORMAL=1`**, which the fork needs so the farlook
