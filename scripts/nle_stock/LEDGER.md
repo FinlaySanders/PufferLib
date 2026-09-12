@@ -514,5 +514,5 @@ weight hold under hallucination) started 16:01** beside the guard-off arm; `clai
 guard-off pid. Drone stock 52336c7a6585 (3b44bca3), local libnhagent bf00d5903920. 4B lanes at 16:00: s601/602 3.4B, s603/604 3.3B (SPS 56–60K,
 land ≈ 18:15–18:50), nomask s607/608 1.3–1.4B (≈ 02:45 Sunday). Rolling panel scores 15–23K (noise ±1K, not results).
 **Guard-off 2B final (`claim2b_noguard_s21`, 6,057 eps, 2,057 kept): 14,383 (se 397) / 8,567, 69 aborts (1.1 %)** vs guard-on over the same
-first-6,057 window (2,057 kept): 14,959 / 8,938 → **−3.9 % / −4.2 %**: the zero-time guard is worth about +4 % on stock for the 2B and is not the
+first-6,057 window (2,057 kept): 15,103 / 9,075 → **−4.8 % / −5.6 %**: the zero-time guard is worth about +5 % on stock for the 2B and is not the
 fighters' loss. `claim2b_nomask_s21` (no form mask, derive v3) started 16:14 in its slot.
