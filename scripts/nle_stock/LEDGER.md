@@ -413,3 +413,12 @@ as a paired read on the harness itself.
 unchanged; `analyze.py` and the abort counters read columns 1 and 4). Local stock binary rebuilt; the 2B claim cert on the
 current tree (`claim2b_s503_r3_local`, strict seed 21, 10,000 eps, default masks, fixed derive) is queued behind the canary
 and will be the first cert with the census columns.
+
+## 2026-09-12 12:37 — canary of the derive fixes (1B `pkgnle_s406`, strict seed 21, 6,008 eps, default masks, tree `0cf32001`+)
+
+**12,785 (se 328) / 8,522, 0 aborted.** Same seed, masks and clock as E2 (old derive): 11,977 (se 313) / 7,354 → **+6.7 % mean,
++15.9 % median** from the reconstruction fixes alone. Against the fork reference (14K cert, seeds 7/11: 13,350 / 8,706):
+**−4.2 % mean, −2.1 % median** — inside 5 % on both for the first time. Kept-window shape: p10 880, p25 2,886, p75 17,148,
+p90 28,610, max 162,710. Ends: died 85.6 %, poisoned 10.9 %, stoned 2.0 %, starved 1.3 %.
+Caveats: one seed, 2,008 kept games (se 2.6 %); the fork reference is another seed and protocol. The same-seed, same-protocol
+fork arm (`rung1_s21`) runs next; the 2B cert on the current tree (`claim2b_s503_r3_local`, 10,000 eps) started 12:38.

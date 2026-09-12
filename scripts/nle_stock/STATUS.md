@@ -1,4 +1,4 @@
-# NetHack on stock NLE — status, 2026-09-12 10:50
+# NetHack on stock NLE — status, 2026-09-12 12:45
 
 Companion to `LEDGER.md` (every number with its arm name, tree and interface) and `ENGINE.txt` (engine pin).
 This is the narrative: the goal, what is established, what is running, what comes next.
@@ -92,8 +92,12 @@ intrinsics 0.25 %; everything else under 0.02 %. Three fixed the same morning (c
 - **intrinsics → 0.** The polymorph-form parser never matched (the form is in parentheses in the farlook line), so form
   resistances were never applied. Fixed, plus a re-probe after prayer, which is where the return-to-form line gets lost.
 
-Still open: weight (an unidentified item's true weight is not public), path (run corners), peaceful transitions, hero tile.
-The live effect of the fixes is the strict canary queued on the second box.
+Still open: weight (an unidentified item's true weight is not public), peaceful transitions, hero tile. (`path` turned out
+to feed only the exploration reward, never the observation; irrelevant to eval.)
+
+**The live effect (canary, 12:37): 12,785 / 8,522 with 0 aborts** against E2's 11,977 / 7,354 on the same seed, masks and
+clock — +6.7 % mean, +15.9 % median from the reconstruction fixes alone, and −4.2 % / −2.1 % against the fork reference:
+inside 5 % on both for the first time (one seed; the same-seed fork arm and the 2B cert follow this afternoon).
 
 ### 3.4 The cert regression: found, explained, fixed
 
