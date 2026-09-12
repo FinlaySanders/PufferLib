@@ -12,7 +12,7 @@
 S=${S:-/puffertank/pufferlib}; OUT=${OUT:-/tmp/ablate}; EPS=${EPS:-3000}; SEED=${SEED:-21}; W=${W:-resources/nethack/pkgnle_s406.bin}
 GPUS=${GPUS:-"0 0"}   # one worker per entry; repeated entries share a GPU and gate on free memory instead of idleness
 MINFREE=${MINFREE:-12500}   # MiB free a shared GPU must have before an arm starts (stock eval 11.9 GB; a harness arm takes 7.5 GB -> 8000)
-BASE_ARMS=${BASE_ARMS:-"logonly real0 derived"}   # reference arms; set empty to run only keep_<channel> arms (e.g. on a second box)
+BASE_ARMS=${BASE_ARMS-"logonly real0 derived"}   # reference arms; set empty to run only keep_<channel> arms (e.g. on a second box)
 CHANNELS=${CHANNELS:-"terrain food_underfoot container_at shop_price inside_shop peaceful_at spells lnc_bits weight capacity intrinsics cast_blocked path engraving_bits hero_tile inv_state inv_true_glyph identity"}
 mkdir -p $OUT; cd $S; ulimit -n 65536
 Q=$OUT/queue.txt; : > $Q
