@@ -468,7 +468,8 @@ static void wt_check(Inst* in) {
         if (p < 3800) p += snprintf(items + p, sizeof items - p, " %c:%d/%s x%ld%s=%ld", let, otyp, otyp >= 0 && otyp < NUM_OBJECTS ? NHT_OBJ_NAME[otyp] : "?", q, eaten ? "(eaten)" : "", base);
     }
     int cap = wcap(); long cond = in->d.blstats[25];
-    __sync_fetch_and_add(&g_wc_n, 1); if (bad) { __sync_fetch_and_add(&g_wc_bad, 1); return; }
+    if (__sync_fetch_and_add(&g_wc_n, 1) % 200000 == 199999) wt_check_report();
+    if (bad) { __sync_fetch_and_add(&g_wc_bad, 1); return; }
     if (cond & 0x200) __sync_fetch_and_add(&g_wc_h, 1);
     int mw = (int)w != in->S.wt, mc = cap != in->S.cap;
     if (mw) __sync_fetch_and_add((cond & 0x200) ? &g_wc_wth : &g_wc_wt, 1); if (mc) __sync_fetch_and_add(&g_wc_cap, 1);

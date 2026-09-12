@@ -977,6 +977,7 @@ static void dr_identity_from_text(DState* S, const DObs* o) {
     // moon/Friday-13th line can replace it in the message buffer: read the top three screen rows, not just row 0 (2026-09-12: 1 % of games)
     for (int r = 0; r < 3 && n < sizeof buf - DR_TTY_CO - 2; r++) { char row[DR_TTY_CO + 1]; dr_row(o, r, row); n += (size_t)snprintf(buf + n, sizeof buf - n, "%s ", row); }
     dr_replace_all(buf, "--More--", " ");
+    for (char* c = buf; *c; c++) if (*c == '\n' || *c == '\r') *c = ' '; // tty update_topl splits a message of >= 80 columns at a space it overwrites with '\n'
     if (getenv("NH_DERIVE_IDLOG")) fprintf(stderr, "IDTEXT: %s\n", buf);
     const char* p = strstr(buf, "You are a"); if (!p) return; p += 9; if (*p == 'n') p++;
     char w[4][32]; int k = 0;
@@ -987,8 +988,8 @@ static void dr_identity_from_text(DState* S, const DObs* o) {
     const char* al = w[0]; const char* ge = NULL; const char* ra; const char* ro;
     int cut = 0; if (k == 3) for (int i = 0; i < 5; i++) if (!strcmp(w[2], RACES[i])) cut = 1;
     // the welcome line is 80 columns for exactly two identities ("You are a neutral female gnomish Archeologist.", "... lawful
-    // female dwarvish Archeologist."): the tty splits it at a --More-- and the tail is dismissed before any boundary, so the
-    // role never reaches the screen or the message buffer. Three words ending in a race adjective is that cut (2026-09-12: 1 % of games)
+    // female dwarvish Archeologist."): the tty splits it with a '\n' (handled above) and shows the tail behind a --More--; if only
+    // the first row survives, three words ending in a race adjective is that cut (2026-09-12: 1 % of games were male human Archeologists)
     if (cut) { ge = w[1]; ra = w[2]; ro = "Archeologist"; }
     else if (k == 4) { ge = w[1]; ra = w[2]; ro = w[3]; } else { ra = w[1]; ro = w[2]; }
     S->gender = (ge && !strcmp(ge, "female")) ? 1 : 0;
