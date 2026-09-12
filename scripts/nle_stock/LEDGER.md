@@ -439,3 +439,16 @@ Bench hygiene: the hero-tile check now mirrors the stock export rule (raw hero g
 channel drops 0.224 % → 0.084 %, the rest is stale pile-order memory. Identity: 1/176 corpus episodes lost the welcome line to
 the "Friday the 13th" warning (fork fake calendar); today's stock cert shows all 13 roles evenly, so the new-moon line is harmless;
 a Ctrl-X (in the challenge action set) fallback is the fix, deferred.
+
+## 2026-09-12 14:15 — the 2B does not close like the 1B; the loss is in the weapon roles
+Old-derive 2B finals (drone, mask off, no guard, 6,000 kept): seed 21 **14,289 (se 233) / 8,160**, seed 32 **13,816 (se 222) / 7,886**,
+aborts 11 %. Fixed-derive seed 21 (local, running) tracks the old derive's window within +0.3 % mean / +2.6 % median, 0 aborts.
+**Fork reference is now ambiguous**: today's tree, seed 7, 10K kept = **17,159 (se 224) / 10,112** vs the claim tree's cert of the
+same weights and seed 16,027 / 9,432 (3.6 σ apart; today's tree carries the expiring form mask, the claim tree had none).
+A same-tree same-seed fork arm (seed 21) is running on the drone; the local stock certs are compared to that.
+**Per-role medians, fork (today's tree, s7) vs stock (fixed derive, s21, 4,702 kept):** Valkyrie 18,279 → 12,096 (−34 %),
+Barbarian 22,500 → 16,839 (−25 %), Caveman −22 %, Rogue −20 %, Ranger −18 %, Archeologist −15 %, Priest −13 %, Samurai −7 %,
+Tourist −6 %, Knight −4 %, Healer −4 %, Wizard 0 %, **Monk +7 %**. The loss lives in the weapon-using fighters and is absent for
+the Monk and the casters → weapon/inventory verbs on stock. Isolation arms queued locally (seed 21, 6,000, fixed derive):
+`claim2b_nomask_s21` (form mask off) and `claim2b_noguard_s21` (zero-time guard off). 2B replay corpora: the short one (185 eps,
+~1,500 steps each) shows every observed channel ≤ 0.5 %; a 25-minute corpus is recording for late-game rates.
