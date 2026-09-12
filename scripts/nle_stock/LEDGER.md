@@ -397,3 +397,19 @@ farlook and the hook), hero_tile 0.1 %.
 `keep_path` dropped from the ablation; `keep_cast_blocked` dropped too (0 mismatches in 107K queries: identical to `derived`).
 Observation channels the policy reads and their residual error after `0cf32001`: peaceful_at 0.66 %, hero_tile 0.22 %,
 capacity 0.19 %, intrinsics 0.08 %, weight 1.5 % (hidden information), everything else ≤ 0.02 %.
+
+**Harness `derived` arm (local, old derive, mode 1, seed 21, 3,003 eps): raw mean 5,950 (se 135) vs log-only 11,377 (se 234) = −48 %**,
+worst zero-time run 99,996 steps; live mismatch rates in derived mode: capacity 13.0 %, weight 3.2 %, intrinsics 3.0 %,
+path 1.8 %, food 1.1 % (errors compound once the policy acts on them). The real stock engine loses 11 % at rung 2 and
+~11–15 % at rung 3 with the same derive, so **the fork harness in derived mode is not a faithful proxy for stock
+reconstruction** (the derive was written for stock's screen semantics: hero glyph on the hero cell, appearance glyphs;
+the fork exports the under-tile and eagerly identity-mapped glyphs). Consequences: `keep_<channel>` arms measure
+harness artefacts, not stock costs — `keep_hero_tile` dropped, no more harness score arms; the bench (mode 0 replay)
+stays valid for *mismatch rates* on fork trajectories; the stock cost is measured only on the stock engine
+(rung 2/3 vs rung 1, and the strict canary). The drone `derived_fix` arm (fixed derive, harness) is left running only
+as a paired read on the harness itself.
+
+**`.ep` log extended (11:40):** columns 5–11 = role race gender max_depth last_turn killer_mnum+1 killer_mlevel (first four
+unchanged; `analyze.py` and the abort counters read columns 1 and 4). Local stock binary rebuilt; the 2B claim cert on the
+current tree (`claim2b_s503_r3_local`, strict seed 21, 10,000 eps, default masks, fixed derive) is queued behind the canary
+and will be the first cert with the census columns.

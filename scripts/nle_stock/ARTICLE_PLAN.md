@@ -38,7 +38,11 @@ episode cap — the cap matches the challenge's no-progress rule only loosely.
 - tonight — 4B lanes `s601–604` (18:30) and `nomask_s607/608` (~03:00)
 - Sunday 06:00–10:00 — rung 1 certs of all six 4B lanes (fork, 20 min each, 6 GPUs)
 - Sunday 10:00–16:00 — rung 3 (stock) for the two best 4B lanes, seeds 21/32; rung 4 Python for the best lane
-- Sunday — behaviour census on the final weights (per-role medians, death causes, verb economy, depth, farming share)
+- Sunday — behaviour census on the final weights (per-role medians, death causes, verb economy, depth, farming share);
+  the `.ep` cert log now carries role / race / gender / max depth / last turn / killer per episode (from 11:40 09-12), so
+  every cert from here on doubles as a behaviour census
+- **Do not plan on harness `keep_<channel>` score arms**: the fork harness in derived mode loses 48 % where the stock engine
+  loses 11 % (it was written for stock screen semantics) — stock costs are measured on the stock engine only
 
 ## 1. Opening: the result (≈ 1 screen)
 

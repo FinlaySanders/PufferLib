@@ -772,7 +772,7 @@ static void nethack_add_log(Nethack* env, int how) { // how: nle how_done, -1 = 
     env->log.perf += (float)env->stats.max_depth / 50.0f;
     env->log.score += (float)env->prev_score;
     { static FILE* eplog; static int eplog_init; if (!eplog_init) { eplog_init = 1; const char* v = getenv("NH_EPLOG"); if (v) eplog = fopen(v, "a"); } // NH_EPLOG=<file>: one line per finished episode in completion order (score, how, game turn) for burn-in-adjusted re-certs
-      if (eplog) { fprintf(eplog, "%ld %d %ld %d\n", (long)env->prev_score, how, (long)env->blstats[NLE_BL_TIME], env->noprog_max); fflush(eplog); } } // 4th column: worst zero-time run in policy steps
+      if (eplog) { fprintf(eplog, "%ld %d %ld %d %d %d %d %d %ld %d %d\n", (long)env->prev_score, how, (long)env->blstats[NLE_BL_TIME], env->noprog_max, env->role_idx, env->race_idx, env->gend_idx, env->stats.max_depth, (long)env->prev_time, env->obs.internal ? env->obs.internal[9] : 0, env->obs.internal ? env->obs.internal[10] : 0); fflush(eplog); } } // columns: score how time(0 at death) worst_zero_time_run role race gender max_depth last_turn killer_mnum+1 killer_mlevel (the first four are stable; analyzers read 1 and 4)
     env->log.valid_moves += (float)env->stats.valid_moves;
     env->log.illegal_actions += (float)env->stats.illegal_actions;
     env->log.new_tiles += (float)env->stats.new_tiles;
