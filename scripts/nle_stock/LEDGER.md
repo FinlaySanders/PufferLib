@@ -549,3 +549,13 @@ the gate is unchanged. ENGINE.txt pin updated. Stock `NH_STOCK_WTCHECK/WTREAL` f
 (0 now — the harness pair was stopped, superseded by `stock_wtreal_s21`; 1/2/3/5 as the masked 4B lanes finish 18:15–18:50; 7 after wtreal ≈ 19:40).
 The four masked leaky 4B lanes finish and stay as the baseline; nomask s607/608 keep GPUs 4/6 (user's call). Validation running locally:
 fixed-engine corpus → replay (expect weight ≈ 0 except hallucination) and a rung-1 smoke eval.
+**Fixed-engine bench (local, f7d8749ab, 2B policy, 354 games / 1.31M boundaries recorded with the recorder built on the new engine):
+weight mismatch 79 / 1,306,697 = 0.006 % (late 38 / 685,889 = 0.006 %), was 2.9 % / 4.9 %; identity 0 / 354; capacity 0.23 %; intrinsics 0.42 %.**
+The residual weight is the hallucination hold. The whole observation of a policy trained on this engine is reconstructable from the challenge
+interface to ≤ 0.4 % on every channel (path is reward-only).
+**Provenance of `fixwt4b_s705` (pid 980974) verified on the process:** exe `/workspace/pufferlib_fix/puffer` 33bb145ac317, mapped
+`/workspace/pufferlib_fix/vendor/fast-nle/build/libnethack.so` acd4252e2c4e (built 17:33:09, exports `nle_shuffled_glyph_c`, source at f7d8749ab with the
+new pricing and no dead hooks), NETHACKDIR = the fix tree's dat, NH_NLE_OPTS=1, no NH_NO_CANT_HOLD. pufferlib_fix = 8c479af7 (nle-stock head; the only
+dirty file is the tracked `puffer` binary). **Env difference to the leaky masked lanes (423ced55):** the form mask expires after 100 turns (a51b1953)
+instead of sticking — the shipping default every stock cert uses — plus inert switches (zero-time v2 is strict-only, NH_NO_CANT_HOLD unset) and
+census logging. So fixed-vs-leaky = weight fix + mask expiry, consistent with the eval configuration, not a pure weight ablation.
