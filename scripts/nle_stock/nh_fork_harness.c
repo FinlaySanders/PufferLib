@@ -10,6 +10,7 @@
 #include <string.h>
 #include "nletypes.h"
 #include "nh_derive.h"
+#include "nh_derive_rec.h"
 
 extern nle_ctx_t* __real_nle_start(nle_obs*, FILE*, nle_settings*);
 extern nle_ctx_t* __real_nle_step(nle_ctx_t*, nle_obs*);
@@ -40,12 +41,32 @@ typedef struct {
     short mapprev[21 * 79]; char invprev[55 * 64]; char stprev[55 * 24]; void* rng;
     int pend, pend_key; // log-only: a stepped key whose boundary hash is still to be taken inside the env's own refresh
     long klog_n; long klog_marked; // keys written to the key log this episode; last key marked as an env boundary (R line)
+    int idx; int ep; DRecW rec; // NH_DERIVE_REC=<dir>: derive-replay recording (mode 0, env slots < NH_DERIVE_REC_ENVS)
 } HEnv;
 static HEnv* g_envs[HMAX]; static int g_nenv; static int g_mode;
 static int g_lock;
 static void lock(void) { while (__sync_lock_test_and_set(&g_lock, 1)) {} }
 static void unlock(void) { __sync_lock_release(&g_lock); }
 static HEnv* find_env(nle_ctx_t* c) { for (int i = 0; i < g_nenv; i++) if (g_envs[i] && g_envs[i]->ctx == c) return g_envs[i]; return NULL; }
+// derive-replay recording (nh_derive_rec.h): every engine interaction the derive sees plus the fork truth at every hook
+static const char* g_rec_dir; static int g_rec_envs;
+static void rec_obs(HEnv* e, int type, int key, int done) {
+    if (!e->rec.on) return; DRecObs c; memset(&c, 0, sizeof c); const DObs* d = &e->d; const nle_obs* o = e->obs;
+    if (d->glyphs) memcpy(c.glyphs, d->glyphs, sizeof c.glyphs); if (d->blstats) memcpy(c.blstats, d->blstats, sizeof c.blstats);
+    if (d->message) memcpy(c.message, d->message, sizeof c.message); if (d->misc) memcpy(c.misc, d->misc, sizeof c.misc);
+    if (d->tty_chars) memcpy(c.tty_chars, d->tty_chars, sizeof c.tty_chars); if (d->tty_colors) memcpy(c.tty_colors, d->tty_colors, sizeof c.tty_colors);
+    if (d->tty_cursor) memcpy(c.tty_cursor, d->tty_cursor, sizeof c.tty_cursor);
+    if (d->inv_glyphs) memcpy(c.inv_glyphs, d->inv_glyphs, sizeof c.inv_glyphs); if (d->inv_strs) memcpy(c.inv_strs, d->inv_strs, sizeof c.inv_strs);
+    if (d->inv_letters) memcpy(c.inv_letters, d->inv_letters, sizeof c.inv_letters); if (d->inv_oclasses) memcpy(c.inv_oclasses, d->inv_oclasses, sizeof c.inv_oclasses);
+    if (o && o->internal) memcpy(c.internal, o->internal, sizeof(int) * (NLE_INTERNAL_SIZE < 16 ? NLE_INTERNAL_SIZE : 16));
+    if (o && o->inv_state) memcpy(c.inv_state, o->inv_state, sizeof c.inv_state); if (o && o->inv_true_glyphs) memcpy(c.inv_true, o->inv_true_glyphs, sizeof c.inv_true);
+    drec_hdr(&e->rec, type, key, done); drec_snapshot(&e->rec, &c);
+}
+static void rec_hook(HEnv* e, int chan, int nargs, const long* a, int nvals, const long* v) { if (e && e->rec.on) drec_hook(&e->rec, chan, nargs, a, nvals, v); }
+static void rec_start(HEnv* e, unsigned long seed) {
+    if (!g_rec_dir || e->idx >= g_rec_envs) return; if (e->rec.on) drec_close(&e->rec);
+    if (drec_open(&e->rec, g_rec_dir, seed, e->idx, e->ep++)) rec_obs(e, R_START, 0, 0);
+}
 
 // mismatch ledger
 enum { C_TERR, C_FOOD, C_CONT, C_PRICE, C_SHOP, C_PEACE, C_SPELLS, C_LNC, C_WT, C_CAP, C_INTR, C_CAST, C_PATH, C_ENGR, C_HERO, C_INVST, C_INVTRUE, C_IDENT, C_DISC, C_RANGE, C_MAPRANGE, C_N };
@@ -76,6 +97,7 @@ static int harness_send(void* ctx, int key) {
     e->obs->action = key;
     __real_nle_step(e->ctx, e->obs);
     if (!e->obs->done) __real_nle_obs_refresh(e->ctx, e->obs);
+    rec_obs(e, R_PROBE, key, e->obs->done);
     e->in_probe = 0;
     return e->obs->done;
 }
@@ -98,11 +120,11 @@ static void bind_public(HEnv* e, nle_obs* o) {
 
 nle_ctx_t* __wrap_nle_start(nle_obs* obs, FILE* f, nle_settings* s) {
     static int init;
-    if (!init) { init = 1; g_mode = getenv("NH_DERIVE_MODE") ? atoi(getenv("NH_DERIVE_MODE")) : 0; parse_real(getenv("NH_DERIVE_REAL")); const char* lp = getenv("NH_DERIVE_LOG"); if (lp) g_log = fopen(lp, "w"); atexit(report); }
+    if (!init) { init = 1; g_mode = getenv("NH_DERIVE_MODE") ? atoi(getenv("NH_DERIVE_MODE")) : 0; parse_real(getenv("NH_DERIVE_REAL")); if (g_mode == 0) { g_rec_dir = getenv("NH_DERIVE_REC"); g_rec_envs = getenv("NH_DERIVE_REC_ENVS") ? atoi(getenv("NH_DERIVE_REC_ENVS")) : 4; } const char* lp = getenv("NH_DERIVE_LOG"); if (lp) g_log = fopen(lp, "w"); atexit(report); }
     HEnv* e = NULL;
     lock();
     for (int i = 0; i < g_nenv; i++) if (g_envs[i] && !g_envs[i]->used) { e = g_envs[i]; break; }
-    if (!e && g_nenv < HMAX) { e = (HEnv*)calloc(1, sizeof(HEnv)); g_envs[g_nenv++] = e; }
+    if (!e && g_nenv < HMAX) { e = (HEnv*)calloc(1, sizeof(HEnv)); e->idx = g_nenv; g_envs[g_nenv++] = e; }
     if (e) e->rng = NULL; // stale after the previous episode's context was torn down; set again on the first step
     if (e) e->used = 1;
     unlock();
@@ -110,6 +132,7 @@ nle_ctx_t* __wrap_nle_start(nle_obs* obs, FILE* f, nle_settings* s) {
     bind_public(e, obs);
     e->ctx = __real_nle_start(obs, f, s); e->obs = obs;
     __real_nle_obs_refresh(e->ctx, obs);
+    rec_start(e, s->initial_seeds.seeds[0]);
     dr_reset(&e->S, &e->d, (unsigned)s->initial_seeds.seeds[0]);
     if (g_mode >= 0) { dr_identity_from_text(&e->S, &e->d); if (e->S.role || e->S.race || e->S.gender || e->S.align != 1) e->S.ident_seen = 1; } // the welcome text is on screen right after the engine start; boundaries retry if it was missed
     { char msg[256]; dr_msg(&e->d, msg, sizeof msg); dr_update_memory(&e->S, &e->d, msg); dr_track_path(&e->S, &e->d, -1); }
@@ -159,8 +182,10 @@ nle_ctx_t* __wrap_nle_step(nle_ctx_t* c, nle_obs* obs) {
     { unsigned long h0 = (e && e->rng) ? rng_hash(e->rng) : 0; if (!obs->done) __real_nle_obs_refresh(c, obs); if (e && e->rng && e->keylog && rng_hash(e->rng) != h0) fprintf(e->keylog, "H obs_refresh %ld\n", e->klog_n + 1); }
     if (e) {
         bind_public(e, obs);
+        rec_obs(e, R_KEY, key, obs->done);
         if (e->keylog) klog_key(e, obs, key, 1, obs->done);
         if (g_mode >= 0 && dr_after_key(&e->S, &e->d, e, harness_send, key, obs->done) && g_mode > 0) { obs->done = 1; obs->how_done = -1; }
+        if (obs->done) drec_close(&e->rec);
     }
     return c;
 }
@@ -174,6 +199,7 @@ nle_ctx_t* __wrap_nle_obs_refresh(nle_ctx_t* c, nle_obs* obs) {
     __real_nle_obs_refresh(c, obs);
     if (!e || obs->done || e->in_probe) return c;
     bind_public(e, obs);
+    rec_obs(e, R_BOUNDARY, 0, 0);
     if (e->petlog) { int hx = (int)obs->blstats[0], hy = (int)obs->blstats[1]; int best = -1, np = 0;
         for (int k = 0; k < 21 * 79; k++) { int g = obs->glyphs[k]; if (g >= NHT_GLYPH_PET_OFF && g < NHT_GLYPH_PET_OFF + NUMMONS) { np++; int d = abs(k % 79 - hx) > abs(k / 79 - hy) ? abs(k % 79 - hx) : abs(k / 79 - hy); if (best < 0 || d < best) best = d; } }
         e->steps++; fprintf(e->petlog, "%ld %ld %ld %d %d %d %d %ld %ld %ld %ld\n", e->steps, obs->blstats[20], obs->blstats[24], hx, hy, best, np, obs->blstats[10], obs->blstats[13], obs->blstats[18], obs->blstats[19]); }
@@ -217,32 +243,33 @@ nle_ctx_t* __wrap_nle_obs_refresh(nle_ctx_t* c, nle_obs* obs) {
     }
     return c;
 }
-void __wrap_nle_end(nle_ctx_t* c) { HEnv* e = find_env(c); __real_nle_end(c); if (e) { e->used = 0; e->ctx = NULL; e->rng = NULL; if (e->petlog) { fprintf(e->petlog, "# end how %d\n", e->obs ? e->obs->how_done : -9); fclose(e->petlog); e->petlog = NULL; } } }
+void __wrap_nle_end(nle_ctx_t* c) { HEnv* e = find_env(c); __real_nle_end(c); if (e) { drec_close(&e->rec); e->used = 0; e->ctx = NULL; e->rng = NULL; if (e->petlog) { fprintf(e->petlog, "# end how %d\n", e->obs ? e->obs->how_done : -9); fclose(e->petlog); e->petlog = NULL; } } }
 void __wrap_nle_identity(nle_ctx_t* c, int* r, int* rc, int* g, int* a) {
     HEnv* e = find_env(c); __real_nle_identity(c, r, rc, g, a);
-    if (e) { int bad = *r != e->S.role || *rc != e->S.race || *g != e->S.gender; note(C_IDENT, bad); if (bad) logmis(e, "identity", *r * 100 + *rc * 10 + *g, e->S.role * 100 + e->S.race * 10 + e->S.gender);
+    if (e) { { long v[4] = { *r, *rc, *g, *a }; rec_hook(e, C_IDENT, 0, NULL, 4, v); } int bad = *r != e->S.role || *rc != e->S.race || *g != e->S.gender; note(C_IDENT, bad); if (bad) logmis(e, "identity", *r * 100 + *rc * 10 + *g, e->S.role * 100 + e->S.race * 10 + e->S.gender);
         if (use_der(C_IDENT)) { *r = e->S.role; *rc = e->S.race; *g = e->S.gender; *a = e->S.align; } }
 }
 
 #define HOOK_INT(name, chan, field, cmp) \
-int __wrap_##name(nle_ctx_t* c) { HEnv* e = find_env(c); int r = __real_##name(c); if (!e) return r; int d = e->S.field; int bad = cmp; note(chan, bad); if (bad) logmis(e, #name, r, d); return use_der(chan) ? d : r; }
-int __wrap_nle_terrain_underfoot(nle_ctx_t* c) { HEnv* e = find_env(c); int r = __real_nle_terrain_underfoot(c); if (!e) return r; int d = e->S.terrain; int bad = r != d; note(C_TERR, bad);
+int __wrap_##name(nle_ctx_t* c) { HEnv* e = find_env(c); int r = __real_##name(c); if (!e) return r; { long v = r; rec_hook(e, chan, 0, NULL, 1, &v); } int d = e->S.field; int bad = cmp; note(chan, bad); if (bad) logmis(e, #name, r, d); return use_der(chan) ? d : r; }
+int __wrap_nle_terrain_underfoot(nle_ctx_t* c) { HEnv* e = find_env(c); int r = __real_nle_terrain_underfoot(c); if (!e) return r; { long v = r; rec_hook(e, C_TERR, 0, NULL, 1, &v); } int d = e->S.terrain; int bad = r != d; note(C_TERR, bad);
     if (bad) { logmis(e, "nle_terrain_underfoot", r, d);
         if (g_log && e->obs) { const nle_obs* o = e->obs; int hr = (int)o->blstats[1], hc = (int)o->blstats[0]; int k = hr * 79 + hc; DLevel* L = dr_level(&e->S, &e->d);
             lock(); fprintf(g_log, "TERRMIS T=%ld hero %d,%d real %d derived %d mem %d heroglyph %d probe_turn %ld cond %lx misc %d%d%d msg=\"%.50s\" top=\"%.40s\"\n", o->blstats[20], hr, hc, r, d, (k >= 0 && k < 21 * 79 && L) ? (int)L->terr[k] : -2, (k >= 0 && k < 21 * 79) ? (int)o->glyphs[k] : -2, e->S.probe_turn, (unsigned long)o->blstats[25], o->misc ? o->misc[0] : -1, o->misc ? o->misc[1] : -1, o->misc ? o->misc[2] : -1, o->message ? (const char*)o->message : "", o->tty_chars ? (const char*)o->tty_chars : ""); unlock(); } }
     return use_der(C_TERR) ? d : r; }
 HOOK_INT(nle_food_underfoot, C_FOOD, food, (r != 0) != (d != 0))
 HOOK_INT(nle_container_at, C_CONT, cont, (r != 0) != (d != 0))
-int __wrap_nle_inside_shop(nle_ctx_t* c) { HEnv* e = find_env(c); int r = __real_nle_inside_shop(c); if (!e) return r; int d = e->S.inshop; int bad = (r != 0) != (d != 0); note(C_SHOP, bad);
+int __wrap_nle_inside_shop(nle_ctx_t* c) { HEnv* e = find_env(c); int r = __real_nle_inside_shop(c); if (!e) return r; { long v = r; rec_hook(e, C_SHOP, 0, NULL, 1, &v); } int d = e->S.inshop; int bad = (r != 0) != (d != 0); note(C_SHOP, bad);
     if (bad) { logmis(e, "nle_inside_shop", r, d); if (g_log && e->obs) { const nle_obs* o = e->obs; DLevel* L = dr_level(&e->S, &e->d); int k = (int)o->blstats[1] * 79 + (int)o->blstats[0];
         lock(); fprintf(g_log, "SHOPMIS T=%ld hero %ld,%ld real %d derived %d shop_set %d shopcell %d terrain %d msg=\"%.60s\"\n", o->blstats[20], o->blstats[1], o->blstats[0], r, d, L ? L->shop_set : -1, (L && k >= 0 && k < 21 * 79) ? L->shop[k] : -1, e->S.terrain, o->message ? (const char*)o->message : ""); unlock(); } }
     return use_der(C_SHOP) ? d : r; }
 HOOK_INT(nle_lnc_bits, C_LNC, lnc, r != d)
 HOOK_INT(nle_intrinsics, C_INTR, intr, r != d)
 HOOK_INT(nle_cast_blocked, C_CAST, castblk, (r != 0) != (d != 0))
-long __wrap_nle_shop_price(nle_ctx_t* c) { HEnv* e = find_env(c); long r = HOOK_RNG_CHECK(e, "shop_price", __real_nle_shop_price(c)); if (!e) return r; long d = e->S.price; note(C_PRICE, r != d); if (r != d) logmis(e, "shop_price", r, d); return use_der(C_PRICE) ? d : r; }
+long __wrap_nle_shop_price(nle_ctx_t* c) { HEnv* e = find_env(c); long r = HOOK_RNG_CHECK(e, "shop_price", __real_nle_shop_price(c)); if (!e) return r; rec_hook(e, C_PRICE, 0, NULL, 1, &r); long d = e->S.price; note(C_PRICE, r != d); if (r != d) logmis(e, "shop_price", r, d); return use_der(C_PRICE) ? d : r; }
 int __wrap_nle_peaceful_at(nle_ctx_t* c, int x, int y) {
     HEnv* e = find_env(c); int r = HOOK_RNG_CHECK(e, "peaceful_at", __real_nle_peaceful_at(c, x, y)); if (!e) return r;
+    { long a[2] = { x, y }, v = r; rec_hook(e, C_PEACE, 2, a, 1, &v); }
     int d = (x >= 1 && x < 80 && y >= 0 && y < 21) ? e->S.peace[y * 79 + (x - 1)] : 0;
     note(C_PEACE, r != d); if (r != d) { logmis(e, "peaceful_at", r, d);
         if (g_log && x >= 1 && x < 80 && y >= 0 && y < 21) { int k = y * 79 + (x - 1); const nle_obs* o = e->obs; lock();
@@ -252,6 +279,7 @@ int __wrap_nle_peaceful_at(nle_ctx_t* c, int x, int y) {
 }
 void __wrap_nle_weight(nle_ctx_t* c, int* wt, int* cap) {
     HEnv* e = find_env(c); int rw, rc; { unsigned long _h0 = (e && e->rng) ? rng_hash(e->rng) : 0; __real_nle_weight(c, &rw, &rc); if (e && e->rng && e->keylog && rng_hash(e->rng) != _h0) fprintf(e->keylog, "H weight %ld\n", e->klog_n); } if (!e) { *wt = rw; *cap = rc; return; }
+    { long v[2] = { rw, rc }; rec_hook(e, C_WT, 0, NULL, 2, v); }
     note(C_WT, abs(rw - e->S.wt) > 10);
     if (abs(rw - e->S.wt) > 10 && g_log) { static int shown; if (shown < 30) { shown++; lock(); fprintf(g_log, "WTMIS T=%ld real=%d derived=%d items:", e->obs->blstats[20], rw, e->S.wt);
         for (int i = 0; i < 55 && e->obs->inv_letters[i]; i++) { char t[81]; memcpy(t, e->obs->inv_strs + i * 80, 80); t[80] = 0; fprintf(g_log, " [%d:%s]", e->obs->inv_glyphs[i], t); } fprintf(g_log, "\n"); unlock(); } }
@@ -262,6 +290,7 @@ int __wrap_nle_spells(nle_ctx_t* c, short* a, signed char* b, signed char* d, in
     HEnv* e = find_env(c); short ra[8]; signed char rb[8], rd[8]; int re[8];
     int rn = HOOK_RNG_CHECK(e, "spells", __real_nle_spells(c, ra, rb, rd, re, n < 8 ? n : 8));
     if (!e) { int m = n < 8 ? n : 8; m = m < rn ? m : rn; for (int i = 0; i < m; i++) { a[i] = ra[i]; b[i] = rb[i]; d[i] = rd[i]; ee[i] = re[i]; } return m; }
+    { long v[33]; v[0] = rn; for (int i = 0; i < 8; i++) { v[1 + i] = i < rn ? ra[i] : 0; v[9 + i] = i < rn ? rb[i] : 0; v[17 + i] = i < rn ? rd[i] : 0; v[25 + i] = i < rn ? re[i] : 0; } rec_hook(e, C_SPELLS, 0, NULL, 33, v); }
     int bad = rn != e->S.nsp;
     for (int i = 0; i < rn && i < e->S.nsp; i++) bad |= ra[i] != e->S.sp_ids[i] || rb[i] != e->S.sp_levs[i] || (re[i] > 0) != (e->S.sp_knows[i] > 0);
     note(C_SPELLS, bad); if (bad) logmis(e, "spells", rn, e->S.nsp);
@@ -272,6 +301,7 @@ int __wrap_nle_spells(nle_ctx_t* c, short* a, signed char* b, signed char* d, in
 int __wrap_nle_path_drain(nle_ctx_t* c, short* p, int n) {
     HEnv* e = find_env(c); short rp[2 * 512]; int rn = HOOK_RNG_CHECK(e, "path_drain", __real_nle_path_drain(c, rp, n < 512 ? n : 512));
     if (!e) { int m = n < rn ? n : rn; memcpy(p, rp, 2 * m * sizeof(short)); return m; }
+    { long v[1 + 2 * 512]; v[0] = rn; for (int i = 0; i < 2 * rn && i < 2 * 512; i++) v[1 + i] = rp[i]; rec_hook(e, C_PATH, 0, NULL, 1 + 2 * (rn < 512 ? rn : 512), v); }
     int bad = 0; // tile sets, order-insensitive
     for (int i = 0; i < rn && !bad; i++) { int f = 0; for (int j = 0; j < e->S.path_n; j++) if (e->S.path[2 * j] == rp[2 * i] && e->S.path[2 * j + 1] == rp[2 * i + 1]) { f = 1; break; } if (!f) bad = 1; }
     for (int j = 0; j < e->S.path_n && !bad; j++) { int f = 0; for (int i = 0; i < rn; i++) if (e->S.path[2 * j] == rp[2 * i] && e->S.path[2 * j + 1] == rp[2 * i + 1]) { f = 1; break; } if (!f) bad = 1; }
