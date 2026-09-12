@@ -342,3 +342,51 @@ SPS ~60K → ≈ 03:00 09-13, earlier once the first four free the CPU.
 after it, mask default) stopped, verified by pid. `equiv/launch_claim_r3.sh`: when gpus 0/7 idle → **one-tree rung 3 of
 `claim2b_s503`, seeds 21/32, `NH_NO_CANT_HOLD=1`** (the interface of the old-tree claim certs and the nomask 4B lanes) →
 then old-4B `rt_4B_1122_s204` rung 3, same setting. Ends with `CLAIM_R3_CHAIN_DONE`.
+
+## 2026-09-12 10:30–10:50 — E2, r3nch final, claim chain, second box, derive-replay bench
+
+**E2 final (local, strict seed 21, expiring `cant_hold` + zero-time v2):** 6,050 eps, **11,977 (se 313) / 7,354, 0 aborted**
+(worst zero-time run 480 steps). X4 (expiring only) 11,750 / 7,199 with 151 aborts; X1 (no mask) 11,956 / 7,540 with 659.
+Score neutral, abort class gone → **v2 is the default in the challenge configuration** (`0cf32001`: on when `NH_STOCK_STRICT`
+is set; `nhc_agent.py` sets `NH_ZT_MASK=1` for the gym env, which has no strict switch; `NH_ZT_MASK=0` turns it off;
+training never sets either).
+
+**`r3nch` final (box, one-tree, `NH_NO_CANT_HOLD=1`, strict seed 21):** 10,067 eps, **11,175 (se 168) / 6,900**, aborted 11.1 %.
+Old tree same seed 11,376 / 7,138 (se 170): equal within noise. Sticky A 10,503 / 6,128. Regression cause confirmed on the box.
+
+**Claim chain started 10:26:51** (`launch_claim_r3.sh`): one-tree rung 3 of `claim2b_s503`, seeds 21/32, mask off, tree `a51b1953`,
+stock `ce98f220d66f`; 1,220 eps each at 10:45 → lands mid-afternoon. Then old-4B rung 3.
+
+**Second box `cpubox`** (ssh alias; 48-core EPYC 7443, one RTX 3090 24 GB, 503 GB RAM, Ubuntu 24.04, CUDA 12.8): clean clone
+of both `nle-stock` branches, stock NLE sources hash-verified (`84c24e5a811b3298`, 537 files), all binaries built after adding
+`libomp-18-dev libgl-dev` (missing on the image; the link errors were `-lomp5`, `-lGL`). Fits 3 harness arms / 2 stock evals.
+Its log-only reference: **11,841 (se 241)** vs local 11,377 (se 234), same seed → cross-machine scheduling noise ≈ 2 se.
+Running since 10:00–10:06: `keep_peaceful_at`, `keep_capacity`, `keep_inv_state`. **ssh refused from ~10:40** (instance down or
+rebooting); `/tmp/cpubox_resume.sh` waits for it and then pulls, builds the fixed stock binary + `puffer_nethack_harness_fix`
+and queues `after_ablation.sh` (strict canary of the derive fixes, seed 21 6,000, vs E2; harness `derived` with the fixed
+derive, vs the local old-derive `derived`). Ablation split: local = `real0`, `keep_hero_tile/cast_blocked/path` (two workers).
+
+### Derive-replay bench (`53d051ea`) — the unit test for the reconstruction
+`NH_DERIVE_REC=<dir>` on the fork harness (mode 0) records, per episode, every key the derive saw, every probe reply and the
+fork's truth at every hook (`nh_derive_rec.h`, block-delta + gzip, ~2 MB/episode). `nh_derive_replay` re-runs `nh_derive.h`
+over the files with no engine; `derive_replay.sh <dir>` runs one file per core and merges. **Validated: the replay reproduces
+the live harness table exactly (18 channels, queries and mismatches equal) on 176 episodes, 34 s wall on 32 cores.**
+`--watch <channel>` prints every change of the real value with the last messages (how the bugs below were found in minutes).
+Limits: a change to *what the derive probes* diverges from the recording from that step on (counted, episode skipped) —
+re-record after probing changes, validate them live. The recording carries the `NH_*`/`NLE_*` environment (the derive reads
+its switches from it). Corpus: `/tmp/drec` (old derive, seed 99, 128 agents, 48 complete + 128 partial episodes, 340 MB);
+`/tmp/drec2` being recorded with the fixed derive.
+
+First corpus, old derive (mismatch per query): capacity **6.69 %**, path 5.23 %, food_underfoot 2.40 % (of 707), weight 1.31 %,
+peaceful_at 0.61 %, intrinsics 0.25 %, hero_tile 0.11 %, terrain 0.014 %, spells 0.010 %, everything else ≤ 0.003 %.
+
+Fixes (`0cf32001`) and their effect on that corpus:
+| channel | before | after | cause |
+|---|---|---|---|
+| capacity | 6.689 % | **0.130 %** | "Dumb move!  You strain a muscle." always wounds the right leg (−100 cap for 6–10 turns); the derive only knew xan/land-mine. Its heal clear looked for "somewhat better" (3.4 text); 3.6.6 prints "Your leg feels better." Now: strain / refusal ("in no shape for") / bear trap / xan / land mine set it with the wound's maximum duration as a fallback expiry (the heal line is often lost in a multi-key step). |
+| food_underfoot, container_at | 2.405 %, 9 | **0** | the fork scans the whole floor chain; the derive tested only the top object while standing still |
+| intrinsics | 0.249 % | **0** (replayable subset) | `dr_parse_self` read the farlook line from its start; the form is inside parentheses (`d   a dog or other canine (werejackal called Agent)`) — it never matched, so `S->form` was always −1. Now parsed, were-forms disambiguated by the line's class letter, resistances of the form from `NHT_MON_MR/M1` (new tables from the nle package, `gen_mon_flags.py`), re-probed after prayer and every 40 turns while polymorphed (the return-to-form line hides in the prayer's pages; without the re-probe the first parser fix made intrinsics 2.8 % and capacity 3.9 % *worse*). |
+Left: weight 1.3 % (an unidentified appearance whose true type weighs more — gauntlets of power 30 vs leather gloves 10 — is
+unknowable from public text; would need the fork to export appearance-canonical weight), path 5.2 % (BFS shortest path vs the
+actual run: the run turns corners orthogonally where BFS cuts the diagonal), peaceful_at 0.6 % (a monster angered between the
+farlook and the hook), hero_tile 0.1 %.

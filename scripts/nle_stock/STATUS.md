@@ -1,4 +1,4 @@
-# NetHack on stock NLE — status, 2026-09-12 09:50
+# NetHack on stock NLE — status, 2026-09-12 10:50
 
 Companion to `LEDGER.md` (every number with its arm name, tree and interface) and `ENGINE.txt` (engine pin).
 This is the narrative: the goal, what is established, what is running, what comes next.
@@ -30,7 +30,10 @@ and at 2B once the mask penalty below is accounted for).
 
 **Test bench:** golden-trajectory replay gate for the engine; per-episode `.ep` logs with burn-in-adjusted analysis
 (the only kind of number that is a cert); a fork harness with per-channel derived/real switching (`NH_DERIVE_REAL`)
-for reconstruction ablations; loop censuses (`NH_STOCK_WEDGELOG`, `.ep` worst zero-time run).
+for reconstruction ablations; loop censuses (`NH_STOCK_WEDGELOG`, `.ep` worst zero-time run); and, since 10:30, the
+**derive-replay bench**: the harness records every key, probe reply and hook truth (`NH_DERIVE_REC`), and
+`derive_replay.sh <dir>` re-runs the reconstruction offline in ~30 s with per-channel mismatch rates, examples and a
+baseline diff. It reproduces the live table exactly. A derive fix is now a minutes-long loop instead of an hour-long eval.
 
 ## 3. Results
 
@@ -78,6 +81,20 @@ Established: the stock interface makes the policy loop ~7× more often than the 
 *symptom* of the reconstruction+probes layer. The split inside that layer (probe side-effects vs which channels) is the
 corrected ablation now running; the overnight one ran without `NLE_GETPOS_NORMAL=1` and is retracted.
 
+### 3.3b What the bench found in its first hour
+
+On the old derive: capacity wrong on 6.7 % of steps, path 5.2 %, food underfoot 2.4 %, weight 1.3 %, peaceful 0.6 %,
+intrinsics 0.25 %; everything else under 0.02 %. Three fixed the same morning (commit `0cf32001`), verified on the corpus:
+
+- **capacity 6.7 % → 0.13 %.** "Dumb move! You strain a muscle." wounds a leg for up to 10 turns (−100 capacity); the derive
+  never knew, and its heal message was the NetHack 3.4 text. Kick refusals and bear traps now count too, with a duration expiry.
+- **food / containers underfoot → 0.** The fork scans the whole floor pile; the derive looked at the top object only.
+- **intrinsics → 0.** The polymorph-form parser never matched (the form is in parentheses in the farlook line), so form
+  resistances were never applied. Fixed, plus a re-probe after prayer, which is where the return-to-form line gets lost.
+
+Still open: weight (an unidentified item's true weight is not public), path (run corners), peaceful transitions, hero tile.
+The live effect of the fixes is the strict canary queued on the second box.
+
 ### 3.4 The cert regression: found, explained, fixed
 
 One-tree rung 3 was ~10 % below the old-tree rung 3 on the same seed. Everything was ruled out byte-for-byte
@@ -87,7 +104,7 @@ One-tree rung 3 was ~10 % below the old-tree rung 3 on the same seed. Everything
 |---|---|---|---|
 | sticky `cant_hold` (shipped 09-11), local | 10,503 | 6,128 | 3.7 % |
 | **no `cant_hold`**, local X1 | **11,956** | **7,540** | 11.1 % |
-| no `cant_hold`, box r3nch (6,536 eps, live) | 11,414 | 6,786 | 10.8 % |
+| no `cant_hold`, box r3nch (final, 10,067 eps) | 11,175 | 6,900 | 11.1 % |
 | expiring `cant_hold` (100 turns; now the default), local X4 (final, 6,074 eps) | 11,750 | 7,199 | 2.5 % |
 
 Mechanism: the flag is set soundly (every engine site is a form test) but was cleared only by "You return to…",
@@ -101,7 +118,7 @@ number taken before it carries the penalty: rung 2 both seeds, the 2B Python run
 |---|---|---|
 | extended `cant_hold` (+WEAR, +2 refusal texts) | aborts 3.7 → 1.5 %, score neutral (P = 0.51) | in tree, now expiring |
 | zero-time memory v1 (mask on first free repeat) | aborts → 1.6 %, **score −8 %** (fast heroes' extra actions read as refusals) | opt-in only |
-| **zero-time memory v2** (mask on the *second* identical free repeat) | **1 abort in 6,062**, score neutral (P = 0.50) | opt-in; E2 decides default |
+| **zero-time memory v2** (mask on the *second* identical free repeat) | E2 on the expiring mask: **11,977 / 7,354, 0 aborts in 6,050** vs 11,750 / 7,199 with 151 | **default in the challenge configuration** (`NH_STOCK_STRICT`, and `nhc_agent.py`); `NH_ZT_MASK=0` off |
 
 ## 4. Running now
 
@@ -109,20 +126,23 @@ number taken before it carries the penalty: rung 2 both seeds, the 2B Python run
 - **4B `nlestock4b_s601–604`** — sticky-`cant_hold` interface, at 1.97–2.10B steps, SPS 61–65K → land ≈ 18:30.
 - **4B `nlestock4b_nomask_s607/608`** — **no form mask at all** (user's call), started 09:12, SPS ~60K → ≈ 03:00 09-13,
   earlier once the first four finish. The 4-vs-2 comparison measures the training-side cost of the mask directly.
-- gpu 7: `r3nch` (one-tree rung 3, mask off, seed 21) to 10,000 eps, ≈ 10:30.
-- then (`launch_claim_r3.sh`, gpus 0/7): **one-tree rung 3 of the 2B `claim2b_s503`, seeds 21/32, mask off** — the
-  claim re-run (~12 h) → then the old 4B `rt_4B_1122_s204` on rung 3 (what a 4B does on stock today).
+- gpus 0/7 since 10:27: **one-tree rung 3 of the 2B `claim2b_s503`, seeds 21/32, mask off** — the claim re-run
+  (1,200 eps each at 10:45, lands mid-afternoon) → then the old 4B `rt_4B_1122_s204` on rung 3.
+
+**Second box `cpubox`** (48 cores, one 3090; brought up 09:35–10:00): `keep_peaceful_at`, `keep_capacity`, `keep_inv_state`
+running since 10:00; then the strict canary of the derive fixes (seed 21, 6,000, vs E2) and a fixed-derive `derived` arm.
+**ssh refused since ~10:40** — a resume script waits for it.
 
 **Local (4090):**
-- X4 done (expiring mask = no-mask score within noise, a quarter of the aborts); **E2** (v2 mask on top of it) running since 09:23, ≈ 12:30 — decides the default eval mask set.
-- corrected reconstruction ablation, serial: `derived` running, then `real0`, then keep_peaceful_at / capacity / inv_state / hero_tile / cast_blocked / path (~70 min each, ≈ 19:00).
+- E2 done (§3.5). `derived` (old derive) at 2,300 / 3,000, `real0` (mismatch table live) running; then `keep_hero_tile`,
+  `keep_cast_blocked`, `keep_path`. Re-recording the replay corpus with the fixed derive.
 
 ## 5. Next
 
-1. **E2** → if neutral-or-better with ~0 aborts, v2 becomes the default stock-side loop guard.
-2. **Corrected ablation** → probes vs channels split; each named channel is a derive fix with a one-arm re-test
-   (~1 h a cycle), gated by the replay gate and a **fixed-seed rung-3 canary** (would have caught §3.4 a day
-   earlier; to be added next to the golden gate).
+1. **Canary of the derive fixes** (second box): strict seed 21 vs E2's 11,977 / 7,354. Same masks, only the derive changed.
+2. **Ablation arms** → which channels move the score; the bench then names the mechanism for each in minutes.
+   Next bench targets: path (orthogonal-preferring run reconstruction), peaceful transitions, then a fork export of
+   appearance-canonical weight if weight turns out to matter.
 3. **Claim table on the fixed tree**: 2B rung 3 (queued), then Python rung 4 of the 2B, both with the mask decision applied.
 4. **4B certs** (rung 1 → 3 → 4) when the lanes land; the 4-vs-2 groups settle the mask question for training.
 5. Reconstruction engineering in the order the ablation names: capacity, peaceful_at, inv_state / inv_true (the
