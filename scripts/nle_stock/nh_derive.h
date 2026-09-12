@@ -897,6 +897,10 @@ static void dr_derive_inventory(DState* S, const DObs* o, const DItem* items, in
         if (strstr(items[i].t, "(weapon in hand")) { lnc |= 2; if (ammo) lnc |= 4; }
     }
     int wt = 0;
+    // hallucinating: NLE's inventory glyphs are random objects (random_obj_to_glyph), so the glyph fallback prices boulders and
+    // statues into the pack (real 863 vs derived 3,458 in the 2B corpus, 2026-09-12). The real weight does not change with the
+    // hero's perception: hold the last sighted estimate until the hallucination ends.
+    if (cond & 0x200) wt = S->wt; else
     for (int i = 0; i < n; i++) {
         int q = dr_quantity(items[i].t); int half = strstr(items[i].t, "partly eaten") ? 2 : 1;
         if (items[i].oc == 12) wt += (q + 50) / 100;
@@ -968,8 +972,10 @@ static void dr_reset(DState* S, const DObs* o, unsigned seed) {
     (void)o;
 }
 static void dr_identity_from_text(DState* S, const DObs* o) {
-    char buf[256 + DR_TTY_CO + 2]; dr_msg(o, buf, 256); size_t n = strlen(buf); buf[n++] = ' ';
-    char top[DR_TTY_CO + 1]; dr_row(o, 0, top); snprintf(buf + n, sizeof buf - n, "%s", top);
+    char buf[256 + 3 * (DR_TTY_CO + 2)]; dr_msg(o, buf, 256); size_t n = strlen(buf); buf[n++] = ' ';
+    // the welcome line wraps past 80 columns for the longest identity ("You are a neutral female gnomish Archeologist.") and a
+    // moon/Friday-13th line can replace it in the message buffer: read the top three screen rows, not just row 0 (2026-09-12: 1 % of games)
+    for (int r = 0; r < 3 && n < sizeof buf - DR_TTY_CO - 2; r++) { char row[DR_TTY_CO + 1]; dr_row(o, r, row); n += (size_t)snprintf(buf + n, sizeof buf - n, "%s ", row); }
     if (getenv("NH_DERIVE_IDLOG")) fprintf(stderr, "IDTEXT: %s\n", buf);
     const char* p = strstr(buf, "You are a"); if (!p) return; p += 9; if (*p == 'n') p++;
     char w[4][32]; int k = 0;
