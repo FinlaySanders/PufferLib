@@ -572,3 +572,6 @@ truncates are not the ones carrying the mean. Decomposition so far of the 2B's �
 +5 % (keep), form mask 0, derive v3 fixes 0, calendar 0. **Remaining suspect under test: the weight channel** (`stock_wtreal_s21`, drone gpu 7,
 ≈ 19:40); if that is also ~0, the residual is in the interface itself (tty/message rendering, mask legality on stock) and needs the stock-side
 truth check per channel.
+**18:35 — 4B lanes end with rc=134:** training completes and the final checkpoint is saved (s602: 0000003999793152.bin), then the trainer's built-in
+10,000-game final eval fails `cudaMalloc` beside the trainer's own buffers on this box. That number was never a cert; rung-1 certs run separately.
+Expect the same exit code from every 4B lane here, fixed ones included; the checkpoint is the deliverable. `fixwt4b_s706` took gpu 3 at 18:32:43.
