@@ -1,4 +1,4 @@
-# NetHack on stock NLE — status, 2026-09-12 15:05
+# NetHack on stock NLE — status, 2026-09-12 16:15
 
 Companion to `LEDGER.md` (every number with its arm name, tree and interface) and `ENGINE.txt` (engine pin).
 This is the narrative: the goal, what is established, what is running, what comes next.
@@ -133,33 +133,41 @@ number taken before it carries the penalty: rung 2 both seeds, the 2B Python run
 | zero-time memory v1 (mask on first free repeat) | aborts → 1.6 %, **score −8 %** (fast heroes' extra actions read as refusals) | opt-in only |
 | **zero-time memory v2** (mask on the *second* identical free repeat) | E2 on the expiring mask: **11,977 / 7,354, 0 aborts in 6,050** vs 11,750 / 7,199 with 151 | **default in the challenge configuration** (`NH_STOCK_STRICT`, and `nhc_agent.py`); `NH_ZT_MASK=0` off |
 
-## 4. Running now
+### 3.6 The 2B on stock — what the afternoon settled (details: LEDGER 16:15)
 
-**Box (8 GPUs, CPU-saturated by six trainers):**
-- **4B `nlestock4b_s601–604`** — sticky-`cant_hold` interface, at 1.97–2.10B steps, SPS 61–65K → land ≈ 18:30.
-- **4B `nlestock4b_nomask_s607/608`** — **no form mask at all** (user's call), started 09:12, SPS ~60K → ≈ 03:00 09-13,
-  earlier once the first four finish. The 4-vs-2 comparison measures the training-side cost of the mask directly.
-- gpus 0/7 since 10:27: **one-tree rung 3 of the 2B `claim2b_s503`, seeds 21/32, mask off** — the claim re-run
-  (1,200 eps each at 10:45, lands mid-afternoon) → then the old 4B `rt_4B_1122_s204` on rung 3.
+- **1B ladder closed at every rung.** Python rung 4 median 8,389 / mean 12,900 (480 games) vs stock rung 3 8,522 / 12,785 vs fork 8,618 / 13,060.
+- **2B stock gap is −13 % on two seeds** (14,357 / 8,398 and 14,816 / 8,856 vs fork 16,520 / 9,839 and 17,159 / 10,112), 0 aborts, guard on.
+  The zero-time guard is not the cause (guard-off reads −7 % with 63 aborts).
+- **Identity bug found and fixed** (`5ee2c435`): the 80-column welcome line carries a newline at the tty wrap; female gnomish/dwarvish
+  Archeologists were male humans for the whole game (1 % of games). Corpus identity now 0/176 and 0/6.
+- **Weight is not derivable.** The fork exports the true-type weight of unidentified boots, gloves, helmets and gray stones; neither NLE nor a
+  player can know it (NLE's `shuffled_glyph` hides types in every glyph). On stock 5.5 % of steps carry a wrong weight, always in the roles that
+  pick up armour — the same roles that lose 20–27 %. Two direct tests are running (§4). If confirmed, it is a fork-side export bug: the
+  training signal was privileged, and the Monday claim carries it as a residual until a retrain on an appearance-canonical weight.
 
-**Second box `cpubox`** (48 cores, one 3090; brought up 09:35–10:00): `keep_peaceful_at`, `keep_capacity`, `keep_inv_state`
-running since 10:00; then the strict canary of the derive fixes (seed 21, 6,000, vs E2) and a fixed-derive `derived` arm.
-**ssh refused since ~10:40** — a resume script waits for it.
+## 4. Running now (16:15)
 
-**Local (4090):**
-- E2 done (§3.5). `derived` (old derive) at 2,300 / 3,000, `real0` (mismatch table live) running; then `keep_hero_tile`,
-  `keep_cast_blocked`, `keep_path`. Re-recording the replay corpus with the fixed derive.
+**Local (4090, two 512-agent stock evals):**
+- `claim2b_noguard_s21` — 2B, zero-time guard off: −6.5 % / −8 % vs guard-on at equal count, 63 aborts → guard stays. Lands ≈ 16:30.
+- `canary3_2b_s21` — 2B, derive v3 (identity newline fix, weight hold under hallucination), default masks, strict seed 21, 6,000; started 16:01,
+  lands ≈ 17:20. Pairs with 14,357 / 8,398 (derive v1) and the fork's 16,520 / 9,839. Expect a small change: the fixes touch 1 % of games and
+  hallucination steps.
+- `claim2b_nomask_s21` — 2B, no form mask, derive v3; queued behind the guard-off pid (≈ 16:30 → 17:50).
+
+**Drone (six 4B trainers on gpus 1–6; evals on 0/7 at nice 10):**
+- `stock_wtreal_s21` (gpu 7) — stock strict 2B seed 21, 6,000, with the engine's weight/capacity in the observation (diagnostic crutch, not a
+  cert). Against canary3 it measures the weight channel's cost on stock. ≈ 18:00.
+- `hw_real0_s21` / `hw_wder_s21` (gpu 0) — fork harness, all channels real vs only weight derived. ≈ 17:00.
+- 4B lanes: s601/602 at 3.4B, s603/604 at 3.3B → 18:15–18:50; nomask s607/608 at 1.35B → ≈ 02:45 Sunday.
 
 ## 5. Next
 
-1. **Canary of the derive fixes** (second box): strict seed 21 vs E2's 11,977 / 7,354. Same masks, only the derive changed.
-2. **Ablation arms** → which channels move the score; the bench then names the mechanism for each in minutes.
-   Next bench targets: path (orthogonal-preferring run reconstruction), peaceful transitions, then a fork export of
-   appearance-canonical weight if weight turns out to matter.
-3. **Claim table on the fixed tree**: 2B rung 3 (queued), then Python rung 4 of the 2B, both with the mask decision applied.
-4. **4B certs** (rung 1 → 3 → 4) when the lanes land; the 4-vs-2 groups settle the mask question for training.
-5. Reconstruction engineering in the order the ablation names: capacity, peaceful_at, inv_state / inv_true (the
-   mask inputs the fork gets from engine hooks), then probe laziness (fewer keystrokes per step also halves cert time).
+1. Read canary3 vs derive v1, then stock_wtreal vs canary3 (the weight cost). If weight carries the fighters' loss: size it, write it up as the
+   fork-side export bug it is, propose the appearance-canonical weight export for the next training round.
+2. `claim2b_nomask_s21` vs canary3: does the form mask pay on stock for the 2B (it pays +4.7 % on the fork).
+3. 2B Python rung 4 (2,000 games) on the final derive; claim table with both stock seeds; per-role census (`ep_census.py`).
+4. Sunday: rung-1 fork certs of all six 4B lanes, pick two, rung 3 strict seeds 21/32, rung 4 for the best.
+5. Article per ARTICLE_PLAN.md; bug table gains the identity newline, the weight export, and the `shuffled_glyph` finding.
 
 ## 6. Things that bit us, now guarded
 
@@ -171,3 +179,8 @@ running since 10:00; then the strict canary of the derive fixes (seed 21, 6,000,
 - Per-index medians at n=16–24 swing 3–15K by chance — only equal-k pooled numbers are readable.
 - Two 512-agent stock evals plus a harness arm do not fit the 4090; memory gates race launchers — one queue per GPU.
 - A sticky belief on a droppable message channel — §3.4.
+- A DONE line that read the previous run's output directory (the v2 replay looked identical because it was the v1 table) — replay drivers
+  now name their output directory in the DONE line.
+- `build_derive_replay.sh` ignores `OUT=` and writes in place — never rebuild it under a running replay.
+- Reading one header (`display.h`) for what an engine exports — NLE's window port remaps glyphs afterwards (`shuffled_glyph`); verify on the
+  running engine (`NH_STOCK_WTCHECK` did in three minutes).

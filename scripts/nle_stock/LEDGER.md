@@ -476,3 +476,40 @@ peaceful 0.3 %, shop_price 0.26 %, capacity 0.2 %; **identity wrong in 6 of 611 
 Guard-off 2B arm (`NH_ZT_MASK=0`): tracking *below* the guard-on cert at equal count (6,330 vs 6,965 at 1,543 games) → the guard
 is not the fighters' loss. Binaries rebuilt on both boxes (local stock fe9217042d7f, drone 15c7c2b639c3, libnhagent 453478ee8b06);
 canary #2 for the 2B (`canary2_2b_s21`) queued behind the guard-off arm; the corpus replay with v2 runs on the drone.
+
+## 2026-09-12 16:15 — afternoon: 1B ladder closed at rung 4; 2B seed 32; what the 2B corpus really said
+**1B Python rung 4 (`r4_pkgnle_s406_fix`, 24 workers × 20 games, libnhagent 067f54d39943, tree 069c1fc4): n=480, median 8,389, mean 12,900**
+(p10 912, p90 32,050; the episode-1 median 6,275 is a 24-game sample, not a leak). Same weights, seed 21: fork 13,060 / 8,618, stock rung 3
+12,785 / 8,522 → **the 1B ladder is closed at every rung (−1 % to −3 %, inside one se)**.
+**2B seed 32, derive v1 + guard (`claim2b_s503_r3_local_s32`, 10,041 eps, 6,041 kept): 14,816 (se 240) / 8,856, 0 aborts** vs the old-derive
+mask-off seed 32 13,816 / 7,886 (11 % aborts): +7 % / +12 %. Two stock seeds 14,357 / 8,398 and 14,816 / 8,856; two fork seeds 16,520 / 9,839
+and 17,159 / 10,112 → **2B stock gap ≈ −13 % / −13 %**.
+**Guard-off 2B (`claim2b_noguard_s21`, NH_ZT_MASK=0) at 5,592 games (1,592 kept): 13,990 / 8,227 vs guard-on 14,959 / 8,938 at the same count,
+63 aborts vs 0 → the guard stays; it is not the fighters' loss** (final line in /tmp/reg/log).
+**Derive v2 replay of the 611-episode 2B corpus: every channel byte-identical to v1** (weight 120,493 → 120,499 of 4.18M queries; identity 6 → 6).
+The 15:29 DONE line was wrong — it re-read the v1 output directories; the v2 outputs are `replay_v2*`. Neither 15:05 diagnosis was right:
+- **Identity (6/611, every one a neutral female gnomish Archeologist):** not a wrap onto row 1. The welcome line is exactly 80 columns; tty's
+  `update_topl` splits it by overwriting the space before "Archeologist." with `\n`, and the message buffer carries that newline. The tokenizer
+  stopped at spaces and periods only, so the third word was "gnomish\n" → no race match → male human by default. Fix `5ee2c435`: newlines are
+  spaces (plus a --More-- strip and a cut-line rule). **1B corpus identity 1 → 0 of 176 (the Friday-13th game included); the six 2B games 6 → 0.**
+- **Weight (2.9 % of boundaries, 4.9 % late; single games wrong on every late step):** not hallucination. Watch traces: "a pair of jungle boots"
+  real +50 derived +15, "a pair of old gloves" +30 vs +10, "buckled boots" +20 vs +50 — **unidentified shuffled armour is priced by the
+  appearance's default type.** The fork's `nle_weight` sums `objects[otyp].oc_weight`, the true type's weight, for every item identified or not.
+  Stock NLE hides the true type as well: `winrl.cc` wraps every inventory and map glyph in `shuffled_glyph` (my reading of `display.h` alone was
+  wrong; the bench is faithful here). So **the weight channel is not derivable from anything public** for unidentified boots (15/20/50), gloves
+  (10/30), helmets (30/50) and gray stones (10/500); cloaks, potions, scrolls, wands, rings, amulets are uniform within their appearance groups.
+  **Measured on stock** (`NH_STOCK_WTCHECK`: walks the stock engine's `invent` with the fork's formula, slot layout verified letter/class by slot;
+  128 agents, 208 early games, 525K boundaries): **weight mismatch 5.5 %, capacity 0.15 %**. Fighters pick up armour, casters do not — the
+  2B's per-role split — so this is the lead hypothesis, under direct test:
+  - drone gpu 7 `stock_wtreal_s21`: stock strict, seed 21, 6,000, **the engine's weight/capacity fed to the policy** (`NH_STOCK_WTREAL=1`, a
+    rung-2 crutch, never a cert). Pairs with the local `canary3_2b_s21` (same tree and seed, derived weight): the difference is the weight
+    channel's cost on stock.
+  - drone gpu 0 `hw_real0_s21` vs `hw_wder_s21`: fork engine, harness mode 0 (all real) vs mode 1 with every channel real except weight.
+  If weight carries the loss, the fix is on the fork side (export an appearance-canonical weight and train on it); nothing trained before
+  Monday can have it, so the 2B/4B claim carries it as a documented residual.
+- Intrinsics 1.6 % late: one missed "You feel healthy." (poison resistance from a corpse; the message fell behind a --More-- in the fork
+  recording) → mismatched for the remaining 23K steps of that game. No probe shows intrinsics; left.
+**Queue:** the `canary2_2b_s21` waiter was killed before it started; **`canary3_2b_s21` (tree 5ee2c435, stock 452e91f52153: identity newline fix +
+weight hold under hallucination) started 16:01** beside the guard-off arm; `claim2b_nomask_s21` (NH_NO_CANT_HOLD=1, derive v3) queued behind the
+guard-off pid. Drone stock 52336c7a6585 (3b44bca3), local libnhagent bf00d5903920. 4B lanes at 16:00: s601/602 3.4B, s603/604 3.3B (SPS 56–60K,
+land ≈ 18:15–18:50), nomask s607/608 1.3–1.4B (≈ 02:45 Sunday). Rolling panel scores 15–23K (noise ±1K, not results).
