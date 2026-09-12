@@ -976,6 +976,7 @@ static void dr_identity_from_text(DState* S, const DObs* o) {
     // the welcome line wraps past 80 columns for the longest identity ("You are a neutral female gnomish Archeologist.") and a
     // moon/Friday-13th line can replace it in the message buffer: read the top three screen rows, not just row 0 (2026-09-12: 1 % of games)
     for (int r = 0; r < 3 && n < sizeof buf - DR_TTY_CO - 2; r++) { char row[DR_TTY_CO + 1]; dr_row(o, r, row); n += (size_t)snprintf(buf + n, sizeof buf - n, "%s ", row); }
+    dr_replace_all(buf, "--More--", " ");
     if (getenv("NH_DERIVE_IDLOG")) fprintf(stderr, "IDTEXT: %s\n", buf);
     const char* p = strstr(buf, "You are a"); if (!p) return; p += 9; if (*p == 'n') p++;
     char w[4][32]; int k = 0;
@@ -984,7 +985,12 @@ static void dr_identity_from_text(DState* S, const DObs* o) {
     static const char* ROLES[13] = {"Archeologist", "Barbarian", "Caveman", "Healer", "Knight", "Monk", "Priest", "Rogue", "Ranger", "Samurai", "Tourist", "Valkyrie", "Wizard"};
     static const char* RACES[5] = {"human", "elven", "dwarven", "gnomish", "orcish"}; static const char* RACES2[5] = {"human", "elf", "dwarf", "gnome", "orc"}; static const char* ALIGNS[3] = {"lawful", "neutral", "chaotic"};
     const char* al = w[0]; const char* ge = NULL; const char* ra; const char* ro;
-    if (k == 4) { ge = w[1]; ra = w[2]; ro = w[3]; } else { ra = w[1]; ro = w[2]; }
+    int cut = 0; if (k == 3) for (int i = 0; i < 5; i++) if (!strcmp(w[2], RACES[i])) cut = 1;
+    // the welcome line is 80 columns for exactly two identities ("You are a neutral female gnomish Archeologist.", "... lawful
+    // female dwarvish Archeologist."): the tty splits it at a --More-- and the tail is dismissed before any boundary, so the
+    // role never reaches the screen or the message buffer. Three words ending in a race adjective is that cut (2026-09-12: 1 % of games)
+    if (cut) { ge = w[1]; ra = w[2]; ro = "Archeologist"; }
+    else if (k == 4) { ge = w[1]; ra = w[2]; ro = w[3]; } else { ra = w[1]; ro = w[2]; }
     S->gender = (ge && !strcmp(ge, "female")) ? 1 : 0;
     if (!strcmp(ro, "Cavewoman")) { ro = "Caveman"; S->gender = 1; } if (!strcmp(ro, "Priestess")) { ro = "Priest"; S->gender = 1; } if (!strcmp(ro, "Valkyrie")) S->gender = 1;
     S->role = 0; S->race = 0; S->align = 1;

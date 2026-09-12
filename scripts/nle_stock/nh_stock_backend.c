@@ -450,6 +450,30 @@ static void chain_dump(Inst* in) {
         for (char* o = head; o && n < 80; o = *(char**)(o + 8), n++) { short otyp = *(short*)(o + 30); long quan = *(long*)(o + 40); fprintf(stderr, " [%d]%s x%ld", otyp, otyp >= 0 && otyp < NUM_OBJECTS ? NHT_OBJ_NAME[otyp] : "?", quan); }
         fprintf(stderr, " (n=%d)\n", n); }
 }
+// NH_STOCK_WTCHECK=1: compare the derived weight/capacity with the stock engine's own inventory, priced by the fork's nle_weight
+// formula (true-type weights, corpses by monster, coins /100, partly eaten halved; containers count empty). Read-only, no RNG.
+// The replay bench cannot check this channel: the fork's public glyphs carry appearances while stock's leak the true type, so
+// the derive prices unidentified armor right on stock only (2026-09-12: bench 2.9 % weight mismatch was this artifact).
+static long g_wc_n, g_wc_wt, g_wc_wth, g_wc_h, g_wc_cap, g_wc_bad, g_wc_shown;
+static void wt_check_report(void) { fprintf(stderr, "WTCHECK boundaries=%ld weight_mismatch=%ld (hallucinating %ld of %ld) cap_mismatch=%ld layout_bad=%ld\n", g_wc_n, g_wc_wt, g_wc_wth, g_wc_h, g_wc_cap, g_wc_bad); }
+static void wt_check(Inst* in) {
+    static int on = -1; if (on < 0) { on = getenv("NH_STOCK_WTCHECK") != NULL; if (on) atexit(wt_check_report); } if (!on || !in->d.blstats || in->so.done) return;
+    char** pinv = (char**)dlsym(in->dl, "invent"); int (*wcap)(void) = (int (*)(void))dlsym(in->dl, "weight_cap"); if (!pinv || !wcap) { __sync_fetch_and_add(&g_wc_bad, 1); return; }
+    long w = 0; int i = 0, bad = 0; char items[4096]; int p = 0;
+    for (char* o = *pinv; o && i < 55; o = *(char**)o, i++) {
+        short otyp = *(short*)(o + 30); long q = *(long*)(o + 40); int cls = *(signed char*)(o + 49); char let = *(char*)(o + 50); int cnm = *(int*)(o + 60); unsigned eaten = *(unsigned*)(o + 68);
+        if (in->d.inv_letters && (in->d.inv_letters[i] != (unsigned char)let || (in->d.inv_oclasses && in->d.inv_oclasses[i] != (unsigned char)cls))) bad = 1;
+        long base = -1; if (cls == 12) w += (q + 50) / 100;
+        else { base = (otyp >= 0 && otyp < NUM_OBJECTS) ? ((otyp == g_corpse_idx && cnm >= 0 && cnm < NUMMONS) ? NHT_MON_CWT[cnm] : NHT_OBJ_WT[otyp]) : 0; base *= q; if (eaten) base /= 2; w += base; }
+        if (p < 3800) p += snprintf(items + p, sizeof items - p, " %c:%d/%s x%ld%s=%ld", let, otyp, otyp >= 0 && otyp < NUM_OBJECTS ? NHT_OBJ_NAME[otyp] : "?", q, eaten ? "(eaten)" : "", base);
+    }
+    int cap = wcap(); long cond = in->d.blstats[25];
+    __sync_fetch_and_add(&g_wc_n, 1); if (bad) { __sync_fetch_and_add(&g_wc_bad, 1); return; }
+    if (cond & 0x200) __sync_fetch_and_add(&g_wc_h, 1);
+    int mw = (int)w != in->S.wt, mc = cap != in->S.cap;
+    if (mw) __sync_fetch_and_add((cond & 0x200) ? &g_wc_wth : &g_wc_wt, 1); if (mc) __sync_fetch_and_add(&g_wc_cap, 1);
+    if ((mw || mc) && __sync_fetch_and_add(&g_wc_shown, 1) < 40) { char m[256]; dr_msg(&in->d, m, sizeof m); fprintf(stderr, "WTCHECK T=%ld cond=%lx real wt=%ld cap=%d derived wt=%d cap=%d wlegs=%d msg=\"%.80s\" inv:%s\n", in->d.blstats[20], cond, w, cap, in->S.wt, in->S.cap, in->S.wlegs, m, items); }
+}
 static void sync_status(Inst* in, nle_obs* o) {
     o->done = in->so.done;
     o->how_done = in->so.how_done;
@@ -656,7 +680,7 @@ nle_ctx_t* nle_start(nle_obs* obs, FILE* f, nle_settings* set) {
     { const char* rd = getenv("NH_KEYREPLAY"); if (rd) { static int init; if (__sync_bool_compare_and_swap(&init, 0, 1)) atexit(rp_report);
         char fn[512]; snprintf(fn, sizeof fn, "%s/%lx.keys", rd, set->initial_seeds.seeds[0]); in->replay = fopen(fn, "r"); in->seed0 = set->initial_seeds.seeds[0];
         if (!in->replay) __sync_fetch_and_add(&g_rp_nofile, 1);
-        else { unsigned long s0, s1, h0; if (!in->so.done) { dr_boundary(&in->S, &in->d, in, stock_send); chain_dump(in); dr_export_glyphs(&in->S, &in->d, 1); in->mapped = 1; sync_status(in, obs); topl_restore(in); }
+        else { unsigned long s0, s1, h0; if (!in->so.done) { dr_boundary(&in->S, &in->d, in, stock_send); chain_dump(in); wt_check(in); dr_export_glyphs(&in->S, &in->d, 1); in->mapped = 1; sync_status(in, obs); topl_restore(in); }
             if (rp_read_start(in, &s0, &s1, &h0) && h0 != dr_hash_sel(&in->d)) { __sync_fetch_and_add(&g_rp_startdiff, 1); if (g_verbose) { char m[256]; dr_msg(&in->d, m, sizeof m); fprintf(stderr, "replay %lx: start hash differs; stock msg=%s bl=", in->seed0, m); for (int i = 0; i < 27; i++) fprintf(stderr, "%ld ", in->d.blstats[i]); fprintf(stderr, "\nreplay %lx: map=", in->seed0); for (int k = 0; k < 21 * 79; k++) if (in->d.glyphs[k] != 2359 && in->d.glyphs[k] < 5976) fprintf(stderr, "%d:%d ", k, in->d.glyphs[k]); fprintf(stderr, "\n"); for (int r = 0; r < 24; r++) { char row[81]; dr_row(&in->d, r, row); fprintf(stderr, "replay %lx: tty%02d=%s\n", in->seed0, r, row); } } } __sync_fetch_and_add(&g_rp_eps, 1); } } }
     return (nle_ctx_t*)in;
 }
@@ -698,7 +722,7 @@ vmore_skip:
     int stalled = dr_after_key(&in->S, &in->d, in, stock_send, key, in->so.done);
     int at_boundary = have_rec && t_rp_boundary;
     if (at_boundary && !rdone && !in->so.done && !stalled) { // an env step boundary: derive (probes) + export, then compare, like the fork's full fill
-        dr_boundary(&in->S, &in->d, in, stock_send); chain_dump(in); dr_export_glyphs(&in->S, &in->d, 1); in->mapped = 1; sync_status(in, obs);
+        dr_boundary(&in->S, &in->d, in, stock_send); chain_dump(in); wt_check(in); dr_export_glyphs(&in->S, &in->d, 1); in->mapped = 1; sync_status(in, obs);
     } else if (!in->so.done && !stalled && !rdone) {
         // a move inside a multi-key env step (e.g. [move, e, y, Enter] ending blind): the fork's arrival look happened at the move,
         // so derive now while the hero can still see; the boundary then reuses this cell (NH_STOCK_NOMIDLOOK=1 disables)
@@ -747,7 +771,7 @@ nle_ctx_t* nle_obs_refresh(nle_ctx_t* c, nle_obs* obs) {
     if (in->mapped) return c; // a second refresh without a key in between: nothing new to derive
     if (in->replay) { dr_export_glyphs(&in->S, &in->d, 1); in->mapped = 1; return c; } // replay: the env's own step structure is not the recorded one; probes only at recorded R boundaries
     topl_save(in);
-    dr_boundary(&in->S, &in->d, in, stock_send);
+    dr_boundary(&in->S, &in->d, in, stock_send); wt_check(in);
     topl_restore(in);
     dr_export_glyphs(&in->S, &in->d, 1);
     in->mapped = 1;
