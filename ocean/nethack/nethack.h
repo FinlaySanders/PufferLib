@@ -226,9 +226,10 @@ void init(Nethack* env) {
 // NH_NO_REFUSAL_MASKS=1 disables the masks added on 2026-09-11 (WEAR/THROW texts, KICK, bump memory) for A/B runs;
 // the original cant_hold behaviour stays
 static int nethack_no_refusal_masks(void) { static int v = -1; if (v < 0) v = getenv("NH_NO_REFUSAL_MASKS") != NULL; return v; }
+static int nethack_no_cant_hold(void) { static int v = -1; if (v < 0) v = getenv("NH_NO_CANT_HOLD") != NULL; return v; } // A/B: disable the form mask entirely
 static void nethack_track_cant_hold(Nethack* env) {
     const char* m = (const char*) env->message;
-    if (!m || !*m) return;
+    if (!m || !*m || nethack_no_cant_hold()) return;
     // the same form predicate (no hands / very small) refuses WIELD, THROW, WEAR and ENGRAVE with four different texts
     if (strstr(m, "can't even hold anything") || strstr(m, "Don't be ridiculous")
         || (!nethack_no_refusal_masks() && (strstr(m, "can't throw or shoot without hands")
