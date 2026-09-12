@@ -11,14 +11,16 @@
 #   box   (one worker per GPU, gated on that GPU being idle):  GPUS="4 6" S=/workspace/pufferlib W=<weights> OUT=... bash derive_ablation.sh
 S=${S:-/puffertank/pufferlib}; OUT=${OUT:-/tmp/ablate}; EPS=${EPS:-3000}; SEED=${SEED:-21}; W=${W:-resources/nethack/pkgnle_s406.bin}
 GPUS=${GPUS:-"0 0"}   # one worker per entry; repeated entries share a GPU and gate on free memory instead of idleness
+MINFREE=${MINFREE:-12500}   # MiB free a shared GPU must have before an arm starts (stock eval 11.9 GB; a harness arm takes 7.5 GB -> 8000)
+BASE_ARMS=${BASE_ARMS:-"logonly real0 derived"}   # reference arms; set empty to run only keep_<channel> arms (e.g. on a second box)
 CHANNELS=${CHANNELS:-"terrain food_underfoot container_at shop_price inside_shop peaceful_at spells lnc_bits weight capacity intrinsics cast_blocked path engraving_bits hero_tile inv_state inv_true_glyph identity"}
 mkdir -p $OUT; cd $S; ulimit -n 65536
 Q=$OUT/queue.txt; : > $Q
-echo "logonly -1 -" >> $Q; echo "real0 0 -" >> $Q; echo "derived 1 -" >> $Q
+for a in $BASE_ARMS; do case $a in logonly) echo "logonly -1 -";; real0) echo "real0 0 -";; derived) echo "derived 1 -";; esac >> $Q; done
 for c in $CHANNELS; do echo "keep_$c 1 $c" >> $Q; done
 echo "$(date +%T) START ablation eps=$EPS seed=$SEED weights=$W harness=$(md5sum puffer_nethack_harness | cut -c1-12) pufferlib=$(git rev-parse --short HEAD)+$(git status --porcelain | grep -c '^ M')dirty engine=$(git -C vendor/fast-nle rev-parse --short HEAD) arms=$(wc -l < $Q) gpus=[$GPUS]" >> $OUT/log
 shared=$([ "$(echo $GPUS | tr ' ' '\n' | sort -u | wc -l)" -lt "$(echo $GPUS | wc -w)" ] && echo 1 || echo 0)
-gpu_ok() { if [ $shared = 1 ]; then [ $(( $(nvidia-smi -i $1 --query-gpu=memory.total --format=csv,noheader,nounits) - $(nvidia-smi -i $1 --query-gpu=memory.used --format=csv,noheader,nounits) )) -ge 12500 ]; else [ $(nvidia-smi -i $1 --query-gpu=memory.used --format=csv,noheader,nounits) -lt 100 ]; fi; }
+gpu_ok() { if [ $shared = 1 ]; then [ $(( $(nvidia-smi -i $1 --query-gpu=memory.total --format=csv,noheader,nounits) - $(nvidia-smi -i $1 --query-gpu=memory.used --format=csv,noheader,nounits) )) -ge $MINFREE ]; else [ $(nvidia-smi -i $1 --query-gpu=memory.used --format=csv,noheader,nounits) -lt 100 ]; fi; }
 worker() { gpu=$1
   while true; do
     job=$(flock $Q.lock sh -c "head -1 $Q; sed -i 1d $Q"); [ -z "$job" ] && break
