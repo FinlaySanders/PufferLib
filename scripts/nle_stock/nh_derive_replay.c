@@ -89,7 +89,7 @@ static void hook_check(Rep* R, int chan, int nargs, const long* a, int nvals, co
     case C_SHOP: { int bad = (r != 0) != (S->inshop != 0); note(C_SHOP, bad); if (bad) example(R, C_SHOP, "real=%ld derived=%d", r, S->inshop); } break;
     case C_PRICE: note(C_PRICE, r != S->price); if (r != S->price) example(R, C_PRICE, "real=%ld derived=%ld inshop=%d top=%d", r, S->price, S->inshop, S->top); break;
     case C_LNC: note(C_LNC, r != S->lnc); if (r != S->lnc) example(R, C_LNC, "real=%ld derived=%d", r, S->lnc); break;
-    case C_INTR: note(C_INTR, r != S->intr); if (r != S->intr) example(R, C_INTR, "real=%ld derived=%d", r, S->intr); break;
+    case C_INTR: note(C_INTR, r != S->intr); if (r != S->intr) example(R, C_INTR, "real=%ld derived=%d form=%d form_dirty=%d gained=%d", r, S->intr, S->form, S->form_dirty, S->intr_gained); break;
     case C_CAST: { int bad = (r != 0) != (S->castblk != 0); note(C_CAST, bad); if (bad) example(R, C_CAST, "real=%ld derived=%d", r, S->castblk); } break;
     case C_IDENT: { int bad = v[0] != S->role || v[1] != S->race || v[2] != S->gender; note(C_IDENT, bad); if (bad) example(R, C_IDENT, "real=%ld/%ld/%ld derived=%d/%d/%d", v[0], v[1], v[2], S->role, S->race, S->gender); } break;
     case C_PEACE: { long x = a[0], y = a[1]; int d = (x >= 1 && x < 80 && y >= 0 && y < 21) ? S->peace[y * 79 + (x - 1)] : 0; note(C_PEACE, r != d);
@@ -101,7 +101,8 @@ static void hook_check(Rep* R, int chan, int nargs, const long* a, int nvals, co
     case C_PATH: { int rn = (int)v[0]; const long* rp = v + 1; int bad = 0;
         for (int i = 0; i < rn && !bad; i++) { int f = 0; for (int j = 0; j < S->path_n; j++) if (S->path[2 * j] == rp[2 * i] && S->path[2 * j + 1] == rp[2 * i + 1]) { f = 1; break; } if (!f) bad = 1; }
         for (int j = 0; j < S->path_n && !bad; j++) { int f = 0; for (int i = 0; i < rn; i++) if (S->path[2 * j] == rp[2 * i] && S->path[2 * j + 1] == rp[2 * i + 1]) { f = 1; break; } if (!f) bad = 1; }
-        note(C_PATH, bad); if (bad) example(R, C_PATH, "real_n=%d derived_n=%d", rn, S->path_n); S->path_n = 0; } break;
+        note(C_PATH, bad); if (bad) { char rs[400] = "", ds[400] = ""; int p = 0; for (int i = 0; i < rn && p < 380; i++) p += snprintf(rs + p, sizeof rs - (size_t)p, "%ld,%ld ", rp[2 * i], rp[2 * i + 1]); p = 0; for (int j = 0; j < S->path_n && p < 380; j++) p += snprintf(ds + p, sizeof ds - (size_t)p, "%d,%d ", S->path[2 * j], S->path[2 * j + 1]);
+            example(R, C_PATH, "real_n=%d derived_n=%d real=[%s] derived=[%s]", rn, S->path_n, rs, ds); } S->path_n = 0; } break;
     default: break;
     }
 }

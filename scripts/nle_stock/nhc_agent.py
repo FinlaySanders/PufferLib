@@ -17,6 +17,9 @@ from nle import nethack
 # challenge the environment owns that rule, so we must not pre-empt it.
 os.environ.setdefault("NH_STOCK_STALLCAP", "1000000")
 os.environ.setdefault("NH_STOCK_TERRAIN_PROBE", "1")
+# the challenge configuration's zero-time loop guard (nethack.h, default on under NH_STOCK_STRICT for the C backend; the
+# gym env has no strict switch, so set it here): masks an action only after it has been refused twice at zero game time
+os.environ.setdefault("NH_ZT_MASK", "1")
 
 SP = os.path.dirname(os.path.abspath(__file__))
 LIB = os.path.join(SP, "libnhagent.so")

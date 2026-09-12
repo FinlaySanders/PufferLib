@@ -254,7 +254,7 @@ static int nethack_zt_world_same(const Nethack* env) {
 // extra speed acts between clock ticks, so a landed attack looked like a refusal and got masked -- 2026-09-11 A/B:
 // aborts 3.7% -> 1.6%, score -8%. v2 masks on the SECOND identical zero-time step (zt_cnt >= 2): at most one extra
 // action per turn exists, so two in a row is a refusal. Still opt-in until v2 is measured against A.
-static int nethack_zt_mask_on(void) { static int v = -1; if (v < 0) v = getenv("NH_ZT_MASK") != NULL; return v; }
+static int nethack_zt_mask_on(void) { static int v = -1; if (v < 0) { const char* e = getenv("NH_ZT_MASK"); v = e ? atoi(e) != 0 : getenv("NH_STOCK_STRICT") != NULL; } return v; } // default ON in the challenge configuration (E2 2026-09-12: 0 aborts in 6,050 strict episodes, score neutral); NH_ZT_MASK=0/1 overrides; training never sets NH_STOCK_STRICT
 static int nethack_zt_blocked(const Nethack* env, int verb, int slot) { // item verbs: was (verb, slot) refused for free in this world?
     if (!nethack_zt_mask_on() || nethack_no_refusal_masks() || !env->zt_n || !nethack_zt_world_same(env)) return 0;
     for (int k = 0; k < env->zt_n; k++) if (env->zt_verb[k] == verb && env->zt_slot[k] == slot && env->zt_cnt[k] >= 2) return 1;

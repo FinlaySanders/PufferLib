@@ -72,11 +72,11 @@ typedef struct {
     // peaceful override cells: "gets angry" while the farlook text still says peaceful
     struct { int r, c; char txt[DR_SDESC]; } angry[16]; int nangry;
     unsigned char peace[DR_CELLS]; short peace_g[DR_CELLS]; long peace_t[DR_CELLS]; int peace_dirty; // farlook-classified monsters (cell, glyph, turn)
-    int form, form_dirty; // hero's polymorphed form (monster index, -1 = own form), from a farlook on the hero's cell
+    int form, form_dirty; long form_t; // hero's polymorphed form (monster index, -1 = own form), from a farlook on the hero's cell; form_t = turn of that farlook (re-probed every 40 turns while polymorphed: the return-to-form line is often lost in a prayer's pages)
     int ident_seen; // harness: identity parsed from the start text at a boundary
     int shop_pending; // a shopkeeper greeting seen on some key since the last boundary (greetings inside multi-key steps were lost)
     int msg_pending; // any non-empty message on a key since the last boundary (discoveries re-probe trigger)
-    int wlegs; // wounded legs (sides): weight_cap subtracts 100 per side unless flying; from kick/xan/land-mine messages, cleared by the heal message
+    int wlegs; long wlegs_t; // wounded legs (sides): weight_cap subtracts 100 per side unless flying; from kick/xan/bear-trap/land-mine messages, cleared by the heal message or when the wound's maximum duration has passed (the heal line is often lost in a multi-key step)
     // path
     int last_lx, last_ly, last_dn, last_dl, have_last;
     short path[2 * DR_PATH]; int path_n;
@@ -464,10 +464,15 @@ static void dr_track_engraving(DState* S, const DObs* o, int key, const char* ms
     if (strstr(msg, " gets angry") || strstr(msg, "You hear the shrieks") || strstr(msg, "turns to flee")) S->peace_dirty = 1; // re-classify visible monsters
     if (dr_shop_welcome(msg) || strstr(msg, "for sale") || strstr(msg, "zorkmid") || strstr(msg, "You sold") || strstr(msg, "Usage fee") || strstr(msg, "for shopping")) S->shop_pending = 1; // greetings and transactions (shops entered without a greeting: dead/absent shopkeeper, level revisit)
     if (msg[0]) S->msg_pending = 1;
-    if (strstr(msg, "pricks your")) { if (S->wlegs < 1) S->wlegs = 1; } // xan sting: one leg ("Ouch! That hurts!" from kicks wounds legs only in some branches -> 12% false positives, dropped)
-    if (strstr(msg, "land mine")) S->wlegs = 2;
-    if (strstr(msg, "somewhat better") || strstr(msg, "You turn into") || strstr(msg, "new man") || strstr(msg, "new woman")) S->wlegs = 0;
-    if (strstr(msg, "You turn into") || strstr(msg, "You return to") || strstr(msg, "new man") || strstr(msg, "new woman") || strstr(msg, "feel like a new") || strstr(msg, "You feel a change coming over")) S->form_dirty = 1;
+    { long T = o->blstats[20];
+      if (strstr(msg, "You strain a muscle")) { if (S->wlegs < 1) S->wlegs = 1; S->wlegs_t = T + 10; } // set_wounded_legs(RIGHT_SIDE, 5 + rnd(5))
+      if (strstr(msg, "bear trap closes on your")) { if (S->wlegs < 1) S->wlegs = 1; if (S->wlegs_t < T + 19) S->wlegs_t = T + 19; } // rn1(10, 10)
+      if (strstr(msg, "pricks your")) { if (S->wlegs < 1) S->wlegs = 1; if (S->wlegs_t < T + 60) S->wlegs_t = T + 60; } // xan: rnd(60 - Dex)
+      if (strstr(msg, "in no shape for")) { if (strstr(msg, "legs are")) S->wlegs = 2; else if (S->wlegs < 1) S->wlegs = 1; if (S->wlegs_t < T + 10) S->wlegs_t = T + 10; } // the kick refusal itself reveals the wound
+      if (strstr(msg, "land mine")) { S->wlegs = 2; S->wlegs_t = T + 75; } } // rn1(35, 41)
+    // "Ouch!  That hurts!" (kicking a wall) wounds only 1 in 3 and is not used; 6.7% of capacity queries were wrong before the strain rule (2026-09-12)
+    if (strstr(msg, "somewhat better") || (strstr(msg, "Your ") && strstr(msg, "feel") && strstr(msg, " better")) || strstr(msg, "You turn into") || strstr(msg, "new man") || strstr(msg, "new woman")) S->wlegs = 0; // heal_legs in 3.6.6: "Your leg feels better." / "Your legs feel better." ("somewhat better" is the 3.4 text and never fired)
+    if (strstr(msg, "You turn into") || strstr(msg, "You return to") || strstr(msg, "new man") || strstr(msg, "new woman") || strstr(msg, "feel like a new") || strstr(msg, "You feel a change coming over") || strstr(msg, "You feel purified") || strstr(msg, "You finish your prayer") || strstr(msg, "You begin praying")) S->form_dirty = 1; // prayer can cure lycanthropy and rehumanize inside its pages
 }
 
 // ---------------------------------------------------------------- peaceful map
@@ -658,7 +663,7 @@ static void dr_probe_self(DState* S, DObs* o, void* ctx, dr_send_fn send) {
     DSave sv; dr_save(o, &sv);
     send(ctx, ';'); S->probes++; S->probe_keys++; dr_getpos_more(S, o, ctx, send);
     send(ctx, '.'); S->probe_keys++; dr_getpos_more(S, o, ctx, send);
-    char m[256]; dr_msg(o, m, sizeof m); S->form = dr_parse_self(m); S->form_dirty = 0;
+    char m[256]; dr_msg(o, m, sizeof m); S->form = dr_parse_self(m); S->form_dirty = 0; S->form_t = o->blstats[20];
     { static int ml = -1; if (ml < 0) ml = getenv("NH_STOCK_MSGLOG") != NULL; if (ml) fprintf(stderr, "self T=%ld form=%d text=[%.70s]\n", o->blstats[20], S->form, m); }
     if (o->misc[0] || o->misc[1] || o->misc[2]) { send(ctx, 27); S->probe_keys++; }
     dr_restore(o, &sv);
@@ -865,12 +870,15 @@ static void dr_item_state(DState* S, const DItem* it, signed char st[8], short* 
 }
 static int dr_parse_self(const char* d) { // farlook text of the hero's own cell: "<form> called <name>" when polymorphed
     const char* ca = strstr(d, " called "); if (!ca) return -1;
-    char name[256]; size_t n = (size_t)(ca - d); if (n >= sizeof name) n = sizeof name - 1; memcpy(name, d, n); name[n] = 0;
+    const char* st = d; for (const char* p = d; p < ca; p++) if (*p == '(') st = p + 1; // "d        a dog or other canine (werejackal called Agent)": the form is the parenthesised name (parsed from the line start before 2026-09-12: never matched)
+    char name[256]; size_t n = (size_t)(ca - st); if (n >= sizeof name) n = sizeof name - 1; memcpy(name, st, n); name[n] = 0;
     char* nm = name; while (*nm == ' ') nm++; if (!strncmp(nm, "a ", 2)) nm += 2; else if (!strncmp(nm, "an ", 3)) nm += 3; else if (!strncmp(nm, "the ", 4)) nm += 4;
     static const char* races[] = {"human", "elf", "dwarf", "gnome", "orc", "elven", "dwarvish", "gnomish", "orcish"};
     for (int k = 0; k < 9; k++) { size_t L = strlen(races[k]); if (!strncmp(nm, races[k], L) && (nm[L] == ' ' || !nm[L])) return -1; }
     int mi = dr_mon_index_suffix(nm); if (mi < 0 || (mi >= 327 && mi <= 341)) return -1;
-    if (mi >= 200 && !strncasecmp(NHT_MON_NAME[mi], "were", 4)) { for (int i = 0; i < mi; i++) if (!strcasecmp(NHT_MON_NAME[i], NHT_MON_NAME[mi])) { mi = i; break; } } // polymorphed into the animal form
+    if (!strncasecmp(NHT_MON_NAME[mi], "were", 4)) { // the name is shared by the animal (low index, 'd'/'r'/'w') and the @ form: the line's class letter picks
+        const char* q = d; while (*q == ' ') q++; int lo = -1, hi = -1; for (int i = 0; i < NUMMONS; i++) if (!strcasecmp(NHT_MON_NAME[i], NHT_MON_NAME[mi])) { if (lo < 0) lo = i; hi = i; }
+        mi = (*q == '@') ? hi : lo; }
     return mi;
 }
 static const char* DR_BOWS[] = {"bow", "elven bow", "orcish bow", "yumi"}; static const char* DR_ARROWS[] = {"arrow", "elven arrow", "orcish arrow", "silver arrow", "ya"};
@@ -902,6 +910,7 @@ static void dr_derive_inventory(DState* S, const DObs* o, const DItem* items, in
         if (L >= 5 && !strcmp(mn + L - 5, "nymph")) cap = 1000;
         else if (NHT_MON_CWT[form] > 0 && NHT_MON_CWT[form] != 1450) cap = cap * NHT_MON_CWT[form] / 1450;
     }
+    if (S->wlegs && S->wlegs_t && o->blstats[20] > S->wlegs_t) S->wlegs = 0; // maximum duration passed: the heal message was lost
     if (cond & 0x400) cap = 1000; else { if (cap > 1000) cap = 1000; if (!(cond & 0x800)) cap -= 100 * S->wlegs; }
     { static int ml = -1; if (ml < 0) ml = getenv("NH_STOCK_MSGLOG") != NULL; if (ml && S->form >= 0 && S->cap != cap) fprintf(stderr, "cap T=%ld form=%d cap=%d wt=%d\n", o->blstats[20], S->form, cap, wt); }
     if (cap < 1) cap = 1; if (cap > 1000) cap = 1000;
@@ -916,6 +925,10 @@ static int dr_intrinsics(const DState* S, const DObs* o) {
     for (int k = 0; k < 8; k++) { int l = DR_ROLE_INNATE[S->role][k].lvl, bit = DR_ROLE_INNATE[S->role][k].bit; if (bit && lvl >= l) b |= bit; }
     if (DR_RACE_INNATE[S->race].bit && lvl >= DR_RACE_INNATE[S->race].lvl) b |= DR_RACE_INNATE[S->race].bit;
     if (o->blstats[20] < S->fast_until) b |= 128;
+    if (S->form >= 0 && S->form < NUMMONS) { // polymorphed: set_uasmon PROPSETs the form's resistances into the H* intrinsics the fork exports
+        unsigned mr = NHT_MON_MR[S->form]; if (mr & 32) b |= 1; if (mr & 1) b |= 2; if (mr & 2) b |= 4; if (mr & 4) b |= 8; if (mr & 16) b |= 16;
+        if (NHT_MON_M1[S->form] & 0x01000000u) b |= 64;
+        const char* mn = NHT_MON_NAME[S->form]; if (!strcmp(mn, "floating eye") || !strcmp(mn, "mind flayer") || !strcmp(mn, "master mind flayer")) b |= 32; }
     return b;
 }
 
@@ -1187,7 +1200,7 @@ static void dr_boundary(DState* S, DObs* o, void* ctx, dr_send_fn send) {
             else if (S->npile > 1) { memmove(S->pile, S->pile + 1, (size_t)(S->npile - 1) * sizeof S->pile[0]); memmove(S->pile_qty, S->pile_qty + 1, (size_t)(S->npile - 1) * sizeof S->pile_qty[0]); S->npile--; S->top = S->pile[0]; } else { S->npile = 0; S->top = -1; }
             L->objm[k] = (short)S->top; food = dr_is_food(S->top); cont = dr_is_cont(S->top); top = S->top; }
         // still on the same cell, nothing happened to it: the last decision stands (the fork's hooks would return the same values)
-        terrain = S->terrain; top = L->objm[k] != S->top && L->objm[k] >= 0 ? L->objm[k] : S->top; food = dr_is_food(top); cont = dr_is_cont(top); engr = L->engr[k]; price = (int)S->price; // L->engr carries the typed/wiped model when no look is possible
+        terrain = S->terrain; top = L->objm[k] != S->top && L->objm[k] >= 0 ? L->objm[k] : S->top; food = dr_is_food(top); cont = dr_is_cont(top); for (int pi = 0; pi < S->npile; pi++) { food |= dr_is_food(S->pile[pi]); cont |= dr_is_cont(S->pile[pi]); } engr = L->engr[k]; price = (int)S->price; // the fork scans the whole floor chain for food/containers, not the top object (2.4% food mismatch before 2026-09-12) // L->engr carries the typed/wiped model when no look is possible
     } else {
         int t = L->terr[k], ob = L->objm[k];
         if (t >= CMAP_OFF + 42) t = -1; // traps (42+) and beams/explosions are overlays, not the floor the fork's back_to_glyph reports
@@ -1231,6 +1244,7 @@ static void dr_boundary(DState* S, DObs* o, void* ctx, dr_send_fn send) {
         if (o->inv_true) o->inv_true[i] = tg;
     }
     dr_probe_peaceful(S, o, ctx, send);
+    if (S->form >= 0 && !S->form_dirty && o->blstats[20] - S->form_t >= 40) S->form_dirty = 1; // periodic re-check while polymorphed
     if (S->form_dirty) dr_probe_self(S, o, ctx, send);
 }
 // glyph export for the stock backend: appearance bijection on undiscovered shuffled types, hero tile = top object else terrain
