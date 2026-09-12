@@ -457,7 +457,7 @@ static void chain_dump(Inst* in) {
 static long g_wc_n, g_wc_wt, g_wc_wth, g_wc_h, g_wc_cap, g_wc_bad, g_wc_shown;
 static void wt_check_report(void) { fprintf(stderr, "WTCHECK boundaries=%ld weight_mismatch=%ld (hallucinating %ld of %ld) cap_mismatch=%ld layout_bad=%ld\n", g_wc_n, g_wc_wt, g_wc_wth, g_wc_h, g_wc_cap, g_wc_bad); }
 static void wt_check(Inst* in) {
-    static int on = -1; if (on < 0) { on = getenv("NH_STOCK_WTCHECK") != NULL; if (on) atexit(wt_check_report); } if (!on || !in->d.blstats || in->so.done) return;
+    static int on = -1, real_wt = -1; if (on < 0) { real_wt = getenv("NH_STOCK_WTREAL") != NULL; on = real_wt || getenv("NH_STOCK_WTCHECK") != NULL; if (on) atexit(wt_check_report); } if (!on || !in->d.blstats || in->so.done) return;
     char** pinv = (char**)dlsym(in->dl, "invent"); int (*wcap)(void) = (int (*)(void))dlsym(in->dl, "weight_cap"); if (!pinv || !wcap) { __sync_fetch_and_add(&g_wc_bad, 1); return; }
     long w = 0; int i = 0, bad = 0; char items[4096]; int p = 0;
     for (char* o = *pinv; o && i < 55; o = *(char**)o, i++) {
@@ -473,6 +473,7 @@ static void wt_check(Inst* in) {
     if (cond & 0x200) __sync_fetch_and_add(&g_wc_h, 1);
     int mw = (int)w != in->S.wt, mc = cap != in->S.cap;
     if (mw) __sync_fetch_and_add((cond & 0x200) ? &g_wc_wth : &g_wc_wt, 1); if (mc) __sync_fetch_and_add(&g_wc_cap, 1);
+    if (real_wt) { in->S.wt = (int)w; in->S.cap = cap; } // NH_STOCK_WTREAL=1: diagnostic crutch, the policy gets the engine's weight/capacity (rung-2 style, never a cert)
     if ((mw || mc) && __sync_fetch_and_add(&g_wc_shown, 1) < 40) { char m[256]; dr_msg(&in->d, m, sizeof m); fprintf(stderr, "WTCHECK T=%ld cond=%lx real wt=%ld cap=%d derived wt=%d cap=%d wlegs=%d msg=\"%.80s\" inv:%s\n", in->d.blstats[20], cond, w, cap, in->S.wt, in->S.cap, in->S.wlegs, m, items); }
 }
 static void sync_status(Inst* in, nle_obs* o) {
