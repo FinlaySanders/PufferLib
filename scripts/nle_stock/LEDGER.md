@@ -463,3 +463,16 @@ on the fork (poison/starvation unchanged). Isolation arms: guard off (running), 
 Mask ON same tree/seed 17,159 / 10,112 → **the expiring form mask is worth +4.7 % / +3.8 % on the fork for the 2B** (2.5 σ); the claim
 tree's 16,027 / 9,432 was a mask-off number and agrees with 16,396 within 1.4 σ. On stock the mask bought ≈ 0 (14,357 with vs
 14,289 mask-off old derive) → either it misfires on stock for fighters or the guard costs the 2B; isolation arms running.
+
+## 2026-09-12 15:05 — the 2B's own bugs, from a 611-episode 2B corpus (25 min × 128 envs, 2.16M late-game boundaries)
+Late-game (turn ≥ 5,000) error rates with derive v1: **weight 4.9 %**, intrinsics 1.6 %, food_underfoot 0.6 %, hero_tile 0.4 %,
+peaceful 0.3 %, shop_price 0.26 %, capacity 0.2 %; **identity wrong in 6 of 611 games (1 %)**.
+- **Weight while hallucinating** (`2f302173`): NLE randomises inventory glyphs under hallucination; items whose text does not resolve
+  to a name fell back to the glyph → random objects priced into the pack (real 863 vs derived 3,458). Fix: hold the last sighted
+  weight while `cond & 0x200`. The recorded game: thousands of mismatches → 0.
+- **Identity for one character** (`2f302173`): all six failures were a neutral female gnomish Archeologist — the only welcome line
+  longer than 80 columns; it wraps to screen row 1 and the parser read row 0 only. Fix: read rows 0–2.
+- Intrinsics 1.6 % late = one-boundary lag on lycanthrope form flips; left.
+Guard-off 2B arm (`NH_ZT_MASK=0`): tracking *below* the guard-on cert at equal count (6,330 vs 6,965 at 1,543 games) → the guard
+is not the fighters' loss. Binaries rebuilt on both boxes (local stock fe9217042d7f, drone 15c7c2b639c3, libnhagent 453478ee8b06);
+canary #2 for the 2B (`canary2_2b_s21`) queued behind the guard-off arm; the corpus replay with v2 runs on the drone.

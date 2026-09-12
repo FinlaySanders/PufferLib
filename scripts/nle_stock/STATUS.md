@@ -1,4 +1,4 @@
-# NetHack on stock NLE — status, 2026-09-12 13:00
+# NetHack on stock NLE — status, 2026-09-12 15:05
 
 Companion to `LEDGER.md` (every number with its arm name, tree and interface) and `ENGINE.txt` (engine pin).
 This is the narrative: the goal, what is established, what is running, what comes next.
@@ -95,7 +95,15 @@ intrinsics 0.25 %; everything else under 0.02 %. Three fixed the same morning (c
 Still open: weight (an unidentified item's true weight is not public), peaceful transitions, hero tile. (`path` turned out
 to feed only the exploration reward, never the observation; irrelevant to eval.)
 
-**The live effect (canary, 12:37): 12,785 / 8,522 with 0 aborts** against E2's 11,977 / 7,354 on the same seed, masks and
+**The 2B is a different story (afternoon).** Same seed, same tree: fork 16,520 / 9,839 vs stock 14,357 / 8,398 (−13 % / −15 %);
+the 1B's fixes moved it under 1 %. The loss is in the weapon-using fighters (Valkyrie −27 %, Barbarian −26 %, Caveman −24 %),
+who die 20–25 % earlier in turns; Monk, casters and Samurai are at parity; stoning deaths 3.5 % vs 1.3 %. A corpus recorded with
+the 2B itself found two more bugs the 1B never triggered: weight goes wild while hallucinating (random inventory glyphs priced as
+boulders), and one identity (neutral female gnomish Archeologist) never parsed because its welcome line wraps. Both fixed; the
+second 2B canary runs at ~16:20. The zero-time guard is not the cause (guard-off arm reads lower). Two fork certs of the 2B also
+disagreed by 7 %; that was the form mask, which is worth +4.7 % on the fork where messages are exact.
+
+**The live effect for the 1B (canary, 12:37): 12,785 / 8,522 with 0 aborts** against E2's 11,977 / 7,354 on the same seed, masks and
 clock — +6.7 % mean, +15.9 % median from the reconstruction fixes alone, and −4.2 % / −2.1 % against the fork reference:
 inside 5 % on both for the first time. **Same seed and protocol on the fork (12:56): 13,060 / 8,618 → the stock gap is −2.1 % mean,
 −1.1 % median, within noise.** The 2B cert on the current tree lands ~14:30.
