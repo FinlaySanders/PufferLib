@@ -884,6 +884,12 @@ static int dr_parse_self(const char* d) { // farlook text of the hero's own cell
 static const char* DR_BOWS[] = {"bow", "elven bow", "orcish bow", "yumi"}; static const char* DR_ARROWS[] = {"arrow", "elven arrow", "orcish arrow", "silver arrow", "ya"};
 static const char* DR_TWOH[] = {"two-handed sword", "tsurugi", "battle-axe", "quarterstaff", "dwarvish mattock", "lance", "bow", "elven bow", "orcish bow", "yumi", "crossbow", "glaive", "halberd", "bardiche", "voulge", "dwarvish spear", "spetum", "lucern hammer", "guisarme", "ranseur", "bill-guisarme", "partisan", "fauchard", "bec de corbin"};
 static int dr_in(const char* s, const char** arr, int n) { for (int i = 0; i < n; i++) if (!strcmp(s, arr[i])) return 1; return 0; }
+static int dr_corpse_mon_from_text(const char* t) { // "a partly eaten uncursed newt corpse" -> newt (suffix match; articles/quantities irrelevant)
+    char s[256]; dr_lower(s, t, sizeof s); const char* cp = strstr(s, " corpse"); if (!cp) return -1;
+    char cand[128] = ""; size_t k = (size_t)(cp - s); if (k >= sizeof cand) k = sizeof cand - 1; memcpy(cand, s, k); cand[k] = 0;
+    const char* strip[] = {"partly eaten ", "uncursed ", "cursed ", "blessed ", "very rotten ", "rotten ", "stale "}; for (int q = 0; q < 7; q++) dr_replace_all(cand, strip[q], "");
+    char* c2 = cand; while (*c2 == ' ') c2++; return dr_mon_index_suffix(c2);
+}
 static void dr_derive_inventory(DState* S, const DObs* o, const DItem* items, int n) {
     long cond = o->blstats[25];
     int lnc = 0;
@@ -897,15 +903,20 @@ static void dr_derive_inventory(DState* S, const DObs* o, const DItem* items, in
         if (strstr(items[i].t, "(weapon in hand")) { lnc |= 2; if (ammo) lnc |= 4; }
     }
     int wt = 0;
-    // hallucinating: NLE's inventory glyphs are random objects (random_obj_to_glyph), so the glyph fallback prices boulders and
-    // statues into the pack (real 863 vs derived 3,458 in the 2B corpus, 2026-09-12). The real weight does not change with the
-    // hero's perception: hold the last sighted estimate until the hallucination ends.
-    if (cond & 0x200) wt = S->wt; else
+    // The inventory TEXT is never hallucinated (objnam.c has no Hallucination branch); the glyphs are (random_obj_to_glyph). So price
+    // from the text first -- real name -> true type, corpse -> its monster -- then the glyph (= appearance slot on both engines, the
+    // fork's f7d8749ab pricing) when it can be trusted, and the appearance named by the text while hallucinating.
+    int hallu = (cond & 0x200) != 0;
     for (int i = 0; i < n; i++) {
-        int q = dr_quantity(items[i].t); int half = strstr(items[i].t, "partly eaten") ? 2 : 1;
-        if (items[i].oc == 12) wt += (q + 50) / 100;
-        else if (items[i].g >= BODY_OFF && items[i].g < BODY_OFF + NUMMONS) wt += (NHT_MON_CWT[items[i].g - BODY_OFF] * q) / half;
-        else { int idx = dr_name_index(items[i].t); if (idx < 0) idx = items[i].idx; if (idx >= 0) wt += (NHT_OBJ_WT[idx] * q) / half; }
+        const char* t = items[i].t; int q = dr_quantity(t); int half = strstr(t, "partly eaten") ? 2 : 1;
+        if (items[i].oc == 12) { wt += (q + 50) / 100; continue; }
+        int mi = dr_corpse_mon_from_text(t);
+        if (mi < 0 && !hallu && items[i].g >= BODY_OFF && items[i].g < BODY_OFF + NUMMONS) mi = items[i].g - BODY_OFF;
+        if (mi >= 0) { wt += (NHT_MON_CWT[mi] * q) / half; continue; }
+        int idx = dr_name_index(t);
+        if (idx < 0 && !hallu) idx = items[i].idx;
+        if (idx < 0) { char tl[256]; dr_lower(tl, t, sizeof tl); dr_strip_parens(tl); int j = dr_appearance_descr_c(tl, items[i].oc); if (j >= 0) idx = dr_gem_canon(j); }
+        if (idx >= 0) wt += (NHT_OBJ_WT[idx] * q) / half;
     }
     int cap = 25 * ((int)o->blstats[2] + (int)o->blstats[5]) + 50;
     int form = S->form;

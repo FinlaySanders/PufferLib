@@ -559,3 +559,7 @@ new pricing and no dead hooks), NETHACKDIR = the fix tree's dat, NH_NLE_OPTS=1, 
 dirty file is the tracked `puffer` binary). **Env difference to the leaky masked lanes (423ced55):** the form mask expires after 100 turns (a51b1953)
 instead of sticking — the shipping default every stock cert uses — plus inert switches (zero-time v2 is strict-only, NH_NO_CANT_HOLD unset) and
 census logging. So fixed-vs-leaky = weight fix + mask expiry, consistent with the eval configuration, not a pure weight ablation.
+**Hallucination closed in the derive (17:50):** inventory text is never hallucinated (objnam.c has no Hallucination branch), only the glyphs are,
+so the derive now prices from the text — real name → type, corpse → its monster, appearance → canonical slot — and uses the glyph only when
+trustworthy; the weight hold is gone. **Fixed-engine corpus: weight 0 / 1,306,697.** Smoke: the old 1B on the fixed engine 13,154 (se 342) / 8,620
+vs 13,060 / 8,618 on the old engine (rung1_s21) — the engine runs; a policy that never leaned on the leak is unaffected.
