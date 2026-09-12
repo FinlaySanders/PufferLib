@@ -327,8 +327,8 @@ n=480 equal-k: **median 6,414, mean 12,462** (p25 1,692, p75 17,610). Rung 3 old
 table. The "episode 1 vs 2+" split (12,311 vs 5,963 here; 3,640 vs 7,325 for the 1B) points opposite ways on n=24 —
 noise, not a cross-episode leak.
 
-**X4 (local, expiring `cant_hold`, strict seed 21):** at 5,736 eps 11,589 (se 323) / 7,445, aborts 2.5 %. Final at 6,000
-pending; E2 (X4 + zero-time v2) starts when X4's process exits.
+**X4 (local, expiring `cant_hold`, strict seed 21) — final, 6,074 eps:** **11,750 (se 306) / 7,199**, aborts 2.5 %. Equal to X1
+(no mask, 11,956 / 7,540) within noise, with a quarter of its aborts. E2 (X4 + zero-time v2) started 09:23.
 
 **Corrected ablation (`/tmp/ablate_gp2`, `NLE_GETPOS_NORMAL=1`):** logonly 11,377 (se 234) at 3,012 eps, worst zero-time
 run 9,404 steps. `derived` running since 09:12. Made **serial** at 09:20 (second worker stopped by pid, `real0` re-queued

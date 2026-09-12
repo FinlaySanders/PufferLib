@@ -1,4 +1,4 @@
-# NetHack on stock NLE — status, 2026-09-12 09:40
+# NetHack on stock NLE — status, 2026-09-12 09:50
 
 Companion to `LEDGER.md` (every number with its arm name, tree and interface) and `ENGINE.txt` (engine pin).
 This is the narrative: the goal, what is established, what is running, what comes next.
@@ -88,7 +88,7 @@ One-tree rung 3 was ~10 % below the old-tree rung 3 on the same seed. Everything
 | sticky `cant_hold` (shipped 09-11), local | 10,503 | 6,128 | 3.7 % |
 | **no `cant_hold`**, local X1 | **11,956** | **7,540** | 11.1 % |
 | no `cant_hold`, box r3nch (6,536 eps, live) | 11,414 | 6,786 | 10.8 % |
-| expiring `cant_hold` (100 turns; now the default), local X4 (5,736 eps) | 11,589 | 7,445 | 2.5 % |
+| expiring `cant_hold` (100 turns; now the default), local X4 (final, 6,074 eps) | 11,750 | 7,199 | 2.5 % |
 
 Mechanism: the flag is set soundly (every engine site is a form test) but was cleared only by "You return to…",
 which stock's message channel can drop; a de-polymorphed hero then kept four verbs masked for the rest of the game.
@@ -114,7 +114,7 @@ number taken before it carries the penalty: rung 2 both seeds, the 2B Python run
   claim re-run (~12 h) → then the old 4B `rt_4B_1122_s204` on rung 3 (what a 4B does on stock today).
 
 **Local (4090):**
-- X4 (expiring `cant_hold`) at 5,736 / 6,000; **E2** (v2 mask on top of it) starts when it exits — decides the default eval mask set.
+- X4 done (expiring mask = no-mask score within noise, a quarter of the aborts); **E2** (v2 mask on top of it) running since 09:23, ≈ 12:30 — decides the default eval mask set.
 - corrected reconstruction ablation, serial: `derived` running, then `real0`, then keep_peaceful_at / capacity / inv_state / hero_tile / cast_blocked / path (~70 min each, ≈ 19:00).
 
 ## 5. Next
