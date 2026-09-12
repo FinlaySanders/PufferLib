@@ -306,3 +306,39 @@ perf work **does** change game behaviour and is parked, not shipped. pufferlib h
 2. When `claim2b_s501/502/503` land: rung-1 fork cert on the pkg tree (`box_baseline_fork.sh`, lane param), then the already-queued rung-3 challenge cert.
 3. Optional middle rung: non-strict stock cert of `pkgnle_s406` to split reconstruction cost from strict-mode cost. Not launched.
 4. Local repo: promote to a training tree only by syncing `ocean/nethack` + `vendor/fast-nle` into a new package build on the box, then a fresh lane; that lane's md5 line becomes the next row here.
+
+## 2026-09-12 morning — results landed, queue changes
+
+**Rung 2, seed 21 (box, one-tree build of ~19:00 09-11 = sticky `cant_hold`, non-strict):** 11,543 eps (12 h timeout, rc=124),
+burn-in-adjusted **11,740 (se 162) / 7,178**. With seed 32 (11,555 / 6,722, segv at 7,195) rung 2 pools to ≈ 11.7K / 7.0K.
+Caveat: taken with the sticky mask. Non-strict keeps the top line, so the "You return to…" clear is less likely dropped
+than in strict mode, but the number is not clean until re-run on `a51b1953`+.
+
+**`r3nch` (box, one-tree `a51b1953`, `NH_NO_CANT_HOLD=1`, strict, seed 21):** first attempt segfaulted after ~100 eps
+(07:17, rc=139); `run_r3nch.sh` relaunched it, live on gpu 7. At 6,536 eps (09:22): **11,414 (se 267) / 6,786**, aborts
+10.8 %. Same seed: A (sticky) 10,503 / 6,128; old tree (no mask) 11,376 / 7,138; local X1 (no mask) 11,956 / 7,540.
+The box reproduces the regression and its cause. Note `NH_STOCK_LITERALOPTS=` (empty) here → backend falls through to
+the strict rc path (`if (litopts && *litopts)`), i.e. NLE's option set applied by rc rewriting, not the literal string;
+same option set, different delivery.
+
+**Rung 4 Python, 2B `claim2b_s503` (box, tree `91414698` = sticky extended `cant_hold`, `libnhagent` 57e5771fb38a):**
+n=480 equal-k: **median 6,414, mean 12,462** (p25 1,692, p75 17,610). Rung 3 old tree `chal2b_s503` = 13,816 / 7,600 →
+−16 % median, the size of the sticky penalty (−19 % at 1B). Not a binding loss; re-run on the fixed tree for the claim
+table. The "episode 1 vs 2+" split (12,311 vs 5,963 here; 3,640 vs 7,325 for the 1B) points opposite ways on n=24 —
+noise, not a cross-episode leak.
+
+**X4 (local, expiring `cant_hold`, strict seed 21):** at 5,736 eps 11,589 (se 323) / 7,445, aborts 2.5 %. Final at 6,000
+pending; E2 (X4 + zero-time v2) starts when X4's process exits.
+
+**Corrected ablation (`/tmp/ablate_gp2`, `NLE_GETPOS_NORMAL=1`):** logonly 11,377 (se 234) at 3,012 eps, worst zero-time
+run 9,404 steps. `derived` running since 09:12. Made **serial** at 09:20 (second worker stopped by pid, `real0` re-queued
+at the front): E2 (11.9 GB) + one harness arm (7.5 GB) fit the 24.5 GB card; two arms + E2 would not, and the memory
+gate raced the E2 launcher. ~70 min per arm → 7 arms ≈ 19:00.
+
+**4B lanes at 09:20:** `s601/602` 2.10B, `s603/604` 1.97B (SPS 61–65K) → land ≈ 18:30. `nomask_s607/608` started 09:12,
+SPS ~60K → ≈ 03:00 09-13, earlier once the first four free the CPU.
+
+**Box eval queue reordered (09:24):** `launch_r3_4b.sh` (old-4B rung 3 first) and `overnight_extra.sh` waiter B (2B rung 3
+after it, mask default) stopped, verified by pid. `equiv/launch_claim_r3.sh`: when gpus 0/7 idle → **one-tree rung 3 of
+`claim2b_s503`, seeds 21/32, `NH_NO_CANT_HOLD=1`** (the interface of the old-tree claim certs and the nomask 4B lanes) →
+then old-4B `rt_4B_1122_s204` rung 3, same setting. Ends with `CLAIM_R3_CHAIN_DONE`.
