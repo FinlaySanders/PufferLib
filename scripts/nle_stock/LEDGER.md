@@ -563,3 +563,12 @@ census logging. So fixed-vs-leaky = weight fix + mask expiry, consistent with th
 so the derive now prices from the text — real name → type, corpse → its monster, appearance → canonical slot — and uses the glyph only when
 trustworthy; the weight hold is gone. **Fixed-engine corpus: weight 0 / 1,306,697.** Smoke: the old 1B on the fixed engine 13,154 (se 342) / 8,620
 vs 13,060 / 8,618 on the old engine (rung1_s21) — the engine runs; a policy that never leaned on the leak is unaffected.
+
+## 2026-09-12 18:15 — the calendar costs nothing; the 2B gap is not guard, mask, derive v3 or clock
+**Fake clock (`claim2b_fakeclock_s21`, canary3's configuration with the backend's seeded per-game date instead of today's new moon; 6,022 eps,
+2,022 kept): 14,439 (se 405) / 8,799, 0 aborts, stoned 0.9 % of games** vs canary3 (real clock, new moon) 14,559 (se 391) / 8,730, stoned 3.5 %
+→ −0.8 % / +0.8 %: **the new-moon stoning excess is real (melee roles 6–10 % → ~1 %) but does not move the 2B's score** — the games it
+truncates are not the ones carrying the mean. Decomposition so far of the 2B's −13 % to the fork (all seed 21, same tree): zero-time guard
++5 % (keep), form mask 0, derive v3 fixes 0, calendar 0. **Remaining suspect under test: the weight channel** (`stock_wtreal_s21`, drone gpu 7,
+≈ 19:40); if that is also ~0, the residual is in the interface itself (tty/message rendering, mask legality on stock) and needs the stock-side
+truth check per channel.
