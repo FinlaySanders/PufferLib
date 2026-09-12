@@ -605,3 +605,15 @@ peaceful_at 0.295 %, food_underfoot 60 of 8,991. Fixes, each from a divergence t
   without items now means "keep the pile memory". The 3,046-mismatch pile game → 0.
 Bench tooling: `--msgs` (every message and probe key with T), `--log` (derive's own PILELOG/MSGLOG), per-channel `--watch` state, weight examples
 carry the inventory. Recording needs the GPU to itself: beside two 512-agent evals the recorder dies on cudaMalloc (rc 139), not a derive bug.
+
+## 2026-09-12 19:40 — peaceful_at fixed: 0.37 % → 0.017 %
+Three causes from the probe log (`NH_STOCK_PEACELOG=1 nh_derive_replay --log`): (1) the farlook description arrived behind a --More-- when a message
+was still on the top line and the probe spaced it away unread → empty text → "hostile" (`cf8cf647`: read before dismissing, keep the page with the
+"(… name)" form; the self-look probe had the same bug); (2) my anger-by-name rule counted thrown MISSES as attacks — tmiss() angers 1 in 3 and then
+prints "gets angry", so a miss now forces a re-look at the named monster next boundary instead of a verdict; hits and melee misses anger unconditionally
+(hmon_hitmon/missum wakeup); (3) the `I` marker: the fork's `nle_peaceful_at` answers for a monster the hero cannot see (behind a boulder), which the
+mask queries because the marker glyph is in its monster range — hidden state, a small fork-side leak of the weight kind; reconstruction cannot know it.
+**Corpus 5 (fixed engine, 376 games, 1.61M boundaries, recorded and replayed with this derive): peaceful_at 272 / 1.61M = 0.017 %, of which 133 are
+the `I` marker and 74 visible monsters; weight 0, identity 0, capacity 0.022 %, hero_tile 0.107 %, intrinsics 0.136 %, spells 0.033 % (T=1), food 60 / 10,150.**
+Every observation channel is now exact or ≤ 0.14 %, with the residuals named: blessed see-invisible potion, invisible-hero self-look, unseen-monster
+marker, first-step spells, piles changed without a look.

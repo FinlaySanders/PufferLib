@@ -467,12 +467,14 @@ static void dr_track_engraving(DState* S, const DObs* o, int key, const char* ms
       else for (size_t r = 0; r < sizeof DR_LOSE / sizeof DR_LOSE[0]; r++) if (strstr(mm, DR_LOSE[r].pat)) { S->intr_lost |= DR_LOSE[r].bit; S->intr_gained &= ~DR_LOSE[r].bit; if (DR_LOSE[r].bit == 128) S->fast_until = 0; } }
     if (strstr(msg, "suddenly moving") && strstr(msg, "faster")) S->fast_until = o->blstats[20] + 120;
     if (strstr(msg, " gets angry") || strstr(msg, "You hear the shrieks") || strstr(msg, "turns to flee")) S->peace_dirty = 1; // re-classify visible monsters
-    if (strstr(msg, "You hit ") || strstr(msg, "You miss ") || strstr(msg, "You kill ") || strstr(msg, " hits the ") || strstr(msg, " misses the ") || strstr(msg, "You smite") || strstr(msg, "You strike")) { // the hero attacked: a peaceful of that name is peaceful no more
+    if (strstr(msg, "You hit ") || strstr(msg, "You miss ") || strstr(msg, "You kill ") || strstr(msg, " hits the ") || strstr(msg, "You smite") || strstr(msg, "You strike")) { // the hero attacked: hmon_hitmon and missum wakeup(TRUE) unconditionally; a thrown MISS angers only 1 in 3 (tmiss) and then prints "gets angry", handled above
         int melee = strstr(msg, "You hit ") || strstr(msg, "You miss ") || strstr(msg, "You smite") || strstr(msg, "You strike"); int hr = (int)o->blstats[1], hc = (int)o->blstats[0];
         int cand = 0, ck = -1; for (int k = 0; k < DR_CELLS; k++) { int g = o->glyphs[k]; if (g >= 0 && g < NUMMONS && strstr(msg, NHT_MON_NAME[g])) { cand++; ck = k; } }
         for (int k = 0; k < DR_CELLS; k++) { int g = o->glyphs[k]; if (!S->peace[k] || g < 0 || g >= NUMMONS || !strstr(msg, NHT_MON_NAME[g])) continue;
             int adj = abs(k / DR_COLS - hr) <= 1 && abs(k % DR_COLS - hc) <= 1;
             if (cand == 1 || (melee && adj)) { S->peace[k] = 0; S->peace_g[k] = (short)g; S->peace_t[k] = o->blstats[20]; } } (void)ck; }
+    if (strstr(msg, " misses the ")) { // a thrown miss angers 1 in 3 (tmiss) and the "gets angry" line can fall behind a --More--: re-look at the named monster next boundary
+        for (int k = 0; k < DR_CELLS; k++) { int g = o->glyphs[k]; if (S->peace[k] && g >= 0 && g < NUMMONS && strstr(msg, NHT_MON_NAME[g])) S->peace_t[k] = -1000; } }
     if (dr_shop_welcome(msg) || strstr(msg, "for sale") || strstr(msg, "zorkmid") || strstr(msg, "You sold") || strstr(msg, "Usage fee") || strstr(msg, "for shopping")) S->shop_pending = 1; // greetings and transactions (shops entered without a greeting: dead/absent shopkeeper, level revisit)
     if (msg[0]) S->msg_pending = 1;
     { long T = o->blstats[20]; int dexdrop = S->prev_dex > 0 && (int)o->blstats[4] == S->prev_dex - 1; // set_wounded_legs: ATEMP(A_DEX)-- when the legs were sound
