@@ -102,6 +102,9 @@ struct Env {
     int prev_action;
     int cant_hold; // polymorphed into a form that cannot hold objects: the engine refuses WIELD/THROW/ENGRAVE for FREE,
                    // so an unmasked policy re-picks them forever. Learned from the refusal message, which is a public channel.
+    long cant_hold_t; // game turn when it was set. The belief expires after NETHACK_CANT_HOLD_TURNS turns: the loop it guards
+                      // against runs with the clock stopped, and a missed "You return to..." (a probe or --More-- can eat the
+                      // one message on stock) would otherwise mask four verbs for the rest of the game.
     int prev_dir; // dir-head index of the last directional action, -1 otherwise
     // zero-time memory: the exact actions (verb, slot, dir) the engine refused for free since the world last changed
     // (hero position, level, game clock). Repeating an identical action in an identical world is never useful in
@@ -227,13 +230,19 @@ void init(Nethack* env) {
 // the original cant_hold behaviour stays
 static int nethack_no_refusal_masks(void) { static int v = -1; if (v < 0) v = getenv("NH_NO_REFUSAL_MASKS") != NULL; return v; }
 static int nethack_no_cant_hold(void) { static int v = -1; if (v < 0) v = getenv("NH_NO_CANT_HOLD") != NULL; return v; } // A/B: disable the form mask entirely
+#ifndef NETHACK_CANT_HOLD_TURNS
+#define NETHACK_CANT_HOLD_TURNS 100 // NH_CANT_HOLD_STICKY=1 restores the never-expiring belief for A/B
+#endif
+static int nethack_cant_hold_sticky(void) { static int v = -1; if (v < 0) v = getenv("NH_CANT_HOLD_STICKY") != NULL; return v; }
 static void nethack_track_cant_hold(Nethack* env) {
+    if (env->cant_hold && !nethack_cant_hold_sticky()
+        && env->blstats[NLE_BL_TIME] - env->cant_hold_t > NETHACK_CANT_HOLD_TURNS) env->cant_hold = 0; // re-learn if still true
     const char* m = (const char*) env->message;
     if (!m || !*m || nethack_no_cant_hold()) return;
     // the same form predicate (no hands / very small) refuses WIELD, THROW, WEAR and ENGRAVE with four different texts
     if (strstr(m, "can't even hold anything") || strstr(m, "Don't be ridiculous")
         || (!nethack_no_refusal_masks() && (strstr(m, "can't throw or shoot without hands")
-            || strstr(m, "Don't even bother") || strstr(m, "can't wear any armor in your current form")))) env->cant_hold = 1;
+            || strstr(m, "Don't even bother") || strstr(m, "can't wear any armor in your current form")))) { env->cant_hold = 1; env->cant_hold_t = env->blstats[NLE_BL_TIME]; }
     // any return to normal form, or a fresh polymorph, clears it; the next refusal will set it again if it still applies
     else if (strstr(m, "You return to ") || strstr(m, "You turn into ") || strstr(m, "You break out of your cocoon")) env->cant_hold = 0;
 }
@@ -861,7 +870,7 @@ static void nethack_do_reset(Nethack* env) {
     env->disc0 = nle_discoveries(env->ctx);
     env->engid_tested = 0;
     env->enh_ready = 0;
-    env->cant_hold = 0; // belief from the previous game's messages must not mask this one
+    env->cant_hold = 0; env->cant_hold_t = 0; // belief from the previous game's messages must not mask this one
     env->zt_n = 0; env->prev_dir = -1;
     env->noprog_run = 0; env->noprog_max = 0;
     memset(&env->stats, 0, sizeof(env->stats));
