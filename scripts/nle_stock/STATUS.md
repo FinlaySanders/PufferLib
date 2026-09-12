@@ -1,4 +1,4 @@
-# NetHack on stock NLE — status, 2026-09-12 16:15
+# NetHack on stock NLE — status, 2026-09-12 17:45
 
 Companion to `LEDGER.md` (every number with its arm name, tree and interface) and `ENGINE.txt` (engine pin).
 This is the narrative: the goal, what is established, what is running, what comes next.
@@ -145,29 +145,31 @@ number taken before it carries the penalty: rung 2 both seeds, the 2B Python run
   pick up armour — the same roles that lose 20–27 %. Two direct tests are running (§4). If confirmed, it is a fork-side export bug: the
   training signal was privileged, and the Monday claim carries it as a residual until a retrain on an appearance-canonical weight.
 
-## 4. Running now (16:15)
+## 4. Running now (17:45)
 
-**Local (4090, two 512-agent stock evals):**
-- `claim2b_noguard_s21` — 2B, zero-time guard off: −6.5 % / −8 % vs guard-on at equal count, 63 aborts → guard stays. Lands ≈ 16:30.
-- `canary3_2b_s21` — 2B, derive v3 (identity newline fix, weight hold under hallucination), default masks, strict seed 21, 6,000; started 16:01,
-  lands ≈ 17:20. Pairs with 14,357 / 8,398 (derive v1) and the fork's 16,520 / 9,839. Expect a small change: the fixes touch 1 % of games and
-  hallucination steps.
-- `claim2b_nomask_s21` — 2B, no form mask, derive v3; queued behind the guard-off pid (≈ 16:30 → 17:50).
+**The weight leak is fixed in the fork (`f7d8749ab`) and leak-fixed lanes are training.** Audit of every export the env consumes found
+weight to be the only channel reading hidden state (LEDGER 17:40); two dead hooks that read hidden corpse age were removed.
 
-**Drone (six 4B trainers on gpus 1–6; evals on 0/7 at nice 10):**
-- `stock_wtreal_s21` (gpu 7) — stock strict 2B seed 21, 6,000, with the engine's weight/capacity in the observation (diagnostic crutch, not a
-  cert). Against canary3 it measures the weight channel's cost on stock. ≈ 18:00.
-- `hw_real0_s21` / `hw_wder_s21` (gpu 0) — fork harness, all channels real vs only weight derived. ≈ 17:00.
-- 4B lanes: s601/602 at 3.4B, s603/604 at 3.3B → 18:15–18:50; nomask s607/608 at 1.35B → ≈ 02:45 Sunday.
+**Drone (leak-fixed tree `/workspace/pufferlib_fix`, driver `nh_fixwt.sh`, claim config, seeds 701–706):**
+- `fixwt4b_s705` training on gpu 0 since 17:35 (≈ 20 h → Sunday ≈ 14:00). Queue, longest first, one lane per GPU as it falls idle:
+  `fixwt4b_s706`, `fixwt2b_s703/704` (≈ 10 h), `fixwt1b_s701/702` (≈ 5 h). GPUs 1/2/3/5 free 18:15–18:50 (masked leaky 4B lanes finish
+  and stay as the baseline), gpu 7 after `stock_wtreal_s21` (≈ 19:40). GPUs 4/6 keep the nomask leaky 4B lanes (≈ 03:00).
+- `stock_wtreal_s21` (gpu 7): the old 2B with the engine's (pre-fix) weight in the observation — how much the leaky 2B loses on stock to the
+  weight channel. Pairs with `canary3_2b_s21` 14,559 / 8,730. ≈ 19:40.
+
+**Local (4090):**
+- `claim2b_fakeclock_s21`: canary3's configuration with the backend's seeded fake date instead of today's new moon → the calendar cost. ≈ 18:40.
+- `rung1_fixwt_smoke`: the old 1B on the leak-fixed engine (sanity: engine runs, score sane; pairs with rung1_s21 13,060 / 8,618). ≈ 17:50.
+- Fixed-engine 2B corpus (363 games) replaying: weight mismatch should fall to hallucination steps only.
 
 ## 5. Next
 
-1. Read canary3 vs derive v1, then stock_wtreal vs canary3 (the weight cost). If weight carries the fighters' loss: size it, write it up as the
-   fork-side export bug it is, propose the appearance-canonical weight export for the next training round.
-2. `claim2b_nomask_s21` vs canary3: does the form mask pay on stock for the 2B (it pays +4.7 % on the fork).
-3. 2B Python rung 4 (2,000 games) on the final derive; claim table with both stock seeds; per-role census (`ep_census.py`).
-4. Sunday: rung-1 fork certs of all six 4B lanes, pick two, rung 3 strict seeds 21/32, rung 4 for the best.
-5. Article per ARTICLE_PLAN.md; bug table gains the identity newline, the weight export, and the `shuffled_glyph` finding.
+1. Read the two attribution arms (weight cost on stock; calendar cost) and put the decomposition of the 2B's −13 % in the ledger.
+2. As leak-fixed lanes land: rung-1 fork cert (14,000), stock strict seeds 21/32 (derive v3, expect weight mismatch ≈ 0), Python rung 4 for the
+   best; the 1B pair lands first (≈ 23:00 tonight) and is the first end-to-end check that the fixed channel closes the gap.
+3. Sunday: same for the 2B pair (≈ 05:00) and the 4B pair (≈ 14:00–16:00); the leaky masked 4B lanes get rung-1 + stock certs as the baseline.
+4. Article per ARTICLE_PLAN.md: results table with leaky vs fixed policies, the ladder, the bug table (identity newline, weight export leak,
+   `shuffled_glyph`, new-moon calendar), the export audit as a section.
 
 ## 6. Things that bit us, now guarded
 
@@ -184,3 +186,6 @@ number taken before it carries the penalty: rung 2 both seeds, the 2B Python run
 - `build_derive_replay.sh` ignores `OUT=` and writes in place — never rebuild it under a running replay.
 - Reading one header (`display.h`) for what an engine exports — NLE's window port remaps glyphs afterwards (`shuffled_glyph`); verify on the
   running engine (`NH_STOCK_WTCHECK` did in three minutes).
+- A lane driver whose worker loops on a lane that dies at launch burns the whole queue in two seconds (`config/default.ini` missing from the new
+  working directory). Workers now re-queue a lane that dies within 120 s and stop.
+- A repo-tracked `puffer` binary in a fresh clone looks like a built trainer — gate on the build's DONE marker, not on the file.
