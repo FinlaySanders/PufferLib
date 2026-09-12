@@ -644,3 +644,8 @@ vs its fixed-engine fork seed 7 (14,000 eps, 10,000 kept) 20,141 (se 278) / 10,3
 The same policy's seed-21 stock cert with the OLDER derive 24c65e8b (weight-text fix, before round 2 and the peaceful fixes) read 16,695 / 8,623 (−17 %). Python rung 4
 (final derive, 480 games) 18,990 / 9,869. Either the seed or derive round 2 explains the 17 %; disambiguation launched on the idle 4090 at 22:08: fork fixed-engine seed 21
 6K (`rung1_leaky4b_s602_fixeng_s21`) then stock strict seed 21 6K with the final derive (`stock_leaky4b_s602_s21_final`), landing ≈ 23:00 before the fixed 1B evals.
+
+### 22:47 — leaky 4B seed 21, FINAL derive: stock 18,241 (se 546) / 9,754 (6,001 eps, 2,001 kept, 0 aborts) vs fork fixed-engine seed 21 20,133 (se 621) / 10,658
+Old-derive stock seed 21 was 16,695 / 8,623 (−17 % / −17 %); the final derive brings it to −9.4 % / −8.5 % (≈ 2.3 se on the mean). Seed 7 pair: −3.2 % / +1.4 %.
+**Pooled over both seeds (8,010 kept): stock final 19,188 mean vs fork ≈ 20,140 → −4.7 %; medians 10,544 / 9,754 vs 10,396 / 10,658 → level.** Reading: derive round 2 +
+the peaceful fixes were most of the 17 % (≈ 60 % of it at seed 21); what remains is a ≤ 5 % mean residual that the medians do not show, inside the "gap under 5 %" target.
