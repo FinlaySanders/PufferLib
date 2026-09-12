@@ -673,13 +673,22 @@ static int dr_look_here(DState* S, DObs* o, void* ctx, dr_send_fn send, DLook* r
 // object cell: with autodescribe on, describing a cell next to the hero marks its objects dknown, which is exactly the
 // side effect that made stock's screen descriptions unusable. The hero's own cell is selected directly.
 static void dr_getpos_more(DState* S, DObs* o, void* ctx, dr_send_fn send) { for (int it = 0; it < 4 && o->misc[2]; it++) { send(ctx, ' '); S->probe_keys++; } }
+// getpos selection ('.'): read the description BEFORE dismissing --More-- pages (with a message still on the top line the
+// description arrives behind a --More--; dr_getpos_more used to space it away unread -> empty text -> "hostile"/no form). Keeps
+// the page that looks like a farlook line ("x  a thing (peaceful name) [seen: ...]"), else the concatenation.
+static void dr_probe_text(DState* S, DObs* o, void* ctx, dr_send_fn send, char* out, size_t n) {
+    char best[256] = ""; char acc[512] = ""; char m[256]; dr_msg(o, m, sizeof m); dr_replace_all(m, "--More--", " ");
+    if (m[0]) { snprintf(acc, sizeof acc, "%s", m); if (strchr(m, '(') && strchr(m, ')')) snprintf(best, sizeof best, "%s", m); }
+    for (int it = 0; it < 4 && o->misc[2]; it++) { send(ctx, ' '); S->probe_keys++; dr_msg(o, m, sizeof m); dr_replace_all(m, "--More--", " ");
+        if (m[0] && !strstr(acc, m)) { size_t L = strlen(acc); snprintf(acc + L, sizeof acc - L, " %s", m); if (strchr(m, '(') && strchr(m, ')')) snprintf(best, sizeof best, "%s", m); } }
+    snprintf(out, n, "%s", best[0] ? best : acc);
+}
 static void dr_probe_self(DState* S, DObs* o, void* ctx, dr_send_fn send) {
     if (S->count_pending || dr_noprobe("look") || dr_prompt_open(o)) return;
     if (o->blstats[25] & 0x200) return; // hallucinating: farlook names draw from the display RNG
     DSave sv; dr_save(o, &sv);
     send(ctx, ';'); S->probes++; S->probe_keys++; dr_getpos_more(S, o, ctx, send);
-    send(ctx, '.'); S->probe_keys++; dr_getpos_more(S, o, ctx, send);
-    char m[256]; dr_msg(o, m, sizeof m); S->form = dr_parse_self(m); S->form_dirty = 0; S->form_t = o->blstats[20];
+    send(ctx, '.'); S->probe_keys++; char m[256]; dr_probe_text(S, o, ctx, send, m, sizeof m); S->form = dr_parse_self(m); S->form_dirty = 0; S->form_t = o->blstats[20];
     { static int ml = -1; if (ml < 0) ml = getenv("NH_STOCK_MSGLOG") != NULL; if (ml) fprintf(stderr, "self T=%ld form=%d text=[%.70s]\n", o->blstats[20], S->form, m); }
     if (o->misc[0] || o->misc[1] || o->misc[2]) { send(ctx, 27); S->probe_keys++; }
     dr_restore(o, &sv);
@@ -705,8 +714,7 @@ static void dr_probe_peaceful(DState* S, DObs* o, void* ctx, dr_send_fn send) {
         if (k < 0 || dup || k == hk) { send(ctx, 27); S->probe_keys++; break; } // no further monster: the cursor stayed
         if (nseen < 32) seen[nseen++] = k;
         if (o->glyphs[k] < 0 || o->glyphs[k] >= PET_OFF) { send(ctx, 27); S->probe_keys++; continue; } // a pet or a remembered marker: skip, keep walking
-        send(ctx, '.'); S->probe_keys++; dr_getpos_more(S, o, ctx, send);
-        char m[256]; dr_msg(o, m, sizeof m);
+        send(ctx, '.'); S->probe_keys++; char m[256]; dr_probe_text(S, o, ctx, send, m, sizeof m);
         S->peace[k] = (unsigned char)(strstr(m, "peaceful ") != NULL || strstr(m, "tame ") != NULL); // farlook text: "d        a dog or other canine (peaceful jackal) [seen: ...]"
         { static int pv = -1; if (pv < 0) pv = getenv("NH_STOCK_PEACELOG") != NULL; if (pv) fprintf(stderr, "peace T=%ld cell %d,%d glyph %d -> %d text=\"%.60s\"\n", T, k / DR_COLS, k % DR_COLS, o->glyphs[k], S->peace[k], m); }
         S->peace_g[k] = (short)o->glyphs[k]; S->peace_t[k] = T;
