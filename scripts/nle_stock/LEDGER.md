@@ -430,3 +430,12 @@ the stock backend's do not (cause unknown; suspects: the out-of-band `nle_obs_re
 occupation handling of probe keys). Together with the −48 % `derived` arm this closes the question: **no harness score arm is
 a stock measurement**; the harness is kept for recording (bench) and mismatch tables only. Its old-derive live mismatch table
 under probe perturbation: capacity 10.1 %, food_underfoot 32 %, weight 2.5 %, path 2.1 %, intrinsics 1.5 %, peaceful 0.29 %.
+
+## 2026-09-12 12:56 — same-seed, same-protocol fork arm: the 1B stock gap is ≤ 2 %
+`rung1_s21` (fork interface, seed 21, 6,049 eps, 512 agents, NLE options): **13,060 (se 333) / 8,618**, would-be aborts 29 (0.5 %).
+Canary (stock, challenge rules, fixed derive, same seed/protocol): 12,785 (se 328) / 8,522, 0 aborts → **−2.1 % mean, −1.1 %
+median**, 0.6 σ from zero. The 1B policy now scores the same on stock NLE under the challenge's rules as on its training interface.
+Bench hygiene: the hero-tile check now mirrors the stock export rule (raw hero glyph while blind/hallucinating/engulfed) — the
+channel drops 0.224 % → 0.084 %, the rest is stale pile-order memory. Identity: 1/176 corpus episodes lost the welcome line to
+the "Friday the 13th" warning (fork fake calendar); today's stock cert shows all 13 roles evenly, so the new-moon line is harmless;
+a Ctrl-X (in the challenge action set) fallback is the fix, deferred.

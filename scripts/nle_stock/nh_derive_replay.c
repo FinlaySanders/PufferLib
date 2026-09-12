@@ -53,7 +53,9 @@ static void inv_text(const DRecObs* o, int i, char* t) { memcpy(t, o->inv_strs +
 static void boundary_checks(Rep* R) {
     DState* S = &R->S; DRecObs* o = R->o;
     if (S->d_valid) { int k = S->d_r * 79 + S->d_c; int under = S->top >= 0 ? S->top : S->terrain; if (under < 0) under = CMAP_OFF + 19;
-        int real = o->glyphs[k], derm = dr_map_glyph(S, (short)under); note(C_HERO, real != derm); if (real != derm) example(R, C_HERO, "real=%d derived=%d top=%d terrain=%d", real, derm, S->top, S->terrain); }
+        int engulfed = 0; for (int q = 0; q < DR_CELLS; q++) if (o->glyphs[q] >= SWALLOW_OFF && o->glyphs[q] < SWALLOW_HI) { engulfed = 1; break; }
+        // the stock backend keeps the raw hero glyph while blind, hallucinating or engulfed (the fork's own rule); on fork truth that raw glyph IS the export, so only the sighted case is a reconstruction test
+        int real = o->glyphs[k], derm = (engulfed || (o->blstats[25] & 0x220)) ? real : dr_map_glyph(S, (short)under); note(C_HERO, real != derm); if (real != derm) example(R, C_HERO, "real=%d derived=%d top=%d terrain=%d cond=%lx blind=%d halu=%d", real, derm, S->top, S->terrain, (unsigned long)o->blstats[25], (int)((o->blstats[25] >> 5) & 1), (int)((o->blstats[25] >> 9) & 1)); }
     { int eb = S->engr_bits; for (int k = 0; k < DR_CELLS; k++) if (o->glyphs[k] >= SWALLOW_OFF && o->glyphs[k] < SWALLOW_HI) { eb |= 4; break; }
       int real = o->internal[6]; note(C_ENGR, real != eb); if (real != eb) example(R, C_ENGR, "real=%d derived=%d", real, eb); }
     for (int i = 0; i < 55 && o->inv_letters[i]; i++) {

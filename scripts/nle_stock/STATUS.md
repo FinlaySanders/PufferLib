@@ -1,4 +1,4 @@
-# NetHack on stock NLE — status, 2026-09-12 12:45
+# NetHack on stock NLE — status, 2026-09-12 13:00
 
 Companion to `LEDGER.md` (every number with its arm name, tree and interface) and `ENGINE.txt` (engine pin).
 This is the narrative: the goal, what is established, what is running, what comes next.
@@ -97,7 +97,8 @@ to feed only the exploration reward, never the observation; irrelevant to eval.)
 
 **The live effect (canary, 12:37): 12,785 / 8,522 with 0 aborts** against E2's 11,977 / 7,354 on the same seed, masks and
 clock — +6.7 % mean, +15.9 % median from the reconstruction fixes alone, and −4.2 % / −2.1 % against the fork reference:
-inside 5 % on both for the first time (one seed; the same-seed fork arm and the 2B cert follow this afternoon).
+inside 5 % on both for the first time. **Same seed and protocol on the fork (12:56): 13,060 / 8,618 → the stock gap is −2.1 % mean,
+−1.1 % median, within noise.** The 2B cert on the current tree lands ~14:30.
 
 ### 3.4 The cert regression: found, explained, fixed
 
