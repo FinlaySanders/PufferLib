@@ -266,3 +266,13 @@ fixed-derive arm are finishing today. Also do not mix panel rolling finals, raw 
 - The canary shows the reconstruction fixes moved nothing → the article says the gap is probes/side effects, with
   `real0` vs log-only as the evidence; still a true story.
 - Moon phase: Sunday is still new moon; fine.
+
+## Reference agent's interface shape (verified from the AutoAscend source, 2026-09-12 20:00)
+The published AutoAscend (maciej-sypetkowski/autoascend) owns the environment loop exactly as our rung 4 does: `EnvWrapper` wraps
+`gym.make('NetHackChallenge-v0')`, the agent's imperative `main()` drives it, and every action is `Agent.step(action)` →
+`self.env.step(self.env._actions.index(key))`; the observation is copied and parsed (`--More--`, `(end)`, `(X of N)` markers) in
+`update()`; the episode ends by an `AgentFinished` exception. One env per process, episodes in parallel via Ray with a 500–720 s wall clock.
+Their own simulations set `no_progress_timeout=1000` (NLE default 10,000; our analyzers count aborts at 1,000). They seed episodes for
+reproducibility; the challenge evaluation is unseeded, as are our certs. No `act(obs)` interface in the repo (the competition's
+`batched_step` wrapper is not published). → Article line: "the agent has the same interface shape as the reference bot: it holds the
+unmodified gym environment and calls only reset and step, every keystroke — including the reconstruction's probes — being one step."
