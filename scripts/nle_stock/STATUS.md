@@ -186,3 +186,7 @@ own-engine fork certs of the four finished leaky 4B lanes, and fork + stock cert
 - A lane driver whose worker loops on a lane that dies at launch burns the whole queue in two seconds (`config/default.ini` missing from the new
   working directory). Workers now re-queue a lane that dies within 120 s and stop.
 - A repo-tracked `puffer` binary in a fresh clone looks like a built trainer — gate on the build's DONE marker, not on the file.
+- A waiter gated on "DONE <lane>" in the training log fired at once: the crashed 17:33 launch had left a DONE line for every fixed lane, and a
+  quarter-trained checkpoint was evaluated under a cert label for a minute before it was caught. Every waiter now gates on the final checkpoint's
+  step count plus the trainer process being gone. Twice tonight a kill-by-pattern from an inline command matched its own shell; kills go through a
+  script file (`certq_restart.sh`) or explicit PIDs only.
