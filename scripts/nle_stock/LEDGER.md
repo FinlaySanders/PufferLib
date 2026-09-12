@@ -172,6 +172,39 @@ The first local ablation attempt (23:00–23:07) ran a harness linked against th
 (`/tmp/ablate_WRONGLIB_2307`). The stock binaries link no fork library (they dlopen stock), so no cert was affected.
 Build scripts now fail if the linked `libnethack.so` is not this tree's.
 
+## Reconstruction ablation — morning of 2026-09-12 — **INVALID, superseded** (kept for the record)
+
+**Retracted 07:20.** These arms ran the harness **without `NLE_GETPOS_NORMAL=1`**, which the fork needs so the farlook
+probe gets a real cursor prompt (the fork's `getpos` returns at once by design; earlier harness work always set it —
+"otherwise kills probes"). The tell: the harness looped in 23% of games while the real stock backend with the same
+derive and probes aborts 3.7% — the harness was not measuring stock. Corrected rerun `/tmp/ablate_gp` (real0, derived,
++6 channels) queued behind arm E. The honest integrated number for probes+reconstruction on stock remains rung 2 vs
+rung 1: ≈ −13% mean. Original (invalid) table:
+
+(fork engine, harness, paired seed 21, 3,000 eps/arm; seed 32 on the box agreed with the first three rows)
+
+| arm | policy sees | mean | median | eps with a ≥1,000-step zero-time loop |
+|---|---|---|---|---|
+| `logonly` | real obs, **no probes sent** | **11,399** | 7,730 | 0.5% |
+| `real0` | real obs, **probes sent** | **7,413** | 4,037 | **22.7%** |
+| `derived` | reconstructed obs (+ probes) | 5,282 | 2,517 | 24.5% |
+| `keep_capacity` | derived except capacity real | 6,328 (+1,046) | 3,472 | 21.1% |
+| `keep_peaceful_at` | derived except peaceful real | 6,033 (+751) | 3,036 | 22.2% |
+| `keep_terrain` / `keep_weight` | | 5,220 / 5,319 (±0) | | |
+
+**The probe keystrokes themselves cost 35% and turn 0.5% loopers into 23% — with the policy seeing the true
+observation.** That is the stock loop excess (rung-1 census 0.5% vs stock 3.7–12%), and it is not observation content
+(D already ruled out the message channel). Reconstruction adds a further −29%; `capacity` and `peaceful_at` are the
+largest channels found so far (cast_blocked, path, engraving, hero_tile, inv_state, inv_true still running); a
+probe-class ablation (terrain probe / mid-look / extra looks / corridor probe / getpos / all probes off) is queued
+behind it. Fixing the probes' side effects is the first lever; `capacity` and `peaceful_at` derivation the second.
+
+Related overnight numbers: rung 2 (non-strict stock, seed 32, died at 7,195 eps with a segfault): 11,555 / 6,722 —
+so the strict rules cost little; the loss is reconstruction+probes. One-tree rung 3 with `cant_hold` (seed 21/32,
+recovered logs): 10,229 / 5,802 and 10,310 / 5,970, aborts ~5% — **lower than the old-tree rung 3 without `cant_hold`
+on the same seed (11,376 / 7,138)**; `r3nch_pkgnle_s406_s21` (same tree, `NH_NO_CANT_HOLD=1`) is running to split
+`cant_hold` from the derive delta between the 13:14 box binary and the landed derive. 4B lanes at 1.6B, ETA ~18:00.
+
 ## Gotchas that produced the mess
 
 1. **`rc=$?` after `$(date +%T)` is always 0.** 16 drivers use `echo "$(date +%T) ... rc=$?"`; the subshell resets `$?`. Every `rc=0` in `long.log`, `chalcert.log`, `claimcert.log`, `chalcert2b.log` is meaningless. `claim2b_s504` segfaulted (`claim2b.log`); three `claimcert` arms and one `overnight` cert arm segfaulted (all with `NH_STOCK_CLEAREOS=1`). Only `box_certq.sh` and `box_baseline_fork.sh` capture `rc` on its own line. Check `*.driver.log` / `*.log` stderr for `Segmentation fault`.

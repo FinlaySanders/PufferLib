@@ -5,7 +5,8 @@
 #   mode  0  real observation, probes sent, derive computed alongside  -> probe side-effects on the game + mismatch table
 #   mode  1  derived observation                                        -> reconstruction + probes
 #   mode  1 + NH_DERIVE_REAL=<channel>  everything derived except one   -> the cost of reconstructing that channel
-# Same seed and deterministic flags in every arm, so episodes pair.
+# Same seed and deterministic flags in every arm, so episodes pair. NLE_GETPOS_NORMAL=1 is REQUIRED on the fork:
+# without it the fork answers getpos instantly and the farlook probe keys land in the game (2026-09-12 morning: invalid run).
 #   local (one GPU, two arms share it, gated on free memory):  EPS=3000 SEED=21 OUT=/tmp/ablate bash derive_ablation.sh
 #   box   (one worker per GPU, gated on that GPU being idle):  GPUS="4 6" S=/workspace/pufferlib W=<weights> OUT=... bash derive_ablation.sh
 S=${S:-/puffertank/pufferlib}; OUT=${OUT:-/tmp/ablate}; EPS=${EPS:-3000}; SEED=${SEED:-21}; W=${W:-resources/nethack/pkgnle_s406.bin}
@@ -24,7 +25,7 @@ worker() { gpu=$1
     set -- $job; id=$1; mode=$2; real=$3
     until gpu_ok $gpu; do sleep 30; done
     rm -f $OUT/$id.ep
-    env NH_NLE_OPTS=1 NETHACKDIR=$S/vendor/fast-nle/build/dat NH_DERIVE_MODE=$mode $( [ "$real" != "-" ] && echo NH_DERIVE_REAL=$real ) \
+    env NH_NLE_OPTS=1 NLE_GETPOS_NORMAL=1 NETHACKDIR=$S/vendor/fast-nle/build/dat NH_DERIVE_MODE=$mode $( [ "$real" != "-" ] && echo NH_DERIVE_REAL=$real ) \
       NH_STOCK_TERRAIN_PROBE=1 NH_STOCK_STALLCAP=1000000 NH_EPLOG=$OUT/$id.ep CUDA_VISIBLE_DEVICES=$gpu \
       timeout 14400 ./puffer_nethack_harness eval --headless --base.load_model_path=$W --policy.hidden_size=1024 --policy.num_layers=4 \
       --base.eval_agents=512 --base.eval_episodes=$EPS --base.seed=$SEED --base.async=0 --vec.num_buffers=1 > $OUT/$id.out 2> $OUT/$id.err
