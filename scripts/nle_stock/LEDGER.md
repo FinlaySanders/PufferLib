@@ -638,3 +638,9 @@ and only the first page of that step survives in `message`, for the training env
 the 4 affected games were fights right after the revert (Elbereth/WIELD masked for a few turns before death). The expiry is the cap on that, not the cause; without it (leaky 4B
 lanes) the same 7 games carried it to the end. A cheaper, exact clear for the next env round: drop the belief when `blstats[HD]` falls from >0 to 0 (forms with mlevel > 0;
 newt/jackal/sewer-rat-class forms stay message-only). Leaky 4B vs fixwt lanes differ on this axis by ~7 events per 376 games: not a confound.
+
+### 22:07 — leaky 4B `nlestock4b_s602`, stock strict seed 7, FINAL derive (758067b6), 10,009 eps, 6,009 kept, 0 aborts: **19,504 (se 336) / 10,544**
+vs its fixed-engine fork seed 7 (14,000 eps, 10,000 kept) 20,141 (se 278) / 10,396 → **−3.2 % mean, +1.4 % median: parity.** vs AutoAscend 5,336 → 1.98× median.
+The same policy's seed-21 stock cert with the OLDER derive 24c65e8b (weight-text fix, before round 2 and the peaceful fixes) read 16,695 / 8,623 (−17 %). Python rung 4
+(final derive, 480 games) 18,990 / 9,869. Either the seed or derive round 2 explains the 17 %; disambiguation launched on the idle 4090 at 22:08: fork fixed-engine seed 21
+6K (`rung1_leaky4b_s602_fixeng_s21`) then stock strict seed 21 6K with the final derive (`stock_leaky4b_s602_s21_final`), landing ≈ 23:00 before the fixed 1B evals.
