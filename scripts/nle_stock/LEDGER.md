@@ -459,3 +459,7 @@ Stock fixed derive, same seed: 14,357 / 8,398 → **−13.1 % / −14.6 %**. Per
 Caveman −24 %, Rogue −19 %, Ranger −13 %, Archeologist −12 %, Knight −7 %, Wizard −5 %, Tourist −3 %, Healer 0, Samurai +3 %,
 Priest +4 %, Monk +4 %. Losing roles die 20–25 % earlier in turns at the same depth. Stoning ends 3.5 % of stock games vs 1.3 %
 on the fork (poison/starvation unchanged). Isolation arms: guard off (running), form mask off (queued), fork mask off (drone).
+**Fork 2B, today's tree, seed 7, form mask OFF (`NH_NO_CANT_HOLD=1`, 10K kept): 16,396 (se 208) / 9,745**, would-be aborts 1.0 %.
+Mask ON same tree/seed 17,159 / 10,112 → **the expiring form mask is worth +4.7 % / +3.8 % on the fork for the 2B** (2.5 σ); the claim
+tree's 16,027 / 9,432 was a mask-off number and agrees with 16,396 within 1.4 σ. On stock the mask bought ≈ 0 (14,357 with vs
+14,289 mask-off old derive) → either it misfires on stock for fighters or the guard costs the 2B; isolation arms running.
