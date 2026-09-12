@@ -530,3 +530,22 @@ reconstruction one, and one that every stock number measured this weekend carrie
 gated on canary3's pid → canary3 minus fakeclock = today's calendar cost for the 2B. Consequences for the claim: the challenge number is
 date-dependent by construction (moon phase, Friday 13th); quote the real-clock number with its date and the fixed-clock number beside it.
 The drone weight tests are unaffected (wtreal vs canary3 both real clock; the harness pair both fake).
+
+## 2026-09-12 17:40 — the weight leak is fixed in the fork; leak-fixed lanes queued
+**Derive v3 canary (`canary3_2b_s21`, 6,079 eps, 2,079 kept): 14,559 (se 391) / 8,730, 0 aborts** vs derive v1 over the same first-6,079 window
+15,103 / 9,075 → level within 1 se; the identity and hallucination fixes do not move the 2B, as expected.
+**No form mask (`claim2b_nomask_s21`, 6,010 eps, 2,010 kept): 14,801 (se 414) / 8,858, 0 aborts** vs canary3 (same protocol) → +1.7 % / +1.5 %:
+**the form mask is neutral on stock for the 2B** (it pays +4.7 % on the fork).
+**Audit of every export the env consumes** (12 hooks + raw fills): weight is the only channel that reads hidden state. Everything else is
+identification-gated by construction (inv_state, inv_true_glyph), the hero's own knowledge model (engraving bits), public game facts
+(terrain/food/container/price/shop underfoot, peaceful only on visible monster glyphs, identity, class counts), computable from public
+events (spell retention = 20,000 − turns since the read; intrinsics from their messages) or menu-visible (fail %). Two hooks that read
+hidden corpse age (`nle_floor_eat_safe`, `nle_invlet_food_unsafe`) were dead code; removed. The exploration reward walks the true map — training-only, allowed.
+**Fork fix `f7d8749ab`** (`nle_weight`): an item is priced by its true type only while its name is displayed (doname's dknown && oc_name_known),
+otherwise by the appearance's canonical slot via a C entry to `shuffled_glyph` — exactly the derive's formula. Hooks are not in the golden hash;
+the gate is unchanged. ENGINE.txt pin updated. Stock `NH_STOCK_WTCHECK/WTREAL` follow the new formula (`WTREAL=2` = the pre-fix channel).
+**Leak-fixed lanes (`nh_fixwt.sh`, tree `/workspace/pufferlib_fix`, engine f7d8749ab, claim config, default masks, seeds 701–706):**
+`fixwt4b_s705/706` (4B, ≈ 20 h), `fixwt2b_s703/704` (2B, ≈ 10 h), `fixwt1b_s701/702` (1B, ≈ 5 h), longest first, one per GPU as GPUs 0/1/2/3/5/7 fall idle
+(0 now — the harness pair was stopped, superseded by `stock_wtreal_s21`; 1/2/3/5 as the masked 4B lanes finish 18:15–18:50; 7 after wtreal ≈ 19:40).
+The four masked leaky 4B lanes finish and stay as the baseline; nomask s607/608 keep GPUs 4/6 (user's call). Validation running locally:
+fixed-engine corpus → replay (expect weight ≈ 0 except hallucination) and a rung-1 smoke eval.

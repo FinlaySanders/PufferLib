@@ -2,7 +2,10 @@
 # git repo (https://github.com/FinlaySanders/fast-nle); pufferlib cannot record its SHA
 # through git, so it is recorded here and checked by the box clone script.
 fast-nle branch:  nle-stock
-fast-nle commit:  dfbdc84c8   (= 1d7ab70 + the six public-observation export edits of the
+fast-nle commit:  f7d8749ab   (= dfbdc84c8 + public weight pricing in nle_weight, 2026-09-12 17:25: unidentified
+                               items priced by their appearance slot; the leak-fixed lanes fixwt* train on it;
+                               hooks are not in the golden hash, so the gate below is unchanged)
+previous pin:     dfbdc84c8   (= 1d7ab70 + the six public-observation export edits of the
                                training tree PufferLib_pkg, 2026-09-10; byte-identical to
                                the engine that trained pkgnle_s406/407 and claim2b_s501-504)
 golden gate:      19/34 OK; the 15 divergences are the intended export changes and match the

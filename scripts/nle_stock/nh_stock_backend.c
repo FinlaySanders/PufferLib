@@ -457,14 +457,19 @@ static void chain_dump(Inst* in) {
 static long g_wc_n, g_wc_wt, g_wc_wth, g_wc_h, g_wc_cap, g_wc_bad, g_wc_shown;
 static void wt_check_report(void) { fprintf(stderr, "WTCHECK boundaries=%ld weight_mismatch=%ld (hallucinating %ld of %ld) cap_mismatch=%ld layout_bad=%ld\n", g_wc_n, g_wc_wt, g_wc_wth, g_wc_h, g_wc_cap, g_wc_bad); }
 static void wt_check(Inst* in) {
-    static int on = -1, real_wt = -1; if (on < 0) { real_wt = getenv("NH_STOCK_WTREAL") != NULL; on = real_wt || getenv("NH_STOCK_WTCHECK") != NULL; if (on) atexit(wt_check_report); } if (!on || !in->d.blstats || in->so.done) return;
-    char** pinv = (char**)dlsym(in->dl, "invent"); int (*wcap)(void) = (int (*)(void))dlsym(in->dl, "weight_cap"); if (!pinv || !wcap) { __sync_fetch_and_add(&g_wc_bad, 1); return; }
+    static int on = -1, real_wt = -1; if (on < 0) { const char* rw = getenv("NH_STOCK_WTREAL"); real_wt = rw ? (atoi(rw) == 2 ? 2 : 1) : 0; on = real_wt || getenv("NH_STOCK_WTCHECK") != NULL; if (on) atexit(wt_check_report); } if (!on || !in->d.blstats || in->so.done) return;
+    char** pinv = (char**)dlsym(in->dl, "invent"); int (*wcap)(void) = (int (*)(void))dlsym(in->dl, "weight_cap"); const unsigned char* ob = (const unsigned char*)dlsym(in->dl, "objects"); if (!pinv || !wcap || !ob) { __sync_fetch_and_add(&g_wc_bad, 1); return; }
     long w = 0; int i = 0, bad = 0; char items[4096]; int p = 0;
     for (char* o = *pinv; o && i < 55; o = *(char**)o, i++) {
         short otyp = *(short*)(o + 30); long q = *(long*)(o + 40); int cls = *(signed char*)(o + 49); char let = *(char*)(o + 50); int cnm = *(int*)(o + 60); unsigned eaten = *(unsigned*)(o + 68);
         if (in->d.inv_letters && (in->d.inv_letters[i] != (unsigned char)let || (in->d.inv_oclasses && in->d.inv_oclasses[i] != (unsigned char)cls))) bad = 1;
         long base = -1; if (cls == 12) w += (q + 50) / 100;
-        else { base = (otyp >= 0 && otyp < NUM_OBJECTS) ? ((otyp == g_corpse_idx && cnm >= 0 && cnm < NUMMONS) ? NHT_MON_CWT[cnm] : NHT_OBJ_WT[otyp]) : 0; base *= q; if (eaten) base /= 2; w += base; }
+        else if (otyp < 0 || otyp >= NUM_OBJECTS) base = 0;
+        else if (otyp == g_corpse_idx && cnm >= 0 && cnm < NUMMONS) { base = NHT_MON_CWT[cnm] * q; if (eaten) base /= 2; w += base; }
+        else { // fork f7d8749ab public pricing: true type only while the name is displayed (dknown && oc_name_known), else the appearance's canonical slot; NH_STOCK_WTREAL=2 = the pre-fix true-type channel (for policies trained before it)
+            int typ = otyp; if (real_wt != 2) { int dknown = (*(unsigned char*)(o + 54) >> 5) & 1; const unsigned char* oe = ob ? ob + (size_t)otyp * OBJC_SIZE : NULL; int nk = oe ? (oe[OBJC_FLAGS] & 1) : 0; int slot = oe ? (int)*(const short*)(oe + 2) : otyp;
+                if (!(dknown && nk)) typ = nk ? slot : dr_gem_canon(slot); }
+            base = NHT_OBJ_WT[typ] * q; if (eaten) base /= 2; w += base; }
         if (p < 3800) p += snprintf(items + p, sizeof items - p, " %c:%d/%s x%ld%s=%ld", let, otyp, otyp >= 0 && otyp < NUM_OBJECTS ? NHT_OBJ_NAME[otyp] : "?", q, eaten ? "(eaten)" : "", base);
     }
     int cap = wcap(); long cond = in->d.blstats[25];
