@@ -231,8 +231,7 @@ class ChallengeRunner:
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--weights", default=os.path.join(SP, "..", "wt_gate", "resources", "nethack",
-                                                      "nethack_t1122_2B_weights.bin"))
+    ap.add_argument("--weights", default=os.path.join(SP, "..", "..", "resources", "nethack", "nethack_t1122_2B_weights.bin"))
     ap.add_argument("--episodes", type=int, default=1)
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--verbose", action="store_true")
