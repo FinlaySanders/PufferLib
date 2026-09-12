@@ -452,3 +452,5 @@ Tourist −6 %, Knight −4 %, Healer −4 %, Wizard 0 %, **Monk +7 %**. The los
 the Monk and the casters → weapon/inventory verbs on stock. Isolation arms queued locally (seed 21, 6,000, fixed derive):
 `claim2b_nomask_s21` (form mask off) and `claim2b_noguard_s21` (zero-time guard off). 2B replay corpora: the short one (185 eps,
 ~1,500 steps each) shows every observed channel ≤ 0.5 %; a 25-minute corpus is recording for late-game rates.
+**2B seed 21, fixed derive + guard, final (14:30): 14,357 (se 232) / 8,398, 0 aborted** vs old derive, mask off, no guard 14,289 / 8,160 (11 % aborts):
++0.5 % / +2.9 %. Same-seed fork (today's tree) reads ~16.8K / 9.7K at 4,131 kept → stock gap ≈ −14 % for the 2B.
