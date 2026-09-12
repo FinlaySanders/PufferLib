@@ -516,3 +516,17 @@ land ≈ 18:15–18:50), nomask s607/608 1.3–1.4B (≈ 02:45 Sunday). Rolling 
 **Guard-off 2B final (`claim2b_noguard_s21`, 6,057 eps, 2,057 kept): 14,383 (se 397) / 8,567, 69 aborts (1.1 %)** vs guard-on over the same
 first-6,057 window (2,057 kept): 15,103 / 9,075 → **−4.8 % / −5.6 %**: the zero-time guard is worth about +5 % on stock for the 2B and is not the
 fighters' loss. `claim2b_nomask_s21` (no form mask, derive v3) started 16:14 in its slot.
+
+## 2026-09-12 17:10 — the calendar: today is a new moon, and stock runs on the real clock
+Stock in the challenge configuration uses the real clock (`NH_STOCK_REALCLOCK=1`, as NLE does); the fork draws a random date per game
+(`nle_fill_fixed_tm`: year 2000–2049, random month/day), so its games sample all eight moon phases. **Sep 12–14 2026 is a new moon.** Stock
+`mhitu.c` AD_STON: a cockatrice hit hisses 1/3 of the time, and the hiss starts stoning `if (!rn2(10) || (flags.moonphase == NEW_MOON &&
+!have_lizard()))` — on a new moon every hiss stones a hero without a lizard corpse, 3.3× the usual rate (plus Luck: no full-moon +1 today).
+**Stoning by role, burn-in windows (stock v1 s21 / stock s32 / fork s21 / fork s7):** all 3.5 / 3.0 / 1.3 / 1.3 %; Barbarian 10.4 / 7.7 / 2.3 / 3.5;
+Samurai 9.1 / 6.0 / 2.1 / 3.4; Monk 8.9 / 9.0 / 4.5 / 4.3; Valkyrie 6.1 / 6.0 / 2.1 / 2.0; Caveman 4.6 / 3.5 / 1.5 / 1.8; casters ≤ 1.3 everywhere.
+The melee roles that carry the 2B's −13 % lose 4–8 % more of their games to stoning on stock today than on the fork — a calendar effect, not a
+reconstruction one, and one that every stock number measured this weekend carries (1B canary, rung 4, both 2B seeds). Direct measurement queued:
+**`claim2b_fakeclock_s21`** = canary3's exact configuration with `NH_STOCK_REALCLOCK` unset (the backend's seeded fake date, the fork's formula),
+gated on canary3's pid → canary3 minus fakeclock = today's calendar cost for the 2B. Consequences for the claim: the challenge number is
+date-dependent by construction (moon phase, Friday 13th); quote the real-clock number with its date and the fixed-clock number beside it.
+The drone weight tests are unaffected (wtreal vs canary3 both real clock; the harness pair both fake).
