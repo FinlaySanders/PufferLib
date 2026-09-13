@@ -658,3 +658,25 @@ the peaceful fixes were most of the 17 % (≈ 60 % of it at seed 21); what remai
 | leaky 1B pkgnle_s406 (own engine) | 13,060 (se 333) / 8,618 | — |
 Two fixed seeds average 13,783 / 9,090 = +5.5 % / +5.5 % over the leaky 1B; s701 is a good seed (+10 %), s702 level on the mean and the best 1B median so far.
 Stock strict and python reads of both running (local s21 6K + drone s21 10K; gym 24×20).
+
+## Sunday 2026-09-13 06:10 — OVERNIGHT RESULTS
+**Leak-fixed 1B, three interfaces (fork = fixed engine; stock = strict, final derive; python = NetHackChallenge-v0 24×20):**
+| policy | fork s21 6K | fork s7 14K→10K | stock s21 6K (local) | stock s21 10K→6K (drone) | python 480 |
+|---|---|---|---|---|---|
+| fixwt1b_s701 | 14,521 / 8,856 | 14,365 (se 171) / 8,941 | 13,177 (se 340) / 8,620 | 13,728 (se 217) / 8,255 | 14,008 / 9,434 |
+| fixwt1b_s702 | 13,124 / 9,090 | 13,201 (se 143) / 9,240 | 12,759 (se 298) / 9,100 | 12,036 (se 164) / 8,427 | 12,919 / 9,591 |
+| leaky 1B pkgnle_s406 | 13,060 / 8,618 | — | 12,785 / 8,522 | — | 12,900 / 8,389 |
+Stock C strict sits 3–9 % under the fork on the mean per pair (pooled ≈ −6 %), medians −3 to −9 %; python 480-game reads sit at the fork level (pooled 960: 13,464 / 9,510).
+Fixed vs leaky 1B: +5.5 % mean on two seeds (fork), python medians +13 %.
+**Leak-fixed 2B:** s703 fork s21 18,666 (se 545) / 11,020; fork s7 14K 17,592 (se 234) / 10,298; stock s21 6K 16,949 (se 487) / 10,036 (stoned 114); python 480 16,501 / 9,200.
+s704 fork s21 15,822 (se 449) / 9,537; fork s7 14K 16,900 (se 220) / 9,904; stock s21 + python running (≈ 07:00). Leaky 2B claim2b_s503: fork 16,520 / 9,839, stock 14,559 / 8,730.
+s703 vs leaky 2B: +13 % fork, +16 % stock. s703 stock vs fork (s21 pair): −9 % / −9 %.
+**Leaky 4B own-engine fork certs (seed 7, 14K→10K):** s602 20,306 / 10,247 (fixed engine: 20,141 / 10,396 → the weight oracle was worth NOTHING to the 4B at eval);
+s601 21,267 / 10,926; s603 19,528 / 11,554; s604 20,680 / 11,238. **No-mask 4Bs (evaluated without the form mask):** s607 20,332 / 10,542; s608 21,381 / 11,326 →
+level with the masked lanes (avg 20,857 / 10,934 vs 20,445 / 11,000): the form mask costs and pays nothing at 4B.
+**Leaky 4B claim cert, stock strict final derive, pooled seeds 7 + 21 (8,010 kept): 19,188 / 10,314** vs fork fixed-engine pooled (12,020 kept) 20,140 / 10,442 → −4.7 % / −1.2 %.
+Fork fixed-engine seeds 44 / 55 (drone, 14K→10K): 20,057 / 10,442 and 20,543 / 10,510; their stock certs (14K) running, land ≈ 08:00; local seeds 32 / 11 follow.
+**Leaky 4B on the REAL gym, pooled 2,400 games (local r1–r3 + drone night r1 960): median 9,858 (90 % bootstrap 9,265–10,657), mean 18,779** = 1.85× AutoAscend 5,336
+(1.9–2.0× the 2023 re-eval 4,918); drone night r2 (960) running, local r4/r5 queued.
+Still to land Sunday: s704 stock/python (07:00), fixed-1B corpus replay (~07:00), calendar arms (07:15–09:30), leaky 2B on the fixed engine + 4B seeds 32/11 (09:30–13:30),
+fixed 4Bs (lanes at 2.7B / 2.5B → ~12:30) and their certs, third-seed stocks of fixed 1B/2B (drone).
