@@ -649,3 +649,12 @@ The same policy's seed-21 stock cert with the OLDER derive 24c65e8b (weight-text
 Old-derive stock seed 21 was 16,695 / 8,623 (−17 % / −17 %); the final derive brings it to −9.4 % / −8.5 % (≈ 2.3 se on the mean). Seed 7 pair: −3.2 % / +1.4 %.
 **Pooled over both seeds (8,010 kept): stock final 19,188 mean vs fork ≈ 20,140 → −4.7 %; medians 10,544 / 9,754 vs 10,396 / 10,658 → level.** Reading: derive round 2 +
 the peaceful fixes were most of the 17 % (≈ 60 % of it at seed 21); what remains is a ≤ 5 % mean residual that the medians do not show, inside the "gap under 5 %" target.
+
+### Sunday 00:20 — leak-fixed 1B lanes landed (fixwt1b_s701 23:45, s702 00:06; both rc=134 = inline eval OOM, final ckpt 999,817,216). Fork certs on the FIXED engine:
+| policy | fork seed 21, 6K (local) | fork seed 7, 14K → 10K kept (drone) |
+|---|---|---|
+| fixwt1b_s701 | 14,521 (se 385) / 8,856 | 14,365 (se 171) / 8,941 |
+| fixwt1b_s702 | (queued after s701's stock) | 13,201 (se 143) / 9,240 |
+| leaky 1B pkgnle_s406 (own engine) | 13,060 (se 333) / 8,618 | — |
+Two fixed seeds average 13,783 / 9,090 = +5.5 % / +5.5 % over the leaky 1B; s701 is a good seed (+10 %), s702 level on the mean and the best 1B median so far.
+Stock strict and python reads of both running (local s21 6K + drone s21 10K; gym 24×20).
