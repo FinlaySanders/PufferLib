@@ -1,0 +1,50 @@
+--- a/src/pufferl.cu
++++ b/src/pufferl.cu
+@@ -1565,6 +1565,18 @@
+     }
+ }
+ 
++__global__ void transpose_obs_wide(precision_t* dst, const precision_t* src,
++        int A, int B, int C) {
++    long idx = (long)blockIdx.x * blockDim.x + threadIdx.x;
++    long total = (long)A * B * C;
++    if (idx >= total) return;
++    long a = idx / ((long)B * C);
++    long rem = idx % ((long)B * C);
++    long b = rem / C;
++    long c = rem % C;
++    dst[b * A * C + a * C + c] = src[idx];
++}
++
+ // 1-thread graph node. cudaEventElapsedTime does not timestamp in-graph events.
+ __global__ void puf_stamp(unsigned long long* dst) {
+     unsigned long long t;
+@@ -1584,8 +1596,14 @@
+     int obs_size = (int)src.observations.shape[2];
+     int num_atns = (int)src.actions.shape[2];
+     int mask_c = src.action_mask.shape[2];
+-    transpose_102<<<grid_size(T * B * obs_size), BLOCK_SIZE, 0, stream>>>(
+-        rollouts->observations.data, src.observations.data, T, B, obs_size);
++    long obs_elements = (long)T * B * obs_size;
++    if (obs_elements > 2147483391L) {
++        transpose_obs_wide<<<(obs_elements + BLOCK_SIZE - 1) / BLOCK_SIZE, BLOCK_SIZE, 0, stream>>>(
++            rollouts->observations.data, src.observations.data, T, B, obs_size);
++    } else {
++        transpose_102<<<grid_size(T * B * obs_size), BLOCK_SIZE, 0, stream>>>(
++            rollouts->observations.data, src.observations.data, T, B, obs_size);
++    }
+     transpose_102<<<grid_size(T * B * num_atns), BLOCK_SIZE, 0, stream>>>(
+         rollouts->actions.data, src.actions.data, T, B, num_atns);
+     transpose_102<<<grid_size(T * B), BLOCK_SIZE, 0, stream>>>(
+@@ -1729,8 +1747,9 @@
+             == cudaSuccess && "cudaStreamBeginCapture failed");
+         train_epoch_gpu(pufferl, src, slot, train_stream);
+         cudaGraph_t graph;
+-        assert(cudaStreamEndCapture(train_stream, &graph)
+-            == cudaSuccess && "cudaStreamEndCapture failed");
++        cudaError_t capture_error = cudaStreamEndCapture(train_stream, &graph);
++        if (capture_error != cudaSuccess) fprintf(stderr,"CAPTURE_ERROR %s\n",cudaGetErrorString(capture_error));
++        assert(capture_error == cudaSuccess && "cudaStreamEndCapture failed");
+         assert(cudaGraphInstantiate(
+             &pufferl->train_cudagraph[slot], graph, 0)
+             == cudaSuccess && "cudaGraphInstantiate failed");

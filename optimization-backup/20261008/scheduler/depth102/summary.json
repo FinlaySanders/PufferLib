@@ -1,0 +1,30 @@
+{
+  "arms": {
+    "before": {
+      "seconds": 4.032201,
+      "gain_percent": 0.03912255366238515,
+      "steps": 4096000,
+      "keys": 9732744
+    },
+    "engine61": {
+      "seconds": 3.79769,
+      "gain_percent": 6.216634322443393,
+      "steps": 4096000,
+      "keys": 9732744
+    },
+    "pool24": {
+      "seconds": 3.883448,
+      "gain_percent": 3.871057369636466,
+      "steps": 4096000,
+      "keys": 9732744
+    },
+    "after": {
+      "seconds": 4.035356,
+      "gain_percent": -0.039091966111537424,
+      "steps": 4096000,
+      "keys": 9732744
+    }
+  },
+  "drift_percent": 0.0782451073247703,
+  "caveat": "CPU-only fixed-action depth replay512streams,4buffers,20Kwarm+8Kmeasure perenv. OriginalWS32total vs retainedpool24workers+4submitters. NoGPUinference/training claim. Both512warm-prefixes verified, aggregateworkload counters equal."
+}

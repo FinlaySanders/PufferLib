@@ -1,0 +1,930 @@
+[
+  {
+    "label": "h224-n512-mb4096",
+    "width": 224,
+    "agents": 512,
+    "minibatch": 4096,
+    "rc": 0,
+    "wall_seconds": 39.281837940216064,
+    "params": 1981736,
+    "sha256": "47a7b4f93c1d31e8d9d3c89c27e35a44c3dd429824289fdc22d833cba8adecf9",
+    "proofs": [
+      [
+        "7",
+        "682be6438987b7c7",
+        "1981736",
+        "1"
+      ],
+      [
+        "13",
+        "1c94b03758f7db94",
+        "1981736",
+        "1"
+      ],
+      [
+        "15",
+        "9621d2ab6f2f097e",
+        "1981736",
+        "1"
+      ]
+    ],
+    "seconds": 1.0827169418333333,
+    "sps": 242116.8357780743,
+    "rollout_tail": 0.329978307,
+    "ppo_tail": 0.0,
+    "used_mib": 14983.1,
+    "updates": 113.0,
+    "epochs": [
+      {
+        "epoch": 8.0,
+        "seconds": 1.039493799,
+        "rollout_tail": 0.286260128,
+        "ppo_tail": 0.0,
+        "used_mib": 14983.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 9.0,
+        "seconds": 1.227157116,
+        "rollout_tail": 0.477692604,
+        "ppo_tail": 0.0,
+        "used_mib": 14983.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 10.0,
+        "seconds": 1.027616024,
+        "rollout_tail": 0.270466089,
+        "ppo_tail": 0.0,
+        "used_mib": 14983.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 11.0,
+        "seconds": 1.052058697,
+        "rollout_tail": 0.302087069,
+        "ppo_tail": 0.0,
+        "used_mib": 14983.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 12.0,
+        "seconds": 1.050915003,
+        "rollout_tail": 0.302347183,
+        "ppo_tail": 0.0,
+        "used_mib": 14983.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 13.0,
+        "seconds": 1.099061012,
+        "rollout_tail": 0.341016769,
+        "ppo_tail": 0.0,
+        "used_mib": 14983.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      }
+    ]
+  },
+  {
+    "label": "h224-n512-mb16384",
+    "width": 224,
+    "agents": 512,
+    "minibatch": 16384,
+    "rc": 0,
+    "wall_seconds": 39.557995080947876,
+    "params": 1981736,
+    "sha256": "47a7b4f93c1d31e8d9d3c89c27e35a44c3dd429824289fdc22d833cba8adecf9",
+    "proofs": [
+      [
+        "7",
+        "682be6438987b7c7",
+        "1981736",
+        "1"
+      ],
+      [
+        "13",
+        "1c94b03758f7db94",
+        "1981736",
+        "1"
+      ],
+      [
+        "15",
+        "9621d2ab6f2f097e",
+        "1981736",
+        "1"
+      ]
+    ],
+    "seconds": 1.1508646011666666,
+    "sps": 227780.05313071288,
+    "rollout_tail": 0.6704651911666667,
+    "ppo_tail": 0.0,
+    "used_mib": 14639.1,
+    "updates": 28.0,
+    "epochs": [
+      {
+        "epoch": 8.0,
+        "seconds": 1.145012379,
+        "rollout_tail": 0.66829586,
+        "ppo_tail": 0.0,
+        "used_mib": 14639.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      },
+      {
+        "epoch": 9.0,
+        "seconds": 1.148931742,
+        "rollout_tail": 0.670152426,
+        "ppo_tail": 0.0,
+        "used_mib": 14639.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      },
+      {
+        "epoch": 10.0,
+        "seconds": 1.128581762,
+        "rollout_tail": 0.643020868,
+        "ppo_tail": 0.0,
+        "used_mib": 14639.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      },
+      {
+        "epoch": 11.0,
+        "seconds": 1.159948349,
+        "rollout_tail": 0.679960012,
+        "ppo_tail": 0.0,
+        "used_mib": 14639.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      },
+      {
+        "epoch": 12.0,
+        "seconds": 1.16827631,
+        "rollout_tail": 0.684755564,
+        "ppo_tail": 0.0,
+        "used_mib": 14639.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      },
+      {
+        "epoch": 13.0,
+        "seconds": 1.154437065,
+        "rollout_tail": 0.676606417,
+        "ppo_tail": 0.0,
+        "used_mib": 14639.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      }
+    ]
+  },
+  {
+    "label": "h224-n512-mb32768",
+    "width": 224,
+    "agents": 512,
+    "minibatch": 32768,
+    "rc": 0,
+    "wall_seconds": 40.56315851211548,
+    "params": 1981736,
+    "sha256": "47a7b4f93c1d31e8d9d3c89c27e35a44c3dd429824289fdc22d833cba8adecf9",
+    "proofs": [
+      [
+        "7",
+        "682be6438987b7c7",
+        "1981736",
+        "1"
+      ],
+      [
+        "13",
+        "1c94b03758f7db94",
+        "1981736",
+        "1"
+      ],
+      [
+        "15",
+        "9621d2ab6f2f097e",
+        "1981736",
+        "1"
+      ]
+    ],
+    "seconds": 1.242327571,
+    "sps": 211010.36966360622,
+    "rollout_tail": 0.7833082675,
+    "ppo_tail": 0.0,
+    "used_mib": 16155.1,
+    "updates": 14.0,
+    "epochs": [
+      {
+        "epoch": 8.0,
+        "seconds": 1.226460934,
+        "rollout_tail": 0.765433788,
+        "ppo_tail": 0.0,
+        "used_mib": 16155.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      },
+      {
+        "epoch": 9.0,
+        "seconds": 1.312754631,
+        "rollout_tail": 0.855129242,
+        "ppo_tail": 0.0,
+        "used_mib": 16155.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      },
+      {
+        "epoch": 10.0,
+        "seconds": 1.238777876,
+        "rollout_tail": 0.781504154,
+        "ppo_tail": 0.0,
+        "used_mib": 16155.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      },
+      {
+        "epoch": 11.0,
+        "seconds": 1.228666544,
+        "rollout_tail": 0.769337416,
+        "ppo_tail": 0.0,
+        "used_mib": 16155.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      },
+      {
+        "epoch": 12.0,
+        "seconds": 1.231295347,
+        "rollout_tail": 0.768734455,
+        "ppo_tail": 0.0,
+        "used_mib": 16155.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      },
+      {
+        "epoch": 13.0,
+        "seconds": 1.216010094,
+        "rollout_tail": 0.75971055,
+        "ppo_tail": 0.0,
+        "used_mib": 16155.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      }
+    ]
+  },
+  {
+    "label": "h512-n512-mb4096",
+    "width": 512,
+    "agents": 512,
+    "minibatch": 4096,
+    "rc": 0,
+    "wall_seconds": 41.006582260131836,
+    "params": 5097608,
+    "sha256": "6d31088c3d4baff2b95b7378d0801bc28cf604a5cb81bddb214d9b48e3db5a25",
+    "proofs": [
+      [
+        "7",
+        "682be6438987b7c7",
+        "5097608",
+        "1"
+      ],
+      [
+        "13",
+        "1c94b03758f7db94",
+        "5097608",
+        "1"
+      ],
+      [
+        "15",
+        "9621d2ab6f2f097e",
+        "5097608",
+        "1"
+      ]
+    ],
+    "seconds": 1.1141355036666667,
+    "sps": 235289.1539110576,
+    "rollout_tail": 0.194591284,
+    "ppo_tail": 0.0,
+    "used_mib": 15145.1,
+    "updates": 113.0,
+    "epochs": [
+      {
+        "epoch": 8.0,
+        "seconds": 1.081648111,
+        "rollout_tail": 0.162759781,
+        "ppo_tail": 0.0,
+        "used_mib": 15145.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 9.0,
+        "seconds": 1.095943928,
+        "rollout_tail": 0.172055006,
+        "ppo_tail": 0.0,
+        "used_mib": 15145.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 10.0,
+        "seconds": 1.062118053,
+        "rollout_tail": 0.143496752,
+        "ppo_tail": 0.0,
+        "used_mib": 15145.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 11.0,
+        "seconds": 1.278327465,
+        "rollout_tail": 0.363677979,
+        "ppo_tail": 0.0,
+        "used_mib": 15145.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 12.0,
+        "seconds": 1.09188509,
+        "rollout_tail": 0.167396069,
+        "ppo_tail": 0.0,
+        "used_mib": 15145.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 13.0,
+        "seconds": 1.074890375,
+        "rollout_tail": 0.158162117,
+        "ppo_tail": 0.0,
+        "used_mib": 15145.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      }
+    ]
+  },
+  {
+    "label": "h512-n512-mb16384",
+    "width": 512,
+    "agents": 512,
+    "minibatch": 16384,
+    "rc": 0,
+    "wall_seconds": 41.05139493942261,
+    "params": 5097608,
+    "sha256": "6d31088c3d4baff2b95b7378d0801bc28cf604a5cb81bddb214d9b48e3db5a25",
+    "proofs": [
+      [
+        "7",
+        "682be6438987b7c7",
+        "5097608",
+        "1"
+      ],
+      [
+        "13",
+        "1c94b03758f7db94",
+        "5097608",
+        "1"
+      ],
+      [
+        "15",
+        "9621d2ab6f2f097e",
+        "5097608",
+        "1"
+      ]
+    ],
+    "seconds": 1.261057059,
+    "sps": 207876.3987157539,
+    "rollout_tail": 0.6558571656666667,
+    "ppo_tail": 0.0,
+    "used_mib": 15113.1,
+    "updates": 28.0,
+    "epochs": [
+      {
+        "epoch": 8.0,
+        "seconds": 1.240078449,
+        "rollout_tail": 0.634034395,
+        "ppo_tail": 0.0,
+        "used_mib": 15113.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      },
+      {
+        "epoch": 9.0,
+        "seconds": 1.239291668,
+        "rollout_tail": 0.633567572,
+        "ppo_tail": 0.0,
+        "used_mib": 15113.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      },
+      {
+        "epoch": 10.0,
+        "seconds": 1.319525719,
+        "rollout_tail": 0.711838722,
+        "ppo_tail": 0.0,
+        "used_mib": 15113.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      },
+      {
+        "epoch": 11.0,
+        "seconds": 1.281324625,
+        "rollout_tail": 0.681353092,
+        "ppo_tail": 0.0,
+        "used_mib": 15113.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      },
+      {
+        "epoch": 12.0,
+        "seconds": 1.252227306,
+        "rollout_tail": 0.647199154,
+        "ppo_tail": 0.0,
+        "used_mib": 15113.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      },
+      {
+        "epoch": 13.0,
+        "seconds": 1.233894587,
+        "rollout_tail": 0.627150059,
+        "ppo_tail": 0.0,
+        "used_mib": 15113.1,
+        "batch": 262144.0,
+        "mb": 16384.0,
+        "updates": 28.0
+      }
+    ]
+  },
+  {
+    "label": "h512-n512-mb32768",
+    "width": 512,
+    "agents": 512,
+    "minibatch": 32768,
+    "rc": 0,
+    "wall_seconds": 42.25075316429138,
+    "params": 5097608,
+    "sha256": "6d31088c3d4baff2b95b7378d0801bc28cf604a5cb81bddb214d9b48e3db5a25",
+    "proofs": [
+      [
+        "7",
+        "682be6438987b7c7",
+        "5097608",
+        "1"
+      ],
+      [
+        "13",
+        "1c94b03758f7db94",
+        "5097608",
+        "1"
+      ],
+      [
+        "15",
+        "9621d2ab6f2f097e",
+        "5097608",
+        "1"
+      ]
+    ],
+    "seconds": 1.3870509863333333,
+    "sps": 188993.7735403492,
+    "rollout_tail": 0.8082099755,
+    "ppo_tail": 0.0,
+    "used_mib": 17037.1,
+    "updates": 14.0,
+    "epochs": [
+      {
+        "epoch": 8.0,
+        "seconds": 1.334860325,
+        "rollout_tail": 0.754282475,
+        "ppo_tail": 0.0,
+        "used_mib": 17037.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      },
+      {
+        "epoch": 9.0,
+        "seconds": 1.521298409,
+        "rollout_tail": 0.942295551,
+        "ppo_tail": 0.0,
+        "used_mib": 17037.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      },
+      {
+        "epoch": 10.0,
+        "seconds": 1.319353342,
+        "rollout_tail": 0.745165825,
+        "ppo_tail": 0.0,
+        "used_mib": 17037.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      },
+      {
+        "epoch": 11.0,
+        "seconds": 1.336715698,
+        "rollout_tail": 0.759656429,
+        "ppo_tail": 0.0,
+        "used_mib": 17037.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      },
+      {
+        "epoch": 12.0,
+        "seconds": 1.383309841,
+        "rollout_tail": 0.802264452,
+        "ppo_tail": 0.0,
+        "used_mib": 17037.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      },
+      {
+        "epoch": 13.0,
+        "seconds": 1.426768303,
+        "rollout_tail": 0.845595121,
+        "ppo_tail": 0.0,
+        "used_mib": 17037.1,
+        "batch": 262144.0,
+        "mb": 32768.0,
+        "updates": 14.0
+      }
+    ]
+  },
+  {
+    "label": "h224-n1024-mb4096",
+    "width": 224,
+    "agents": 1024,
+    "minibatch": 4096,
+    "rc": -6,
+    "wall_seconds": 66.943288564682,
+    "failure_tail": "ARM buffer=1 game_steps=12288\nBATCH_WARM buffer=3 game_steps=12288\nBATCH_WARM buffer=0 game_steps=12288\nPERF_FROZEN optimizer writes scratch weights; forward/backward and actor weights fixed\nPERF_LOADED_WEIGHTS random initialization saved /puffertank/experiments/nethack-batch-sweep-20260918/h224-n1024-mb4096/loaded.bin before first rollout\nBATCH_PERF epoch=0 seconds=8.048402071 rollout_tail=0.000000000 ppo_tail=2.206315756 used_mib=23255.1 batch=524288 mb=4096 updates=227\nPERF_EPOCH epoch=0 steps=524288 seconds=8.048402071 mean_turn=25158.27 max_turn=102934 over1k=984 over10k=732 depth8=0 envs=1024\n\u256d\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502 PufferLib 5.0               \ud83d\udc21 GPU: 100%   VRAM:  22.7/24G    RAM:  6.6G     \u2502\n\u2502                                                                              \u2502\n\u2502 Env             nethack    Evaluate     8s 048  85%    Losses      -0.144    \u2502\n\u2502 Params             2.0M      Model      1s 088  11%    policy      -0.137    \u2502\n\u2502 Steps            524.3K      Env        4s 344  46%    value        0.044    \u2502\n\u2502 SPS              122.4K      Copy        286ms   3%    entropy      3.823    \u2502\n\u2502 Epoch                 1    Train        1s 353  14%    old_kl       0.000    \u2502\n\u2502 Uptime         4s 284ms      Model      1s 339  14%    kl           0.000    \u2502\n\u2502 To go      1m 04s 257ms      Misc         14ms   0%    clipfrac     0.000    \u2502\n\u2502                                                                              \u2502\n\u2502 perf                          0.066   score                     10261.853    \u2502\n\u2502 episode_return              269.005   episode_length             2871.706    \u2502\n\u2502 max_depth                     3.312   min_ac                        2.132    \u2502\n\u2502 depth_5                       0.228   depth_10                      0.006    \u2502\n\u2502 depth_15                      0.000   mines_depth                   0.472    \u2502\n\u2502 sokoban_depth                 0.003   sells                         1.258    \u2502\n\u2502 buys                          0.530   role_ix                       6.138    \u2502\n\u2502 discoveries                  16.875   death_combat                  0.870    \u2502\n\u2502 death_weak                    0.304   death_starved                 0.013    \u2502\n\u2502 death_other                   0.117   death_mon_level               2.072    \u2502\n\u2502 death_ac                      4.169   runs                        607.374    \u2502\n\u2502 searches                      1.208   engraves                     19.289    \u2502\n\u2502 wears                        17.775   eats                         81.815    \u2502\n\u2502 quaffs                        2.482   prayers                      12.538    \u2502\n\u2502 throws                      184.827   zaps                          4.182    \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\npuffer_batch: src/pufferl.cu:1753: void train_impl(PuffeRL*, RolloutBuf*): Assertion `cudaGraphInstantiate( &pufferl->train_cudagraph[slot], graph, 0) == cudaSuccess && \"cudaGraphInstantiate failed\"' failed.\n"
+  },
+  {
+    "label": "h224-n1024-mb16384",
+    "width": 224,
+    "agents": 1024,
+    "minibatch": 16384,
+    "rc": 0,
+    "wall_seconds": 104.38638114929199,
+    "params": 1981736,
+    "sha256": "47a7b4f93c1d31e8d9d3c89c27e35a44c3dd429824289fdc22d833cba8adecf9",
+    "proofs": [
+      [
+        "7",
+        "682be6438987b7c7",
+        "1981736",
+        "2"
+      ],
+      [
+        "13",
+        "1c94b03758f7db94",
+        "1981736",
+        "2"
+      ],
+      [
+        "15",
+        "9621d2ab6f2f097e",
+        "1981736",
+        "2"
+      ]
+    ],
+    "seconds": 2.83541437,
+    "sps": 184907.01237435007,
+    "rollout_tail": 1.8660551706666666,
+    "ppo_tail": 0.0,
+    "used_mib": 23457.1,
+    "updates": 56.0,
+    "epochs": [
+      {
+        "epoch": 8.0,
+        "seconds": 2.782987118,
+        "rollout_tail": 1.815843105,
+        "ppo_tail": 0.0,
+        "used_mib": 23457.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      },
+      {
+        "epoch": 9.0,
+        "seconds": 2.794089079,
+        "rollout_tail": 1.827208996,
+        "ppo_tail": 0.0,
+        "used_mib": 23457.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      },
+      {
+        "epoch": 10.0,
+        "seconds": 2.846998453,
+        "rollout_tail": 1.880609989,
+        "ppo_tail": 0.0,
+        "used_mib": 23457.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      },
+      {
+        "epoch": 11.0,
+        "seconds": 2.867225409,
+        "rollout_tail": 1.901061058,
+        "ppo_tail": 0.0,
+        "used_mib": 23457.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      },
+      {
+        "epoch": 12.0,
+        "seconds": 2.927603006,
+        "rollout_tail": 1.956314564,
+        "ppo_tail": 0.0,
+        "used_mib": 23457.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      },
+      {
+        "epoch": 13.0,
+        "seconds": 2.793583155,
+        "rollout_tail": 1.815293312,
+        "ppo_tail": 0.0,
+        "used_mib": 23457.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      }
+    ]
+  },
+  {
+    "label": "h224-n1024-mb32768",
+    "width": 224,
+    "agents": 1024,
+    "minibatch": 32768,
+    "rc": -6,
+    "wall_seconds": 61.380206823349,
+    "failure_tail": "BATCH_WARM buffer=3 game_steps=12288\nBATCH_WARM buffer=2 game_steps=12288\nBATCH_WARM buffer=1 game_steps=12288\nBATCH_WARM buffer=0 game_steps=12288\nPERF_FROZEN optimizer writes scratch weights; forward/backward and actor weights fixed\nPERF_LOADED_WEIGHTS random initialization saved /puffertank/experiments/nethack-batch-sweep-20260918/h224-n1024-mb32768/loaded.bin before first rollout\npuffer_batch: src/pufferl.cu:927: void pufferl_forward(PuffeRL*, int, int, cudaStream_t): Assertion `cudaGraphInstantiate(&pufferl->rollout_graphs[graph], _graph, 0) == cudaSuccess && \"cudaGraphInstantiate failed\"' failed.\n"
+  },
+  {
+    "label": "h512-n1024-mb4096",
+    "width": 512,
+    "agents": 1024,
+    "minibatch": 4096,
+    "rc": -6,
+    "wall_seconds": 67.57006216049194,
+    "failure_tail": "ARM buffer=0 game_steps=12288\nBATCH_WARM buffer=2 game_steps=12288\nBATCH_WARM buffer=1 game_steps=12288\nPERF_FROZEN optimizer writes scratch weights; forward/backward and actor weights fixed\nPERF_LOADED_WEIGHTS random initialization saved /puffertank/experiments/nethack-batch-sweep-20260918/h512-n1024-mb4096/loaded.bin before first rollout\nBATCH_PERF epoch=0 seconds=8.374255657 rollout_tail=0.000000000 ppo_tail=2.493236542 used_mib=23551.1 batch=524288 mb=4096 updates=227\nPERF_EPOCH epoch=0 steps=524288 seconds=8.374255657 mean_turn=25158.27 max_turn=102934 over1k=984 over10k=732 depth8=0 envs=1024\n\u256d\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256e\n\u2502 PufferLib 5.0               \ud83d\udc21 GPU: 100%   VRAM:  23.0/24G    RAM:  6.6G     \u2502\n\u2502                                                                              \u2502\n\u2502 Env             nethack    Evaluate     8s 374  83%    Losses      -0.144    \u2502\n\u2502 Params             5.1M      Model      1s 157  11%    policy      -0.137    \u2502\n\u2502 Steps            524.3K      Env        4s 302  43%    value        0.043    \u2502\n\u2502 SPS              114.9K      Copy        286ms   2%    entropy      3.791    \u2502\n\u2502 Epoch                 1    Train        1s 607  16%    old_kl       0.000    \u2502\n\u2502 Uptime         4s 564ms      Model      1s 592  15%    kl           0.000    \u2502\n\u2502 To go      1m 08s 460ms      Misc         14ms   0%    clipfrac     0.000    \u2502\n\u2502                                                                              \u2502\n\u2502 perf                          0.066   score                     10261.853    \u2502\n\u2502 episode_return              269.005   episode_length             2871.706    \u2502\n\u2502 max_depth                     3.312   min_ac                        2.132    \u2502\n\u2502 depth_5                       0.228   depth_10                      0.006    \u2502\n\u2502 depth_15                      0.000   mines_depth                   0.472    \u2502\n\u2502 sokoban_depth                 0.003   sells                         1.258    \u2502\n\u2502 buys                          0.530   role_ix                       6.138    \u2502\n\u2502 discoveries                  16.875   death_combat                  0.870    \u2502\n\u2502 death_weak                    0.304   death_starved                 0.013    \u2502\n\u2502 death_other                   0.117   death_mon_level               2.072    \u2502\n\u2502 death_ac                      4.169   runs                        607.374    \u2502\n\u2502 searches                      1.208   engraves                     19.289    \u2502\n\u2502 wears                        17.775   eats                         81.815    \u2502\n\u2502 quaffs                        2.482   prayers                      12.538    \u2502\n\u2502 throws                      184.827   zaps                          4.182    \u2502\n\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256f\npuffer_batch: src/pufferl.cu:1753: void train_impl(PuffeRL*, RolloutBuf*): Assertion `cudaGraphInstantiate( &pufferl->train_cudagraph[slot], graph, 0) == cudaSuccess && \"cudaGraphInstantiate failed\"' failed.\n"
+  },
+  {
+    "label": "h512-n1024-mb16384",
+    "width": 512,
+    "agents": 1024,
+    "minibatch": 16384,
+    "rc": 0,
+    "wall_seconds": 105.98527646064758,
+    "params": 5097608,
+    "sha256": "6d31088c3d4baff2b95b7378d0801bc28cf604a5cb81bddb214d9b48e3db5a25",
+    "proofs": [
+      [
+        "7",
+        "682be6438987b7c7",
+        "5097608",
+        "2"
+      ],
+      [
+        "13",
+        "1c94b03758f7db94",
+        "5097608",
+        "2"
+      ],
+      [
+        "15",
+        "9621d2ab6f2f097e",
+        "5097608",
+        "2"
+      ]
+    ],
+    "seconds": 2.9508920113333335,
+    "sps": 177671.02218122352,
+    "rollout_tail": 1.7371369598333333,
+    "ppo_tail": 0.0,
+    "used_mib": 24069.1,
+    "updates": 56.0,
+    "epochs": [
+      {
+        "epoch": 8.0,
+        "seconds": 2.948414803,
+        "rollout_tail": 1.741354942,
+        "ppo_tail": 0.0,
+        "used_mib": 24069.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      },
+      {
+        "epoch": 9.0,
+        "seconds": 2.986042261,
+        "rollout_tail": 1.763325214,
+        "ppo_tail": 0.0,
+        "used_mib": 24069.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      },
+      {
+        "epoch": 10.0,
+        "seconds": 2.837820292,
+        "rollout_tail": 1.620169878,
+        "ppo_tail": 0.0,
+        "used_mib": 24069.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      },
+      {
+        "epoch": 11.0,
+        "seconds": 2.979480505,
+        "rollout_tail": 1.769035816,
+        "ppo_tail": 0.0,
+        "used_mib": 24069.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      },
+      {
+        "epoch": 12.0,
+        "seconds": 2.986334085,
+        "rollout_tail": 1.772479534,
+        "ppo_tail": 0.0,
+        "used_mib": 24069.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      },
+      {
+        "epoch": 13.0,
+        "seconds": 2.967260122,
+        "rollout_tail": 1.756456375,
+        "ppo_tail": 0.0,
+        "used_mib": 24069.1,
+        "batch": 524288.0,
+        "mb": 16384.0,
+        "updates": 56.0
+      }
+    ]
+  },
+  {
+    "label": "h512-n1024-mb32768",
+    "width": 512,
+    "agents": 1024,
+    "minibatch": 32768,
+    "rc": -6,
+    "wall_seconds": 59.56634974479675,
+    "failure_tail": "BATCH_WARM buffer=3 game_steps=12288\nBATCH_WARM buffer=2 game_steps=12288\nBATCH_WARM buffer=1 game_steps=12288\nBATCH_WARM buffer=0 game_steps=12288\nPERF_FROZEN optimizer writes scratch weights; forward/backward and actor weights fixed\nPERF_LOADED_WEIGHTS random initialization saved /puffertank/experiments/nethack-batch-sweep-20260918/h512-n1024-mb32768/loaded.bin before first rollout\npuffer_batch: src/pufferl.cu:1753: void train_impl(PuffeRL*, RolloutBuf*): Assertion `cudaGraphInstantiate( &pufferl->train_cudagraph[slot], graph, 0) == cudaSuccess && \"cudaGraphInstantiate failed\"' failed.\n"
+  },
+  {
+    "label": "h224-n2048-mb4096",
+    "width": 224,
+    "agents": 2048,
+    "minibatch": 4096,
+    "rc": -6,
+    "wall_seconds": 0.590665340423584,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h224-n2048-mb16384",
+    "width": 224,
+    "agents": 2048,
+    "minibatch": 16384,
+    "rc": -6,
+    "wall_seconds": 0.4050920009613037,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h224-n2048-mb32768",
+    "width": 224,
+    "agents": 2048,
+    "minibatch": 32768,
+    "rc": -6,
+    "wall_seconds": 0.3888680934906006,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h512-n2048-mb4096",
+    "width": 512,
+    "agents": 2048,
+    "minibatch": 4096,
+    "rc": -6,
+    "wall_seconds": 0.3976881504058838,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h512-n2048-mb16384",
+    "width": 512,
+    "agents": 2048,
+    "minibatch": 16384,
+    "rc": -6,
+    "wall_seconds": 0.4053518772125244,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h512-n2048-mb32768",
+    "width": 512,
+    "agents": 2048,
+    "minibatch": 32768,
+    "rc": -6,
+    "wall_seconds": 0.4074101448059082,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h224-n4096-mb4096",
+    "width": 224,
+    "agents": 4096,
+    "minibatch": 4096,
+    "rc": -6,
+    "wall_seconds": 0.5445244312286377,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h224-n4096-mb16384",
+    "width": 224,
+    "agents": 4096,
+    "minibatch": 16384,
+    "rc": -6,
+    "wall_seconds": 0.5076291561126709,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h224-n4096-mb32768",
+    "width": 224,
+    "agents": 4096,
+    "minibatch": 32768,
+    "rc": -6,
+    "wall_seconds": 0.5119800567626953,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h512-n4096-mb4096",
+    "width": 512,
+    "agents": 4096,
+    "minibatch": 4096,
+    "rc": -6,
+    "wall_seconds": 0.5100982189178467,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h512-n4096-mb16384",
+    "width": 512,
+    "agents": 4096,
+    "minibatch": 16384,
+    "rc": -6,
+    "wall_seconds": 0.4980456829071045,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  },
+  {
+    "label": "h512-n4096-mb32768",
+    "width": 512,
+    "agents": 4096,
+    "minibatch": 32768,
+    "rc": -6,
+    "wall_seconds": 0.48970699310302734,
+    "failure_tail": "puffer_batch: src/pufferl.cu:262: void alloc_create(Allocator*): Assertion `cudaMalloc(&alloc->mem, alloc->total_bytes) == cudaSuccess && \"alloc_create: cudaMalloc failed\"' failed.\n"
+  }
+]

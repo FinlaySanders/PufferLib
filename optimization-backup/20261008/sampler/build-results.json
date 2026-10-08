@@ -1,0 +1,54 @@
+[
+  {
+    "tree": "source",
+    "name": "puffer_baseline",
+    "flags": "",
+    "command": [
+      "bash",
+      "build.sh",
+      "nethack",
+      "puffer_baseline"
+    ],
+    "rc": 0,
+    "seconds": 5.3682310581207275
+  },
+  {
+    "tree": "source",
+    "name": "puffer_heads",
+    "flags": "-DPUF_HEAD_SAMPLER",
+    "command": [
+      "bash",
+      "build.sh",
+      "nethack",
+      "puffer_heads"
+    ],
+    "rc": 0,
+    "seconds": 5.336554527282715
+  },
+  {
+    "tree": "depth-source",
+    "name": "puffer_baseline",
+    "flags": "",
+    "command": [
+      "bash",
+      "build.sh",
+      "nethack",
+      "puffer_baseline"
+    ],
+    "rc": 0,
+    "seconds": 5.46662449836731
+  },
+  {
+    "tree": "depth-source",
+    "name": "puffer_heads",
+    "flags": "-DPUF_HEAD_SAMPLER",
+    "command": [
+      "bash",
+      "build.sh",
+      "nethack",
+      "puffer_heads"
+    ],
+    "rc": 0,
+    "seconds": 5.337689638137817
+  }
+]

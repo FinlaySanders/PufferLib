@@ -1,0 +1,65 @@
+#ifdef PUFFER_NETHACK
+__global__ void sample_logits_heads(Prec dec_out, Prec logstd, int* act_sizes,
+        float* actions, float* env_actions, precision_t* logprobs,
+        precision_t* value_out, curandStatePhilox4_32_10_t* rng_states,
+        precision_t* action_mask, int mask_stride
+#ifdef NETHACK_IDENTIFY_HEAD
+        , float* identify_logprobs
+#endif
+        ) {
+    static_assert(NUM_ATNS <= 32, "one lane per action head");
+    int idx = blockIdx.x, h = threadIdx.x;
+    __shared__ float uniforms[NUM_ATNS], head_lp[NUM_ATNS];
+    __shared__ int chosen[NUM_ATNS];
+    if (h == 0) {
+        curandStatePhilox4_32_10_t state = rng_states[idx];
+        for (int j = 0; j < NUM_ATNS; j++) uniforms[j] = curand_uniform(&state);
+        rng_states[idx] = state;
+    }
+    __syncthreads();
+    if (h < NUM_ATNS) {
+        int off = 0;
+        for (int j = 0; j < h; j++) off += act_sizes[j];
+        int A = act_sizes[h], base = idx * dec_out.shape[1], mb = idx * mask_stride;
+        float cache[PPO_MAX_HEAD_A];
+        float lse = ppo_discrete_logsumexp(dec_out.data, base, off, A, action_mask, mb, cache);
+        float inv_K = 0.0f;
+        float eps = h == 0 ? nethack_verb_eps_load(action_mask + mb + off, A, &inv_K) : 0.0f;
+        float cumsum = 0.0f;
+        int sampled = A - 1;
+        for (int a = 0; a < A; a++) {
+            if (eps > 0.0f) cumsum += nethack_verb_eps_mix(expf(cache[a] - lse), action_mask[mb + off + a], eps, inv_K);
+            else cumsum += expf(cache[a] - lse);
+            if (uniforms[h] < cumsum) { sampled = a; break; }
+        }
+        if (sampled == A - 1) {
+            for (int a = A - 1; a >= 0; a--) {
+                if (to_float(action_mask[mb + off + a]) != 0.0f) { sampled = a; break; }
+            }
+        }
+        chosen[h] = sampled;
+        actions[idx * NUM_ATNS + h] = (float)sampled;
+        env_actions[idx * NUM_ATNS + h] = (float)sampled;
+        head_lp[h] = eps > 0.0f ? logf((1.0f - eps) * expf(cache[sampled] - lse) + eps * inv_K) : cache[sampled] - lse;
+    }
+    __syncthreads();
+    if (h == 0) {
+        float total = 0.0f;
+        #ifdef NETHACK_IDENTIFY_HEAD
+        float identify_lp = 0.0f;
+#endif
+        for (int j = 0; j < NUM_ATNS; j++) if (nethack_head_used(chosen[0], j)) {
+#ifdef NETHACK_IDENTIFY_HEAD
+            if (j == NETHACK_IDENTIFY_HEAD) { identify_lp = head_lp[j]; continue; }
+#endif
+            total += head_lp[j];
+        }
+#ifdef NETHACK_IDENTIFY_HEAD
+        identify_logprobs[2 * idx] = total;
+        identify_logprobs[2 * idx + 1] = identify_lp;
+#endif
+        logprobs[idx] = from_float(total);
+        value_out[idx] = dec_out.data[idx * dec_out.shape[1] + dec_out.shape[1] - 1];
+    }
+}
+#endif

@@ -1,0 +1,586 @@
+diff --git a/ocean/nethack/README.md b/ocean/nethack/README.md
+index 48b1b3ee..e1926604 100644
+--- a/ocean/nethack/README.md
++++ b/ocean/nethack/README.md
+@@ -56,3 +56,36 @@ GPU eval (same stack as training rollouts):
+ # or pin a run:
+ ./puffer eval nethack --load-model-path=checkpoints/nethack/<run>/<step>.bin
+ ```
++
++### Identification target head
++
++The decoder has 21 sampled heads: verb, 12 verb-specific inventory pointers,
++identification target, six direction heads, and spell slot. The target shares
++inventory keys and is sampled in parallel. READ preserves its inventory letter
++before consuming the scroll and selects it when an identify menu appears.
++Unavailable targets and remaining identification allowance use the existing
++select-all/menu-order fallback; automatic identify-all needs no choice.
++
++The environment marks whether the sampled target was selected in an identify
++menu. Rollout log-probabilities are finalized after the step, and PPO excludes
++the head from both log-probability and entropy when unused (including other
++scrolls, failed reads, and automatic identify-all). No hidden scroll identity is
++used. This adds one query projection and changes action/logit
++layout; old checkpoints require conversion before loading.
++
++Validation: `python3 tests/test_nethack_encoder.py` checks CUDA forward/backward
++against numerical and PyTorch references. Then `python3 tests/test_nethack_identify.py`
++checks a live one-item identification, menu selection/fallback, and verb gating.
++
++### Discovered inventory identities
++
++Known item types replace their appearance glyph in the inventory observation.
++Unknown items retain the public appearance glyph. The separate additive
++identity channel is padded out; item-state features (including the type-known
++flag, enchantment and blessed/cursed knowledge) are unchanged. Internal raw
++inventory glyphs and action eligibility are unchanged.
++
++This is the default for new training and evaluation. Set `NH_DISC_SWAP=0` to
++reproduce the additive observation semantics of older identify-head policies;
++`NH_DISC_SWAP=1` explicitly selects replacement. Tensor sizes and checkpoint
++layout are unchanged, but the observation semantics must match training.
+diff --git a/ocean/nethack/macros.h b/ocean/nethack/macros.h
+index e0c15902..a19c3c86 100644
+--- a/ocean/nethack/macros.h
++++ b/ocean/nethack/macros.h
+@@ -133,6 +133,47 @@ static void nethack_answer_menu(Nethack* env) {
+     }
+ }
+ 
++// Menu text is public. Preserve the pre-read inventory letter across consumption
++// of the scroll, which can shift inventory slot indices.
++static int nethack_identify_choice(const unsigned char* screen, int target, int identifying) {
++    char text[24 * 80 + 1];
++    memcpy(text, screen, 24 * 80); text[24 * 80] = 0;
++    if (!identifying && !strstr(text, "What would you like to identify")) return '.';
++    if (target) {
++        for (int i = 0; i + 3 < 24 * 80; i++)
++            if (text[i] == target && text[i+1] == ' '
++                && text[i+2] == '-' && text[i+3] == ' ') return target;
++    }
++    if (target) {
++        for (int i = 0; i < 24 * 80; i++) {
++            int page, pages;
++            if (text[i] == '(' && sscanf(text + i, "(%d of %d)", &page, &pages) == 2
++                && page < pages) return '>';
++        }
++    }
++    return '.';
++}
++
++static void nethack_answer_identify(Nethack* env, unsigned char* screen, int target) {
++    int identifying = 0;
++    for (int r = 0; r < 8 && !env->obs.done && env->misc[NETHACK_MISC_XWAIT]; r++) {
++        char text[24 * 80 + 1];
++        memcpy(text, screen, 24 * 80); text[24 * 80] = 0;
++        if (strstr(text, "What would you like to identify")) identifying = 1;
++        int choice = nethack_identify_choice(screen, target, identifying);
++        env->obs.action = choice;
++        nethack_engine_step(env);
++        if (target && choice == target) {
++            env->identify_target_used = 1;
++            target = 0;
++        }
++        if (choice == '>') continue;
++        if (env->obs.done || !env->misc[NETHACK_MISC_XWAIT]) break;
++        env->obs.action = '\r';
++        nethack_engine_step(env);
++    }
++}
++
+ // verbs
+ 
+ // item-verb flow: press the command, walk the engine's prompts, choose the
+diff --git a/ocean/nethack/nethack.c b/ocean/nethack/nethack.c
+index f7b412d7..e2e72b1d 100644
+--- a/ocean/nethack/nethack.c
++++ b/ocean/nethack/nethack.c
+@@ -39,9 +39,9 @@ static void env_open(Nethack* env) {
+     env->num_agents = 1;
+     Agent* a = &env->agents[0];
+     a->observations = (unsigned char*)calloc(NETHACK_OBS_SIZE, 1);
+-    a->actions = (float*)calloc(20, sizeof(float)); // {verb, 12 per-verb slots, 6 per-verb dirs, spell slot}
++    a->actions = (float*)calloc(NUM_ATNS, sizeof(float)); // verb, 13 item slots, 6 directions, spell slot
+     a->action_mask = (unsigned char*)calloc(NETHACK_NUM_ACTIONS
+-                      + 12 * NETHACK_INV_SLOTS + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS
++                      + NETHACK_ITEM_HEADS * NETHACK_INV_SLOTS + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS
+                       + NETHACK_SPELL_SLOTS, 1);
+     a->rewards = (float*)calloc(1, sizeof(float));
+     a->terminals = (float*)calloc(1, sizeof(float));
+@@ -132,10 +132,10 @@ static void env_close(Nethack* env) {
+ #define DEMO_INV_FLAT (NETHACK_INV_SLOTS * DEMO_INV_HID)
+ #define DEMO_INV_POOL 128
+ #define DEMO_SFEAT 24 // buc4 + known+spe + quan + ero2 + flags7 + tk + armcat7
+-#define DEMO_OD (NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS \
++#define DEMO_OD (NETHACK_NUM_ACTIONS + NETHACK_ITEM_HEADS * NETHACK_INV_SLOTS + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS \
+                  + NETHACK_SPELL_SLOTS)
+-#define DEMO_NUM_HEADS 20
+-#define DEMO_PTR_HEADS 12
++#define DEMO_NUM_HEADS NUM_ATNS
++#define DEMO_PTR_HEADS NETHACK_ITEM_HEADS
+ #define DEMO_QDIM ((DEMO_PTR_HEADS + 1) * DEMO_INV_HID)
+ #define DEMO_DEC_LIN (NETHACK_NUM_ACTIONS + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS + 1)
+ #define DEMO_DEC_PAD ((DEMO_DEC_LIN + 7) / 8 * 8)
+@@ -356,12 +356,7 @@ static NethackNet* make_nethack_net(Weights* w) {
+     net->dec_k = get_weights_aligned(w, DEMO_INV_HID * DEMO_INV_HID);
+     net->dec_tau = get_weights_aligned(w, DEMO_PTR_HEADS);
+     net->mingru = make_mingru(w, 1, net->hidden_size, net->num_layers);
+-    static int logit_sizes[DEMO_NUM_HEADS] = {
+-        NETHACK_NUM_ACTIONS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS,
+-        NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS,
+-        NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS,
+-        NETHACK_INV_SLOTS, NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, NETHACK_NUM_DIRS,
+-        NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, NETHACK_SPELL_SLOTS};
++    static int logit_sizes[DEMO_NUM_HEADS] = ACT_SIZES;
+     net->md = make_multidiscrete(1, logit_sizes, DEMO_NUM_HEADS);
+     assert(w->idx == w->size - 7);
+     // materialize the residual-factorized embedding once (host, load time)
+diff --git a/ocean/nethack/nethack.cu b/ocean/nethack/nethack.cu
+index 330f79f6..fef02d3c 100644
+--- a/ocean/nethack/nethack.cu
++++ b/ocean/nethack/nethack.cu
+@@ -2839,13 +2839,13 @@ static void create_nethack_encoder(Encoder* enc) {
+ 
+ static constexpr int NH_DIRS = 8;
+ static constexpr int NH_DIRHEADS = 6; // move|run|kick|throw|zap|apply
+-static constexpr int NH_HEADS = 12; // wear|eat|quaff|throw|zap|takeoff|puton|remove|wield|apply|read|drop
+-static constexpr int NH_SLOT_OD = NH_HEADS * NH_INV; // 660 slot logits
++static constexpr int NH_HEADS = 13; // wear|eat|quaff|throw|zap|takeoff|puton|remove|wield|apply|read|drop|identify target
++static constexpr int NH_SLOT_OD = NH_HEADS * NH_INV; // 715 slot logits
+ static constexpr int NH_DEC_OD = NH_ACTIONS + NH_SLOT_OD + NH_DIRHEADS * NH_DIRS
+                                 + NH_SPELL_SLOTS; // logits: verbs|slots|dirs|spell
+ static constexpr int NH_DEC_LIN = NH_ACTIONS + NH_DIRHEADS * NH_DIRS + 1; // verbs|dirs|value
+ static constexpr int NH_DEC_PAD = (NH_DEC_LIN + 7) / 8 * 8; // lin rows padded to mult of 8 (cublasLt alignment)
+-// queries: 12 cosine inv heads + 1 dot-product spell head (row NH_HEADS)
++// queries: 13 cosine inv heads + 1 dot-product spell head (row NH_HEADS)
+ static constexpr int NH_QHEADS = NH_HEADS + 1;
+ static constexpr int NH_QDIM = NH_QHEADS * NH_INV_HID; // stacked queries
+ static constexpr int NH_SPELL_BASE = NH_ACTIONS + NH_SLOT_OD + NH_DIRHEADS * NH_DIRS;
+diff --git a/ocean/nethack/nethack.h b/ocean/nethack/nethack.h
+index 24767958..b4305651 100644
+--- a/ocean/nethack/nethack.h
++++ b/ocean/nethack/nethack.h
+@@ -50,11 +50,12 @@ extern void nle_identity(nle_ctx_t*, int*, int*, int*, int*);
+ #include "netlib.h"
+ 
+ #define OBS_SIZE NETHACK_OBS_SIZE
+-#define NUM_ATNS 20
++#define NUM_ATNS 21
+ #define ACT_SIZES {NETHACK_NUM_ACTIONS, \
+     NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, \
+     NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, \
+     NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, NETHACK_INV_SLOTS, \
++    NETHACK_INV_SLOTS, \
+     NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, \
+     NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, NETHACK_NUM_DIRS, \
+     NETHACK_SPELL_SLOTS}
+@@ -66,6 +67,7 @@ struct Env {
+     Agent agents[1];
+     unsigned char* action_mask;
+     int num_agents;
++    int identify_target_used;
+     int pending_reset; // NLE's coroutine must reset on a stepping thread
+     int tag;
+     int boundary_reached;
+@@ -374,7 +376,7 @@ static void nethack_compute_mask(Nethack* env) {
+ 
+     // spell-slot head: castable iff still known (retention > 0) and Pw covers
+     // 5 * level; fail% is deliberately NOT masked (it's in the obs)
+-    unsigned char* sp = mask + NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS
++    unsigned char* sp = mask + NETHACK_NUM_ACTIONS + NETHACK_ITEM_HEADS * NETHACK_INV_SLOTS
+                         + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS;
+     memset(sp, 0, NETHACK_SPELL_SLOTS);
+     int castable = 0;
+@@ -397,6 +399,15 @@ static void nethack_compute_mask(Nethack* env) {
+     long shop_price = nle_shop_price(env->ctx);
+     if (shop_price > env->blstats[NLE_BL_GOLD]) mask[NETHACK_ACT_PICKUP] = 0;
+ 
++    // Identification eligibility is checked against the actual menu after READ.
++    unsigned char* ids = mask + NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS;
++    int id_count = 0;
++    for (int i = 0; i < NETHACK_INV_SLOTS; i++) {
++        ids[i] = env->inv_letters[i] && env->inv_oclasses[i] != 12;
++        id_count += ids[i];
++    }
++    if (!id_count) ids[0] = 1;
++
+     // item slot heads. Exact shortcuts: the class set carried in inventory
+     // decides at the predicate's first test, so a verb whose classes are all
+     // absent has no usable slot without walking them; the WIELD weld scan
+@@ -437,7 +448,7 @@ static void nethack_compute_mask(Nethack* env) {
+     }
+ 
+     // per-verb dir rows: wall legality; THROW/ZAP use target rays (all-1 fallback)
+-    unsigned char* dirs = mask + NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS;
++    unsigned char* dirs = mask + NETHACK_NUM_ACTIONS + NETHACK_ITEM_HEADS * NETHACK_INV_SLOTS;
+     memset(dirs, 1, NETHACK_NUM_DIRS);
+     int legal_dirs = 0;
+     for (int d = 0; d < NETHACK_NUM_DIRS; d++) {
+@@ -587,12 +598,11 @@ static void nethack_pack_obs(Nethack* env) {
+         ex[4*i + 2] = (unsigned char)((v >> 16) & 0xffu);
+         ex[4*i + 3] = (unsigned char)((v >> 24) & 0xffu);
+     }
+-    // slot glyphs; NH_DISC_SWAP=1: discovered identity REPLACES the appearance
+-    // glyph (stable rep once known; the add-channel below goes silent)
++    // Known types replace appearances; NH_DISC_SWAP=0 restores legacy additive observations.
+     static int dsw = -1;
+     if (dsw < 0) {
+         const char* e = getenv("NH_DISC_SWAP");
+-        dsw = e && e[0] && e[0] != '0';
++        dsw = !(e && e[0] == '0');
+     }
+     unsigned char* iv = ((obs_t*)env->agents[0].observations) + NETHACK_OFF_INV;
+     for (int i = 0; i < NETHACK_INV_SLOTS; i++) {
+@@ -1076,12 +1086,19 @@ static void nethack_execute(Nethack* env, int verb, int slot, int dirkey, int* b
+         }
+         break;
+     case NETHACK_ACT_READ: {
++        int target_slot = (int)env->agents[0].actions[NETHACK_IDENTIFY_HEAD];
++        int target = target_slot >= 0 && target_slot < NETHACK_INV_SLOTS
++            ? env->inv_letters[target_slot] : 0;
++        unsigned char screen[24 * 80] = {0};
++        unsigned char* saved_screen = env->obs.tty_chars;
++        env->obs.tty_chars = screen;
+         int oc = env->inv_oclasses[slot];
+         if (nethack_item_use(env, 'r', "read", NULL, slot, &st->verb_uses[verb], bad_pick)) {
+             if (oc == 9) st->reads_scroll++;
+             else if (oc == 10) st->reads_book++;
+-            nethack_answer_menu(env);
++            nethack_answer_identify(env, screen, target);
+         }
++        env->obs.tty_chars = saved_screen;
+         break;
+     }
+     case NETHACK_ACT_ALTAR_ID: {
+@@ -1147,17 +1164,21 @@ void puf_step(Nethack* env) {
+     int verb = (int)env->agents[0].actions[0];
+     int head = NETHACK_VERBS[verb].head;
+     int slot = (head >= 0) ? (int)env->agents[0].actions[1 + head] : 0;
+-    if (verb == NETHACK_ACT_CAST) slot = (int)env->agents[0].actions[19];
++    if (verb == NETHACK_ACT_CAST) slot = (int)env->agents[0].actions[NETHACK_SPELL_HEAD];
+     int dh = nethack_dir_head(verb);
+-    int dirkey = NETHACK_DIR_KEYS[dh >= 0 ? (int)env->agents[0].actions[13 + dh] : 0];
++    int dirkey = NETHACK_DIR_KEYS[dh >= 0 ? (int)env->agents[0].actions[NETHACK_DIR_HEAD_BASE + dh] : 0];
+ 
+     long time_before = env->blstats[NLE_BL_TIME];
+     long hx0 = env->blstats[NLE_BL_X], hy0 = env->blstats[NLE_BL_Y], hd0 = env->blstats[NLE_BL_DEPTH];
+     int bad_pick = 0;
++    env->identify_target_used = 0;
+     nethack_execute(env, verb, slot, dirkey, &bad_pick);
+ 
++    // Negative is rollout metadata, written only after executing the action.
++    if (!env->identify_target_used)
++        env->agents[0].actions[NETHACK_IDENTIFY_HEAD] = -1;
+     env->prev_action = verb;
+-    env->prev_dir = dh >= 0 ? (int)env->agents[0].actions[13 + dh] : -1;
++    env->prev_dir = dh >= 0 ? (int)env->agents[0].actions[NETHACK_DIR_HEAD_BASE + dh] : -1;
+     nethack_track_cant_hold(env); // before prompt handling blanks the message
+     nethack_handle_prompts(env);
+     if (!env->obs.done) nle_obs_refresh(env->ctx, &env->obs);
+@@ -1285,8 +1306,8 @@ void puf_log(Log* log, Dict* out) {
+ 
+ // Per-(verb,head) consumption map for PPO consumed-head gating (weak symbol
+ // read by src/algo.cu). heads: [0]=verb, [1..12]=slot heads 0..11,
+-// [13..18]=per-verb dir heads, [19]=spell-slot head (CAST). A head is
+-// "consumed" iff the sampled verb actually uses it.
++// [13]=identify target, [14..19]=dir heads, [20]=spell slot. A head is
++// gated by the sampled verb; the identify target is conditional on READ.
+ #define PUFFER_PROVIDES_HEAD_CONSUME_MAP 1
+ const signed char* env_head_consume_map(int* n_verbs, int* n_atns) {
+     static signed char map[NETHACK_NUM_ACTIONS * NUM_ATNS];
+@@ -1299,8 +1320,9 @@ const signed char* env_head_consume_map(int* n_verbs, int* n_atns) {
+             int sh = NETHACK_VERBS[v].head; // slot head 0..11 or -1
+             if (sh >= 0) row[1 + sh] = 1;
+             int dh = nethack_dir_head(v);
+-            if (dh >= 0) row[13 + dh] = 1;
+-            if (v == NETHACK_ACT_CAST) row[19] = 1; // spell-slot head
++            if (dh >= 0) row[NETHACK_DIR_HEAD_BASE + dh] = 1;
++            if (v == NETHACK_ACT_READ) row[NETHACK_IDENTIFY_HEAD] = 1;
++            if (v == NETHACK_ACT_CAST) row[NETHACK_SPELL_HEAD] = 1; // spell-slot head
+         }
+         built = 1;
+     }
+diff --git a/ocean/nethack/nethack_policy.cu b/ocean/nethack/nethack_policy.cu
+index 20dcad50..3a059b71 100644
+--- a/ocean/nethack/nethack_policy.cu
++++ b/ocean/nethack/nethack_policy.cu
+@@ -63,6 +63,11 @@ __device__ int nethack_head_used(int verb, int h) {
+     return (int)d_hc_dev[verb * d_hc_stride + h];
+ }
+ 
++__device__ int nethack_head_used_after_step(int verb, int h, float action) {
++    return nethack_head_used(verb, h)
++        && (h != NETHACK_IDENTIFY_HEAD || action >= 0.0f);
++}
++
+ __device__ float nethack_verb_eps_load(const precision_t* mask_row,
+         int A, float* inv_K) {
+     *inv_K = 0.0f;
+diff --git a/ocean/nethack/netlib.h b/ocean/nethack/netlib.h
+index 509892eb..a652fa0e 100644
+--- a/ocean/nethack/netlib.h
++++ b/ocean/nethack/netlib.h
+@@ -158,10 +158,14 @@ enum { NETHACK_MISC_YN = 0, NETHACK_MISC_GETLIN = 1, NETHACK_MISC_XWAIT = 2 };
+ 
+ // actions
+ 
+-// action space: verb head (26) + 12 item-slot heads (55) + 6 per-verb
++// action space: verb head (26) + 13 item-slot heads (55; last is identify target) + 6 per-verb
+ // direction heads (8 each: MOVE RUN KICK THROW ZAP APPLY) + spell-slot head (8)
+ #define NETHACK_NUM_ACTIONS 26
+ #define NETHACK_NUM_DIRS 8
++#define NETHACK_ITEM_HEADS 13
++#define NETHACK_IDENTIFY_HEAD 13
++#define NETHACK_DIR_HEAD_BASE 14
++#define NETHACK_SPELL_HEAD 20
+ #define NETHACK_DIR_HEADS 6
+ 
+ static const int NETHACK_DIR_KEYS[NETHACK_NUM_DIRS] =
+diff --git a/src/algo.cu b/src/algo.cu
+index 13b2d974..8b8305eb 100644
+--- a/src/algo.cu
++++ b/src/algo.cu
+@@ -1434,7 +1434,7 @@ __global__ void cache_imp_and_v(
+                 logps[at_base + logits_offset + a] = cache[a] - lse;
+             }
+ #ifdef PUFFER_NETHACK
+-            int used = nethack_head_used(verb, h);
++            int used = nethack_head_used_after_step(verb, h, actions[idx * NUM_ATNS + h]);
+             if (used) {
+                 int act = (int)actions[idx * NUM_ATNS + h];
+                 if (h == 0) {
+@@ -1550,7 +1550,7 @@ __global__ void ppo_loss_compute(
+             for (int h = 0; h < a.num_atns; ++h) {
+                 int A = a.act_sizes[h];
+ #ifdef PUFFER_NETHACK
+-                if (!nethack_head_used(verb, h)) {
++                if (!nethack_head_used_after_step(verb, h, g.actions[nt * a.num_atns + h])) {
+                     for (int j = 0; j < A; ++j) {
+                         a.grad_logits[at_base + logits_offset + j] = 0.0f;
+                     }
+diff --git a/src/pufferl.cu b/src/pufferl.cu
+index b6064dfd..f8a74d8d 100644
+--- a/src/pufferl.cu
++++ b/src/pufferl.cu
+@@ -350,6 +350,9 @@ struct RolloutBuf {
+     Prec observations;  // (horizon, agents, input_size)
+     Prec initial_states;
+     Float actions;      // (horizon, agents, num_atns) float32: large discrete IDs
++#ifdef PUFFER_NETHACK
++    Float identify_logprobs; // (horizon, agents, 2): base + conditional head
++#endif
+     Prec values;        // (horizon, agents)
+     Prec logprobs;      // ...
+     Prec rewards;
+@@ -378,6 +381,10 @@ void register_rollout_buffers(RolloutBuf* bufs, Allocator* alloc,
+         alloc_register(alloc, prec_fields[i]);
+     }
+     alloc_register(alloc, &bufs->actions);
++#ifdef PUFFER_NETHACK
++    bufs->identify_logprobs = {.shape = {T, B, 2}};
++    alloc_register(alloc, &bufs->identify_logprobs);
++#endif
+ }
+ 
+ // Rank-2 or rank-3 time-major tensor. F==0 means rank-2 (zero-terminated shape);
+@@ -406,6 +413,9 @@ RolloutBuf rollout_time_view(RolloutBuf* base, int start_t, int T) {
+     RolloutBuf view = *base;
+     view.observations = puf_time_view(base->observations, start_t, T);
+     view.actions      = puf_time_view(base->actions,      start_t, T);
++#ifdef PUFFER_NETHACK
++    view.identify_logprobs = puf_time_view(base->identify_logprobs, start_t, T);
++#endif
+     view.values       = puf_time_view(base->values,       start_t, T);
+     view.logprobs     = puf_time_view(base->logprobs,     start_t, T);
+     view.rewards      = puf_time_view(base->rewards,      start_t, T);
+@@ -599,7 +609,11 @@ __global__ void sample_logits(
+         precision_t* value_out,    // (B,)
+         curandStatePhilox4_32_10_t* rng_states,
+         precision_t* action_mask,  // (B, A_total); always allocated
+-        int mask_stride) {
++        int mask_stride
++#ifdef PUFFER_NETHACK
++        , float* identify_logprobs
++#endif
++        ) {
+     int B = dec_out.shape[0];
+     int fused_cols = dec_out.shape[1];
+     int num_atns = NUM_ATNS;
+@@ -615,6 +629,9 @@ __global__ void sample_logits(
+     curandStatePhilox4_32_10_t state = rng_states[idx];
+     int logits_base = idx * fused_cols;
+     float total_log_prob = 0.0f;
++#ifdef PUFFER_NETHACK
++    float identify_lp = 0.0f;
++#endif
+ 
+     if (is_continuous) {
+         for (int h = 0; h < num_atns; h++) {
+@@ -687,6 +704,8 @@ __global__ void sample_logits(
+                 if (eps > 0.0f) {
+                     total_log_prob += logf((1.0f - eps)
+                         * expf(cache[sampled] - logsumexp) + eps * inv_K);
++                } else if (h == NETHACK_IDENTIFY_HEAD) {
++                    identify_lp = cache[sampled] - logsumexp;
+                 } else {
+                     total_log_prob += cache[sampled] - logsumexp;
+                 }
+@@ -698,11 +717,27 @@ __global__ void sample_logits(
+         }
+     }
+ 
++#ifdef PUFFER_NETHACK
++    identify_logprobs[2 * idx] = total_log_prob;
++    identify_logprobs[2 * idx + 1] = identify_lp;
++#endif
+     logprobs[idx] = from_float(total_log_prob);
+     value_out[idx] = logits[logits_base + fused_cols - 1];
+     rng_states[idx] = state;
+ }
+ 
++#ifdef PUFFER_NETHACK
++__global__ void nethack_finish_logprobs(const float* actions,
++        const float* parts, precision_t* logprobs, int count) {
++    int i = blockIdx.x * blockDim.x + threadIdx.x;
++    if (i >= count) return;
++    float lp = parts[2*i];
++    if (actions[i * NUM_ATNS + NETHACK_IDENTIFY_HEAD] >= 0)
++        lp += parts[2*i+1];
++    logprobs[i] = from_float(lp);
++}
++#endif
++
+ // Index into (L, agents, H): element-parallel over L*count*H.
+ // state_row is agent index within the state tensor's agent dim.
+ static __device__ long state_elem_idx(
+@@ -873,7 +908,11 @@ static void pufferl_forward_step(PuffeRL* pufferl, int buf, int t,
+             act_b.data, env->actions.data + (long)sub * act_cols,
+             lp_b.data, val_b.data,
+             pufferl->rng_states[buf] + off,
+-            mask_b.data, mask_stride);
++            mask_b.data, mask_stride
++#ifdef PUFFER_NETHACK
++            , puf_slice(rollouts.identify_logprobs, t, sub, n).data
++#endif
++            );
+     }
+ }
+ 
+@@ -1188,6 +1227,20 @@ static void* vec_thread_main(void* arg) {
+             my_accum[PROF_ENV] += (t1.tv_sec - t0.tv_sec) * 1000.0f
+                 + (t1.tv_nsec - t0.tv_nsec) / 1e6f;
+             cudaEventRecord(ev[H2D_START], stream);
++#ifdef PUFFER_NETHACK
++            // The environment marks unused identification targets as -1. Store
++            // this outcome with the same transition, including terminal steps.
++            RolloutBuf rb = pufferl->rollouts;
++            if (pufferl->hypers.async)
++                rb = rollout_time_view(&pufferl->rollouts,
++                    pufferl->write_slot * horizon, horizon);
++            Float acted = puf_slice(rb.actions, t, agent_start, apb);
++            cudaMemcpyAsync(acted.data, &vec->actions[agent_start * NUM_ATNS],
++                apb * NUM_ATNS * sizeof(float), cudaMemcpyHostToDevice, stream);
++            nethack_finish_logprobs<<<grid_size(apb), BLOCK_SIZE, 0, stream>>>(
++                acted.data, puf_slice(rb.identify_logprobs, t, agent_start, apb).data,
++                puf_slice(rb.logprobs, t, agent_start, apb).data, apb);
++#endif
+             cpu_upload(pufferl, agent_start, apb, stream);
+             cudaEventRecord(ev[H2D_END], stream);
+             h2d_pending = 1;
+diff --git a/tests/test_nethack_cuda.cu b/tests/test_nethack_cuda.cu
+index 7c7de520..9ab08d46 100644
+--- a/tests/test_nethack_cuda.cu
++++ b/tests/test_nethack_cuda.cu
+@@ -71,6 +71,92 @@ int nh_dec_pad()     { return NH_DEC_PAD; }
+ int nh_num_actions() { return NH_ACTIONS; }
+ int nh_heads()       { return NH_HEADS; }
+ 
++int nh_identify_menu_choice(const unsigned char* screen, int target) {
++    return nethack_identify_choice(screen, target, 0);
++}
++int nh_identify_gate(int verb) {
++    int nv, na;
++    const signed char* map = env_head_consume_map(&nv, &na);
++    return map[verb * na + NETHACK_IDENTIFY_HEAD];
++}
++// Exercise the actual PPO kernels, including outcome gating and old-logprob
++// finalization. Returns loss, entropy, target gradient, ratio, and new logprob.
++void nh_identify_ppo(int used, float target_logit, float* result) {
++    int hs[] = ACT_SIZES, A = NH_DEC_OD;
++    float* mem; cudaMallocManaged(&mem, (6*A + NUM_ATNS + 128)*sizeof(float));
++    memset(mem, 0, (6*A + NUM_ATNS + 128)*sizeof(float));
++    float* logits=mem; float* mask=logits+A+1; float* acts=mask+A;
++    float* grad=acts+NUM_ATNS; float* oldlp=grad+A; float* imp=oldlp+1;
++    float* value=imp+1; float* newlp=value+1; float* parts=newlp+1;
++    float* adv=parts+2; float* ret=adv+1; float* ent=ret+1;
++    float* losses=ent+1;
++    int* sizes; cudaMallocManaged(&sizes,sizeof(hs)); memcpy(sizes,hs,sizeof(hs));
++    int nv,na; const signed char* host=env_head_consume_map(&nv,&na);
++    signed char* map; cudaMalloc(&map,nv*na);
++    cudaMemcpy(map,host,nv*na,cudaMemcpyHostToDevice);
++    cudaMemcpyToSymbol(d_hc_dev,&map,sizeof(map)); cudaMemcpyToSymbol(d_hc_stride,&na,sizeof(na));
++    for(int i=0;i<A;i++) mask[i]=1;
++    acts[0]=NETHACK_ACT_READ; acts[NETHACK_IDENTIFY_HEAD]=used ? 0 : -1;
++    int offset=NETHACK_NUM_ACTIONS+12*NETHACK_INV_SLOTS;
++    logits[offset]=target_logit;
++    parts[0]=-logf(NETHACK_NUM_ACTIONS)-logf(NETHACK_INV_SLOTS);
++    parts[1]=-logf(NETHACK_INV_SLOTS);
++    nethack_finish_logprobs<<<1,32>>>(acts,parts,oldlp,1);
++    Prec dec={.data=logits,.shape={1,1,A+1}}, empty={};
++    cache_imp_and_v<<<1,32>>>(dec,acts,oldlp,mask,empty,sizes,imp,value,grad,newlp);
++    cudaDeviceSynchronize();
++    float saved_lp=*newlp, saved_ratio=*imp;
++    *adv=1; *ent=0.1f;
++    PPOKernelArgs ka={}; ka.grad_logits=grad; ka.grad_values_pred=newlp;
++    ka.logits=logits; ka.values_pred=logits+A; ka.act_sizes=sizes;
++    ka.action_mask=mask; ka.num_atns=NUM_ATNS; ka.clip_coef=0.2f;
++    ka.vf_clip_coef=0.2f; ka.ent_coef=ent; ka.T_seq=1; ka.A_total=A; ka.N=1;
++    PPOGraphArgs ga={.imp=imp,.actions=acts,.old_logprobs=oldlp,
++        .advantages=adv,.values=value,.returns=ret};
++    ppo_loss_compute<<<1,PPO_THREADS>>>(losses,ka,ga);
++    assert(cudaDeviceSynchronize()==cudaSuccess);
++    result[0]=losses[LOSS_TOTAL]; result[1]=losses[LOSS_ENT];
++    result[2]=grad[offset]; result[3]=saved_ratio; result[4]=saved_lp;
++    float maxg=0; for(int i=0;i<NETHACK_INV_SLOTS;i++) maxg=fmaxf(maxg,fabsf(grad[offset+i]));
++    result[5]=maxg;
++    signed char* nil=NULL;cudaMemcpyToSymbol(d_hc_dev,&nil,sizeof(nil));
++    cudaFree(map);cudaFree(sizes);cudaFree(mem);
++}
++
++int nh_identify_live(int (*prepare)(nle_ctx_t*), int (*check)(nle_ctx_t*)) {
++    Nethack env = {};
++    env.rng = 7; env.num_agents = 1;
++    Agent* a = &env.agents[0];
++    a->observations = (unsigned char*)calloc(OBS_SIZE, 1);
++    a->actions = (float*)calloc(NUM_ATNS, sizeof(float));
++    int sizes[] = ACT_SIZES, total = 0;
++    for (int i=0;i<NUM_ATNS;i++) total += sizes[i];
++    a->action_mask = (unsigned char*)calloc(total, 1);
++    a->rewards = (float*)calloc(1,sizeof(float));
++    a->terminals = (float*)calloc(1,sizeof(float));
++    init(&env); nethack_sync_buffers(&env); nethack_do_reset(&env);
++    int letters = prepare(env.ctx);
++    nle_obs_refresh(env.ctx, &env.obs);
++    int scroll = -1, target = -1;
++    for (int i=0;i<NETHACK_INV_SLOTS;i++) {
++        if (env.inv_letters[i] == (letters & 255)) scroll=i;
++        if (env.inv_letters[i] == (letters >> 8)) target=i;
++    }
++    int result = -1;
++    if (scroll >= 0 && target >= 0) {
++        a->actions[NETHACK_IDENTIFY_HEAD] = target;
++        int bad = 0;
++        nethack_execute(&env,NETHACK_ACT_READ,scroll,0,&bad);
++        nethack_handle_prompts(&env);
++        result = bad ? -2 : check(env.ctx);
++    }
++    puf_close(&env);
++    free(a->observations); free(a->actions); free(a->action_mask);
++    free(a->rewards); free(a->terminals);
++    return result;
++}
++
++
+ #if 0
+ void nh_get_gA(void* dst, int B) {
+     cudaMemcpy(dst, g_a->gA.data, (size_t)B * NH_INV * NH_GK * sizeof(float), cudaMemcpyDeviceToDevice);

@@ -1,0 +1,127 @@
+{
+  "baseline_seconds": 35.356752277,
+  "strict_seconds": 26.1702092875,
+  "time_reduction_percent": 25.982428808869862,
+  "throughput_gain_percent": 35.10305511346399,
+  "baseline_sps": 111213.83460770853,
+  "strict_sps": 150253.28826384916,
+  "baseline_drift_percent": 0.32532187672602575,
+  "strict_repeat_drift_percent": 2.510238451862512,
+  "checks": {
+    "strict_check": {
+      "shapes": 7,
+      "max_relative_error": 0.00193022106
+    },
+    "both_check2": {
+      "shapes": 7,
+      "max_relative_error": 0.0023016951
+    }
+  },
+  "production_diff_unchanged": true,
+  "checkpoint_sha256": "6541c5212ae4aae45e3c419bec2bf150883c457188117743d546cfb1d62a2718",
+  "profile": {
+    "capture_seconds": 10,
+    "kernel_union_seconds": {
+      "all": 8.294400454,
+      "unattributed": 0.211993237,
+      "fused_rollout": 3.655331214,
+      "train_forward_backward": 7.250006742
+    },
+    "kernel_sums_seconds": {
+      "unattributed": 0.222324907,
+      "fused_rollout": 5.944921833,
+      "train_forward_backward": 7.444355493
+    },
+    "ppo_graphs": [
+      {
+        "corr": 7254,
+        "start": 455667043,
+        "end": 2004624576,
+        "kernels": 118661
+      },
+      {
+        "corr": 37987,
+        "start": 2301090875,
+        "end": 3846003847,
+        "kernels": 118661
+      },
+      {
+        "corr": 68723,
+        "start": 4180996735,
+        "end": 5734957809,
+        "kernels": 118661
+      },
+      {
+        "corr": 99457,
+        "start": 6016859048,
+        "end": 7566674896,
+        "kernels": 118661
+      },
+      {
+        "corr": 130206,
+        "start": 7907781675,
+        "end": 9449972343,
+        "kernels": 118661
+      }
+    ],
+    "complete_ppo_graph_count": 5,
+    "mean_complete_ppo_graph_seconds": 1.547967619,
+    "ppo_gap_ms": [
+      296.466299,
+      334.992888,
+      281.901239,
+      341.106779
+    ],
+    "top_ppo_kernel_sums_seconds": [
+      {
+        "name": "void cutlass::Kernel2<cutlass_80_tensorop_bf16_s16816gemm_relu_bf16_64x64_32x6_nn_align8>(T1::Params)",
+        "seconds": 0.949291098
+      },
+      {
+        "name": "ampere_bf16_s16816gemm_bf16_128x64_ldg8_f2f_stages_64x3_nt",
+        "seconds": 0.670473147
+      },
+      {
+        "name": "void cutlass::Kernel2<cutlass_80_tensorop_bf16_s16816gemm_relu_bf16_64x64_32x6_nt_align8>(T1::Params)",
+        "seconds": 0.472298111
+      },
+      {
+        "name": "ampere_bf16_s1688gemm_bf16_128x128_ldg8_f2f_stages_32x1_nn",
+        "seconds": 0.418652623
+      },
+      {
+        "name": "ampere_bf16_s1688gemm_bf16_128x128_ldg8_f2f_stages_32x1_tn",
+        "seconds": 0.367465141
+      },
+      {
+        "name": "ampere_bf16_s16816gemm_bf16_128x64_ldg8_f2f_stages_32x6_nn",
+        "seconds": 0.267331737
+      },
+      {
+        "name": "cache_imp_and_v(Prec, const float *, const __nv_bfloat16 *, const __nv_bfloat16 *, Prec, const int *, __nv_bfloat16 *, __nv_bfloat16 *, float *, float *)",
+        "seconds": 0.262392413
+      },
+      {
+        "name": "mingru_scan_backward_row(PrefixScan, const __nv_bfloat16 *, const __nv_bfloat16 *)",
+        "seconds": 0.229524986
+      },
+      {
+        "name": "nh_relu_bias_bwd_kernel(__nv_bfloat16 *, const __nv_bfloat16 *, long long *, long, int)",
+        "seconds": 0.212527942
+      },
+      {
+        "name": "ppo_loss_compute(float *, PPOKernelArgs, PPOGraphArgs)",
+        "seconds": 0.199048815
+      },
+      {
+        "name": "mingru_scan_forward_row(PrefixScan)",
+        "seconds": 0.158248397
+      },
+      {
+        "name": "void cublasLt::splitKreduce_kernel<(int)32, (int)16, int, float, __nv_bfloat16, float, __nv_bfloat16, (bool)0, __nv_bfloat16, __nv_bfloat16, __nv_bfloat16, (bool)1, (bool)0, (bool)0, (bool)0>(cublasLt::cublasSplitKParams<T6>, const T4 *, const T10 *, T9 *, T5 *, const T6 *, const T6 *, const T11 *, const T4 *, T11 *, void *, long, T6 *, int *, T6 *, T6 *, const T6 *, const T6 *, const T6 *, const T6 *, const T6 *)",
+        "seconds": 0.157306462
+      }
+    ],
+    "inference_training_overlap_seconds": 2.748517521
+  }
+}

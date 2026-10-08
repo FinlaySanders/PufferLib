@@ -1,0 +1,40 @@
+{
+  "before": {
+    "seconds": 24.616396429,
+    "sps": 170386.5962712068,
+    "mean_turn": 28589.949375,
+    "gain_percent": 0.057393967231345044
+  },
+  "pgo61": {
+    "seconds": 21.109886645,
+    "sps": 198689.08206541438,
+    "mean_turn": 28589.949375,
+    "gain_percent": 16.67767416142847
+  },
+  "pool83": {
+    "seconds": 16.681836843,
+    "sps": 251429.38631245552,
+    "mean_turn": 28589.949375,
+    "gain_percent": 47.64875707218905
+  },
+  "after": {
+    "seconds": 24.644653082,
+    "sps": 170191.23726531342,
+    "mean_turn": 28589.949375,
+    "gain_percent": -0.05732816141899022
+  },
+  "equivalence": {
+    "initial_rng_states_identical": true,
+    "retained_vs_original_observations": true,
+    "pool_vs_original_observations": true,
+    "closing_vs_opening_observations": true,
+    "rng_hashes": {
+      "before": "4321709e6b01c7a2c8642d768daaaa2894d5505b7a6d661edbc3c608aa3bc7d7",
+      "pgo61": "4321709e6b01c7a2c8642d768daaaa2894d5505b7a6d661edbc3c608aa3bc7d7",
+      "pool83": "4321709e6b01c7a2c8642d768daaaa2894d5505b7a6d661edbc3c608aa3bc7d7",
+      "after": "4321709e6b01c7a2c8642d768daaaa2894d5505b7a6d661edbc3c608aa3bc7d7"
+    }
+  },
+  "caveat": "Timings comparable as fixed workload only if per-block observations and initial RNG states match; observation hashes are block-boundary checks, not full action-stream proof.",
+  "baseline_drift_percent": 0.1147879344627123
+}

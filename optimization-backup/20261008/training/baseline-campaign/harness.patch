@@ -1,0 +1,179 @@
+--- a/src/pufferl.cu
++++ b/src/pufferl.cu
+@@ -430,6 +430,7 @@
+     int num_policies;
+     int* policy_layout;
+     // CPU pins / workers (unused on GPU)
++    double perf_completed[4];
+     int* env_starts;
+     int* env_counts;
+     obs_t* observations;
+@@ -1020,7 +1021,9 @@
+     Env* envs = (Env*)calloc(total_agents, sizeof(Env));
+     int agents_created = 0;
+     while (agents_created < total_agents) {
+-        envs[num_envs].rng = num_envs;
++        envs[num_envs].rng = getenv("PUF_BATCH_REPLAY")
++            ? (num_envs / (total_agents / 4)) * 128 + (num_envs % (total_agents / 4)) % 128
++            : num_envs;
+         puf_init(&envs[num_envs], ek);
+         agents_created += envs[num_envs].num_agents;
+         num_envs++;
+@@ -1162,12 +1165,12 @@
+     for (int i = 0; i < NUM_EV; i++) {
+         cudaEventCreate(&ev[i]);
+     }
+-    __atomic_store_n(state, BUF_WAITING, __ATOMIC_SEQ_CST);
+     float* my_accum = &vec->accum[buf * NUM_PROF];
+     FILE* perf_record = NULL;
+     const unsigned char* perf_replay = NULL;
+     size_t perf_replay_size = 0, perf_replay_pos = 0;
+-    size_t perf_frame_bytes = (size_t)apb * NUM_ATNS * sizeof(float);
++    size_t perf_frame_bytes = (size_t)128 * NUM_ATNS * sizeof(float);
++    assert(apb % 128 == 0);
+     if (const char* dir = getenv("PUF_ACTION_RECORD")) {
+         char path[4096]; snprintf(path,sizeof(path),"%s/buf%d.bin",dir,buf);
+         perf_record = fopen(path,"wb"); assert(perf_record);
+@@ -1180,6 +1183,22 @@
+         assert(perf_replay!=MAP_FAILED);close(fd);
+     }
+ 
++    if (getenv("PUF_BATCH_REPLAY")) {
++        assert(perf_replay && vec->buffers==4);
++        for(int t=0;t<24*512;t++) {
++            assert(perf_replay_pos+perf_frame_bytes<=perf_replay_size);
++            for(int rep=0;rep<apb/128;rep++)
++                memcpy(&vec->actions[(agent_start+rep*128)*NUM_ATNS],perf_replay+perf_replay_pos,perf_frame_bytes);
++            perf_replay_pos+=perf_frame_bytes;
++            memset(&vec->rewards[agent_start],0,apb*sizeof(float));
++            memset(&vec->terminals[agent_start],0,apb*sizeof(float));
++            ep_run(vec->env_pool,buf,env_start,env_count);
++        }
++        cpu_upload(pufferl,agent_start,apb,stream);
++        cudaStreamSynchronize(stream);
++        fprintf(stderr,"BATCH_WARM buffer=%d game_steps=%d\n",buf,24*512);
++    }
++    __atomic_store_n(state, BUF_WAITING, __ATOMIC_SEQ_CST);
+     struct timespec t0, t1;
+     float ms = 0.0f;
+     while (true) {
+@@ -1227,7 +1246,8 @@
+             if (perf_record) assert(fwrite(&vec->actions[agent_start * NUM_ATNS],1,perf_frame_bytes,perf_record)==perf_frame_bytes);
+             if (perf_replay) {
+                 assert(perf_replay_pos+perf_frame_bytes<=perf_replay_size);
+-                memcpy(&vec->actions[agent_start * NUM_ATNS],perf_replay+perf_replay_pos,perf_frame_bytes);
++                for(int rep=0;rep<apb/128;rep++)
++                    memcpy(&vec->actions[(agent_start+rep*128)*NUM_ATNS],perf_replay+perf_replay_pos,perf_frame_bytes);
+                 perf_replay_pos+=perf_frame_bytes;
+             }
+             memset(&vec->rewards[agent_start], 0, apb * sizeof(float));
+@@ -1280,6 +1300,7 @@
+             cudaEventElapsedTime(&ms, ev[H2D_START], ev[H2D_END]);
+             my_accum[PROF_COPY] += ms;
+         }
++        vec->perf_completed[buf]=wall_clock();
+         __atomic_store_n(state, BUF_WAITING, __ATOMIC_SEQ_CST);
+     }
+ }
+@@ -1544,6 +1565,18 @@
+     }
+ }
+ 
++__global__ void transpose_obs_wide(precision_t* dst, const precision_t* src,
++        int A, int B, int C) {
++    long idx = (long)blockIdx.x * blockDim.x + threadIdx.x;
++    long total = (long)A * B * C;
++    if (idx >= total) return;
++    long a = idx / ((long)B * C);
++    long rem = idx % ((long)B * C);
++    long b = rem / C;
++    long c = rem % C;
++    dst[b * A * C + a * C + c] = src[idx];
++}
++
+ // 1-thread graph node. cudaEventElapsedTime does not timestamp in-graph events.
+ __global__ void puf_stamp(unsigned long long* dst) {
+     unsigned long long t;
+@@ -1563,8 +1596,14 @@
+     int obs_size = (int)src.observations.shape[2];
+     int num_atns = (int)src.actions.shape[2];
+     int mask_c = src.action_mask.shape[2];
+-    transpose_102<<<grid_size(T * B * obs_size), BLOCK_SIZE, 0, stream>>>(
+-        rollouts->observations.data, src.observations.data, T, B, obs_size);
++    long obs_elements = (long)T * B * obs_size;
++    if (obs_elements > 2147483391L) {
++        transpose_obs_wide<<<(obs_elements + BLOCK_SIZE - 1) / BLOCK_SIZE, BLOCK_SIZE, 0, stream>>>(
++            rollouts->observations.data, src.observations.data, T, B, obs_size);
++    } else {
++        transpose_102<<<grid_size(T * B * obs_size), BLOCK_SIZE, 0, stream>>>(
++            rollouts->observations.data, src.observations.data, T, B, obs_size);
++    }
+     transpose_102<<<grid_size(T * B * num_atns), BLOCK_SIZE, 0, stream>>>(
+         rollouts->actions.data, src.actions.data, T, B, num_atns);
+     transpose_102<<<grid_size(T * B), BLOCK_SIZE, 0, stream>>>(
+@@ -1708,8 +1747,9 @@
+             == cudaSuccess && "cudaStreamBeginCapture failed");
+         train_epoch_gpu(pufferl, src, slot, train_stream);
+         cudaGraph_t graph;
+-        assert(cudaStreamEndCapture(train_stream, &graph)
+-            == cudaSuccess && "cudaStreamEndCapture failed");
++        cudaError_t capture_error = cudaStreamEndCapture(train_stream, &graph);
++        if (capture_error != cudaSuccess) fprintf(stderr,"CAPTURE_ERROR %s\n",cudaGetErrorString(capture_error));
++        assert(capture_error == cudaSuccess && "cudaStreamEndCapture failed");
+         assert(cudaGraphInstantiate(
+             &pufferl->train_cudagraph[slot], graph, 0)
+             == cudaSuccess && "cudaGraphInstantiate failed");
+@@ -3219,11 +3259,12 @@
+     char final_checkpoint[4096] = {0};
+ 
+     for (long epoch = 0; epoch < train_epochs; epoch++) {
+-        if (getenv("PUF_SIZE_CAPTURE") && epoch==32) { cudaDeviceSynchronize(); cudaProfilerStart(); }
+-        if (getenv("PUF_SIZE_CAPTURE") && epoch==38) { cudaDeviceSynchronize(); cudaProfilerStop(); }
++        if (getenv("PUF_SIZE_CAPTURE") && epoch==8) { cudaDeviceSynchronize(); cudaProfilerStart(); }
++        if (getenv("PUF_SIZE_CAPTURE") && epoch==14) { cudaDeviceSynchronize(); cudaProfilerStop(); }
+ 
+ #ifdef PUF_PERF_LOAD
+         double perf_epoch_start = wall_clock();
++        double perf_ppo_done=0;
+ #endif
+         if (pufferl->hypers.async) {
+             // Cleanba 2-slot: warmup fills slot 0; then collect into write
+@@ -3249,6 +3290,7 @@
+             RolloutBuf train_src = rollout_time_view(&pufferl->rollouts,
+                 ready_slot * pufferl->hypers.horizon, pufferl->hypers.horizon);
+             train_impl(pufferl, &train_src);
++            perf_ppo_done=wall_clock();
+ 
+             if (prefetch_next) {
+                 rollout_finish(pufferl, t0);
+@@ -3274,13 +3316,25 @@
+         char age_marker[256];
+         snprintf(age_marker, sizeof(age_marker), "game_age epoch=%ld mean=%.2f max=%ld over10k=%d envs=%d", epoch,
+             (double)perf_turn_sum / pufferl->vec->size, perf_turn_max, perf_over10k, pufferl->vec->size);
+-        if (epoch==31 || epoch==37 || epoch==train_epochs-1) {
++        if (epoch==7 || epoch==13 || epoch==train_epochs-1) {
+             uint64_t hash=1469598103934665603ULL;
+             const unsigned char* bytes=(const unsigned char*)pufferl->vec->observations;
+-            size_t n=(size_t)pufferl->hypers.total_agents*OBS_SIZE*sizeof(obs_t);
+-            for(size_t j=0;j<n;j++) { hash^=bytes[j];hash*=1099511628211ULL; }
+-            fprintf(stderr,"SIZE_PROOF epoch=%ld obs=%016llx params=%ld\n",epoch,(unsigned long long)hash,(long)numel(pufferl->policies[0].master_weights.shape));
+-        }
++            size_t chunk=(size_t)128*OBS_SIZE*sizeof(obs_t);
++            int apb=pufferl->hypers.total_agents/4;
++            for(int b=0;b<4;b++) {
++                const unsigned char* first=bytes+(size_t)b*apb*OBS_SIZE*sizeof(obs_t);
++                for(int rep=1;rep<apb/128;rep++) assert(memcmp(first,first+rep*chunk,chunk)==0);
++                for(size_t j=0;j<chunk;j++) { hash^=first[j];hash*=1099511628211ULL; }
++            }
++            fprintf(stderr,"BATCH_PROOF epoch=%ld obs=%016llx params=%ld copies=%d\n",epoch,(unsigned long long)hash,(long)numel(pufferl->policies[0].master_weights.shape),pufferl->hypers.total_agents/512);
++        }
++        size_t memfree=0,memtotal=0;cudaMemGetInfo(&memfree,&memtotal);
++        double last_rollout=0;
++        for(int b=0;b<4;b++) last_rollout=fmax(last_rollout,pufferl->vec->perf_completed[b]);
++        fprintf(stderr,"BATCH_PERF epoch=%ld seconds=%.9f rollout_tail=%.9f ppo_tail=%.9f used_mib=%.1f batch=%d mb=%d updates=%d\n",epoch,perf_epoch_seconds,
++            fmax(0.,last_rollout-perf_ppo_done),fmax(0.,perf_ppo_done-last_rollout),
++            (double)(memtotal-memfree)/(1024.*1024.),pufferl->hypers.total_agents*pufferl->hypers.horizon,pufferl->hypers.minibatch_size,
++            (int)(pufferl->hypers.replay_ratio*pufferl->hypers.total_agents*pufferl->hypers.horizon/pufferl->hypers.minibatch_size));
+         nvtxMarkA(age_marker);
+         fprintf(stderr,"PERF_EPOCH epoch=%ld steps=%ld seconds=%.9f mean_turn=%.2f max_turn=%ld over1k=%d over10k=%d depth8=%d envs=%d\n",
+             epoch, pufferl->global_step, perf_epoch_seconds,

@@ -1,0 +1,756 @@
+--- a/src/algo.cu
++++ b/src/algo.cu
+@@ -846,10 +846,15 @@
+     for (int i = 0; i < m->num_layers; i++) {
+         Prec state_i = mingru_state_layer(state, i, 0, B);
+         puf_mm(&x, &m->weights[i], &a->combined[i], stream);
++#ifdef PUF_MINGRU_NOCOPY
++        mingru_gate<<<grid_size(B*H), BLOCK_SIZE, 0, stream>>>(
++            a->out.data, state_i.data, a->combined[i].data, state_i.data, x.data, H, B);
++#else
+         mingru_gate<<<grid_size(B*H), BLOCK_SIZE, 0, stream>>>(
+             a->out.data, a->next_state.data,
+             a->combined[i].data, state_i.data, x.data, H, B);
+         puf_copy(&state_i, &a->next_state, stream);
++#endif
+         x = a->out;
+     }
+     return x;
+@@ -861,7 +866,11 @@
+     MinGRUActivations* a = (MinGRUActivations*)activations;
+     int B = (int)x.shape[0];
+     for (int i = 0; i < m->num_layers; i++) {
++#ifdef PUF_MINGRU_NOCOPY
++        a->saved_inputs[i].data=x.data;
++#else
+         puf_copy(&a->saved_inputs[i], &x, stream);
++#endif
+         Prec state_i = mingru_state_layer(state, i, agent_off, B);
+         puf_mm(&x, &m->weights[i], &a->combined_bufs[i], stream);
+         PrefixScan& scan = a->scan_bufs[i];
+@@ -1120,6 +1129,66 @@
+     }
+ }
+ 
++#ifdef PUF_MUON_BATCH_NORM
++struct MuonNormDesc { long offset; int n, blocks; };
++__global__ void muon_norm_batch_partials(float* partials, const precision_t* src, const MuonNormDesc* desc
++    ) {
++    int param=blockIdx.y,block=blockIdx.x;
++    MuonNormDesc d=desc[param];
++    if (block >= d.blocks) return;
++    __shared__ float sdata[256];
++    int tid=threadIdx.x;float sum=0.0f;
++    for(int i=block*256+tid;i<d.n;i+=256*d.blocks) { float v=to_float(src[d.offset+i]);sum+=v*v; }
++    sdata[tid]=sum;
++    block_reduce_sum(sdata,&partials[param*256+block],tid,256,1);
++}
++__global__ void muon_norm_batch_reduce(float* out,const float* partials,const MuonNormDesc* desc) {
++    __shared__ float sdata[256];int tid=threadIdx.x;
++    sdata[tid]=tid<desc[blockIdx.x].blocks?partials[blockIdx.x*256+tid]:0.0f;
++    block_reduce_sum(sdata,&out[blockIdx.x],tid,256,1);
++}
++__global__ void muon_norm_batch_apply(precision_t* dst,const float* norms,const MuonNormDesc* desc
++    ) {
++    int param=blockIdx.y,block=blockIdx.x;
++    MuonNormDesc d=desc[param];if(block>=d.blocks)return;
++    float inv_norm=1.0f/fmaxf(sqrtf(norms[param]),1e-7f);
++    for(int i=block*256+threadIdx.x;i<d.n;i+=256*d.blocks)
++        dst[d.offset+i]=from_float(to_float(dst[d.offset+i])*inv_norm);
++}
++#endif
++
++
++#ifdef PUF_MUON_OUTPLACE
++#include <cublasLt.h>
++#include <vector>
++struct OutplacePlan { int M,N,K; cublasLtMatmulDesc_t desc; cublasLtMatrixLayout_t a,b,c; cublasLtMatmulAlgo_t algo; };
++thread_local cublasLtHandle_t outplace_handle=nullptr;
++thread_local std::vector<OutplacePlan> outplace_plans;
++static OutplacePlan& outplace_plan(int M,int N,int K) {
++    for(auto& p:outplace_plans)if(p.M==M&&p.N==N&&p.K==K)return p;
++    if(!outplace_handle)assert(cublasLtCreate(&outplace_handle)==CUBLAS_STATUS_SUCCESS);
++    OutplacePlan p={};p.M=M;p.N=N;p.K=K;
++    assert(cublasLtMatmulDescCreate(&p.desc,CUBLAS_COMPUTE_32F,CUDA_R_32F)==CUBLAS_STATUS_SUCCESS);
++    assert(cublasLtMatrixLayoutCreate(&p.a,CUDA_R_16BF,N,K,N)==CUBLAS_STATUS_SUCCESS);
++    assert(cublasLtMatrixLayoutCreate(&p.b,CUDA_R_16BF,K,M,K)==CUBLAS_STATUS_SUCCESS);
++    assert(cublasLtMatrixLayoutCreate(&p.c,CUDA_R_16BF,N,M,N)==CUBLAS_STATUS_SUCCESS);
++    cublasLtMatmulPreference_t pref;cublasLtMatmulPreferenceCreate(&pref);
++    size_t workspace=32UL<<20;uint32_t reductions=CUBLASLT_REDUCTION_SCHEME_COMPUTE_TYPE;
++    cublasLtMatmulPreferenceSetAttribute(pref,CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES,&workspace,sizeof(workspace));
++    cublasLtMatmulPreferenceSetAttribute(pref,CUBLASLT_MATMUL_PREF_REDUCTION_SCHEME_MASK,&reductions,sizeof(reductions));
++    cublasLtMatmulHeuristicResult_t result;int count=0;
++    assert(cublasLtMatmulAlgoGetHeuristic(outplace_handle,p.desc,p.a,p.b,p.c,p.c,pref,1,&result,&count)==CUBLAS_STATUS_SUCCESS && count==1);
++    p.algo=result.algo;cublasLtMatmulPreferenceDestroy(pref);outplace_plans.push_back(p);return outplace_plans.back();
++}
++static void outplace_mm(Prec* A,Prec* B,Prec* C,Prec* D,cudaStream_t stream,float alpha,float beta) {
++    int M=A->shape[0],K=A->shape[1],N=B->shape[1];auto& p=outplace_plan(M,N,K);
++    void* workspace=nullptr;
++    for(auto* ws=g_cublas_workspaces;ws;ws=ws->next)if(ws->stream==stream){workspace=ws->data;break;}
++    assert(workspace);
++    assert(cublasLtMatmul(outplace_handle,p.desc,&alpha,B->data,p.a,A->data,p.b,&beta,C->data,p.c,D->data,p.c,&p.algo,workspace,32UL<<20,stream)==CUBLAS_STATUS_SUCCESS);
++}
++#endif
++
+ constexpr double ns_coeffs[5][3] = {
+     {4.0848, -6.8946, 2.9270},
+     {3.9505, -6.3029, 2.6377},
+@@ -1131,6 +1200,11 @@
+ // Muon optimizer. Our benchmarks show this is a major
+ // upgrade over Adam (weight decay not needed in RL).
+ struct Muon {
++#ifdef PUF_MUON_BATCH_NORM
++    MuonNormDesc* norm_desc;
++    float *batch_partials,*batch_norms;
++    int norm_count;
++#endif
+     double momentum;
+     // Scalars / scratch: raw device ptrs. Tensors: allocator.
+     float* lr;
+@@ -1144,6 +1218,21 @@
+ 
+ void muon_init(Muon* m, Allocator* param_alloc, double momentum, Allocator* alloc) {
+     m->momentum = momentum;
++#ifdef PUF_MUON_BATCH_NORM
++    MuonNormDesc* host=(MuonNormDesc*)calloc(param_alloc->num_regs,sizeof(MuonNormDesc));
++    long norm_offset=0;int norm_count=0;
++    for(int i=0;i<param_alloc->num_regs;i++) {
++        auto& e=param_alloc->regs[i];long n=numel(e.shape);
++        if(ndim(e.shape)>=2)host[norm_count++]={norm_offset,(int)n,min((int)grid_size(n),256)};
++        norm_offset+=n;
++    }
++    m->norm_count=norm_count;
++    assert(cudaMalloc(&m->norm_desc,norm_count*sizeof(MuonNormDesc))==cudaSuccess);
++    assert(cudaMalloc(&m->batch_partials,norm_count*256*sizeof(float))==cudaSuccess);
++    assert(cudaMalloc(&m->batch_norms,norm_count*sizeof(float))==cudaSuccess);
++    assert(cudaMemcpy(m->norm_desc,host,norm_count*sizeof(MuonNormDesc),cudaMemcpyHostToDevice)==cudaSuccess);
++    free(host);
++#endif
+     m->param_alloc = param_alloc;
+     cudaMalloc((void**)&m->lr, sizeof(float));
+     cudaMalloc((void**)&m->grad_norm, sizeof(float));
+@@ -1158,6 +1247,10 @@
+             long R = e.shape[0], C = numel(e.shape) / R;
+             max_M = max(max_M, min(R, C));
+             max_N = max(max_N, max(R, C));
++#ifdef PUF_MUON_OUTPLACE
++            int M=min(R,C);outplace_plan(M,M,M);
++            outplace_plan(R,C,M);
++#endif
+         }
+     }
+     m->gram =     {.shape = {max_M, max_M}};
+@@ -1183,6 +1276,11 @@
+         m->mb.data, grads.data, m->grad_norm,
+         max_grad_norm, 1e-6f, (float)m->momentum, n_grad);
+ 
++#ifdef PUF_MUON_BATCH_NORM
++    muon_norm_batch_partials<<<dim3(256,m->norm_count),256,0,stream>>>(m->batch_partials,grads.data,m->norm_desc);
++    muon_norm_batch_reduce<<<m->norm_count,256,0,stream>>>(m->batch_norms,m->batch_partials,m->norm_desc);
++    muon_norm_batch_apply<<<dim3(256,m->norm_count),256,0,stream>>>(grads.data,m->batch_norms,m->norm_desc);
++#endif
+     // Per-param NS into workspace; write scaled update back into flat grads.
+     // 1D params already hold their update in-place (scale 1).
+     long offset = 0;
+@@ -1203,6 +1301,7 @@
+         Prec gram = {.data = m->gram.data, .shape = {M, M}};
+         Prec gram_buf = {.data = m->gram_buf.data, .shape = {M, M}};
+ 
++#ifndef PUF_MUON_BATCH_NORM
+         int nblk = min((int)grid_size(ne), 256);
+         muon_sum_sq_partials<<<nblk, 256, 0, stream>>>(
+             m->norm_partials, x.data, (int)ne);
+@@ -1210,6 +1309,8 @@
+             m->ns_norm, m->norm_partials, nblk);
+         muon_l2_normalize<<<grid_size(ne), BLOCK_SIZE, 0, stream>>>(
+             x.data, m->ns_norm, 1e-7f, (int)ne);
++
++#endif
+ 
+         // 5 steps land in x_buf. 4 = you break it.
+         for (int i = 0; i < 5; ++i) {
+@@ -1220,6 +1321,11 @@
+             } else {
+                 puf_mm(&src, &src, &gram, stream);
+             }
++#ifdef PUF_MUON_OUTPLACE
++            outplace_mm(&gram,&gram,&gram,&gram_buf,stream,(float)ns_coeffs[i][2],(float)ns_coeffs[i][1]);
++            if(tall)outplace_mm(&src,&gram_buf,&src,&dst,stream,1.0f,(float)ns_coeffs[i][0]);
++            else outplace_mm(&gram_buf,&src,&src,&dst,stream,1.0f,(float)ns_coeffs[i][0]);
++#else
+             puf_copy(&gram_buf, &gram, stream);
+             puf_mm_nn(&gram, &gram, &gram_buf, stream,
+                 (float)ns_coeffs[i][2], (float)ns_coeffs[i][1]);
+@@ -1231,6 +1337,7 @@
+                 puf_mm_nn(&gram_buf, &src, &dst,
+                     stream, 1.0f, (float)ns_coeffs[i][0]);
+             }
++#endif
+         }
+         float scale = sqrtf(fmaxf(1.0f, (float)R / (float)C));
+         muon_store_update<<<grid_size(ne), BLOCK_SIZE, 0, stream>>>(
+@@ -1459,6 +1566,9 @@
+         int logits_offset = 0;
+         for (int h = 0; h < NUM_ATNS; ++h) {
+             int A = act_sizes[h];
++#if defined(PUFFER_NETHACK) && defined(PUF_SKIP_UNUSED_LOGPS)
++            if(!nethack_head_used(verb,h)) { logits_offset+=A;continue; }
++#endif
+             float cache[PPO_MAX_HEAD_A];
+             float lse = ppo_discrete_logsumexp(
+                 logits, logits_base, logits_offset, A,
+@@ -1508,6 +1618,17 @@
+     return dec;
+ }
+ 
++#if defined(PUF_PPO_ZERO) && defined(PUFFER_NETHACK)
++__global__ void nethack_zero_unused(float* logps,const float* actions,int A_total,int NT) {
++    long i=(long)blockIdx.x*blockDim.x+threadIdx.x;if(i>=(long)NT*A_total)return;
++    int sample=i/A_total,c=i%A_total;
++    constexpr int widths[]=ACT_SIZES;
++    int h=0,off=0;
++    #pragma unroll
++    for(int j=0;j<NUM_ATNS;j++) { if(c>=off)h=j;off+=widths[j]; }
++    if(!nethack_head_used((int)actions[sample*NUM_ATNS],h))logps[i]=0.0f;
++}
++#endif
+ __global__ void ppo_loss_compute(
+         float* __restrict__ ppo_partials,
+         PPOKernelArgs a, PPOGraphArgs g) {
+@@ -1584,9 +1705,11 @@
+                 int A = a.act_sizes[h];
+ #ifdef PUFFER_NETHACK
+                 if (!nethack_head_used(verb, h)) {
++#ifndef PUF_PPO_ZERO
+                     for (int j = 0; j < A; ++j) {
+                         a.grad_logits[at_base + logits_offset + j] = 0.0f;
+                     }
++#endif
+                     logits_offset += A;
+                     continue;
+                 }
+@@ -1693,6 +1816,9 @@
+         .T_seq = T, .A_total = A_total, .N = N,
+         .is_continuous = is_continuous,
+     };
++#if defined(PUF_PPO_ZERO) && defined(PUFFER_NETHACK)
++    nethack_zero_unused<<<grid_size((long)N*T*A_total),BLOCK_SIZE,0,stream>>>(args.grad_logits,graph_args.actions,A_total,N*T);
++#endif
+     ppo_loss_compute<<<ppo_grid, PPO_THREADS, 0, stream>>>(
+             bufs.ppo_partials.data, args, graph_args);
+     ppo_loss_reduce<<<1, LOSS_N, 0, stream>>>(
+--- a/src/pufferl.cu
++++ b/src/pufferl.cu
+@@ -367,7 +367,14 @@
+ void register_rollout_buffers(RolloutBuf* bufs, Allocator* alloc,
+         int T, int B, int input_size, int num_atns, int mask_size) {
+     memset(bufs, 0, sizeof(*bufs));
++#ifdef PUF_BYTE_OBS
++    static_assert(sizeof(obs_t)==1 && sizeof(precision_t)==2,"byte observations require BF16 storage containers");
++    assert(input_size%2==0);
++    // Packed byte pairs: this field is bitwise storage, not BF16 numeric data.
++    bufs->observations = {.shape = {T,B,input_size/2}};
++#else
+     bufs->observations = {.shape = {T, B, input_size}};
++#endif
+     bufs->actions      = {.shape = {T, B, num_atns}};
+     bufs->values       = {.shape = {T, B}};
+     bufs->logprobs     = {.shape = {T, B}};
+@@ -544,6 +551,9 @@
+     Hypers hypers;
+     bool is_continuous;  // True if all action dimensions are continuous (size==1)
+     RolloutBuf rollouts;
++#ifdef PUF_REUSE_ROLLOUT
++    RolloutBuf step_rollouts;
++#endif
+     RolloutBuf train_rollouts;  // Pre-allocated transposed copy for train_impl
+     EnvBuf env;
+     TrainGraph train_buf;
+@@ -807,6 +817,9 @@
+         rollouts = rollout_time_view(&pufferl->rollouts,
+             pufferl->write_slot * hypers->horizon, hypers->horizon);
+     }
++#ifdef PUF_REUSE_ROLLOUT
++    rollouts=pufferl->step_rollouts;t=0;
++#endif
+     EnvBuf* env = &pufferl->env;
+     VecEnv* vec = pufferl->vec;
+     int block_size = hypers->total_agents / hypers->num_buffers;
+@@ -817,6 +830,9 @@
+     ObsTensor* obs_env = &env->obs;
+     int n = block_size * obs_env->shape[1];
+     Prec obs_dst = puf_slice(rollouts.observations, t, start, block_size);
++#ifdef PUF_BYTE_OBS
++    cudaMemcpyAsync(obs_dst.data,obs_env->data+(long)start*obs_env->shape[1],n,cudaMemcpyDeviceToDevice,stream);
++#else
+     // Env obs -> rollout: D2D if same type, else cast (float/uchar → precision_t).
+     if (sizeof(obs_t) == sizeof(precision_t)) {
+         cudaMemcpyAsync(obs_dst.data,
+@@ -826,6 +842,8 @@
+         cast<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
+             obs_dst.data, obs_env->data + (long)start * obs_env->shape[1], n);
+     }
++
++#endif
+ 
+     Prec rew_dst = puf_slice(rollouts.rewards, t, start, block_size);
+     Prec term_dst = puf_slice(rollouts.terminals, t, start, block_size);
+@@ -898,18 +916,63 @@
+     }
+ }
+ 
++#ifdef PUF_REUSE_ROLLOUT
++struct StepRecord { precision_t *obs,*mask,*lp,*val,*rew,*term;float* actions; };
++__global__ void record_step(StepRecord dst,StepRecord src,int O,int M,int A,int B) {
++    int i=blockIdx.x*blockDim.x+threadIdx.x;
++    if(i<O)dst.obs[i]=src.obs[i];
++    if(i<M)dst.mask[i]=src.mask[i];
++    if(i<A)dst.actions[i]=src.actions[i];
++    if(i<B){dst.lp[i]=src.lp[i];dst.val[i]=src.val[i];dst.rew[i]=src.rew[i];dst.term[i]=src.term[i];}
++}
++static StepRecord record_view(RolloutBuf& r,int t,int start,int n) {
++    return {puf_slice(r.observations,t,start,n).data,puf_slice(r.action_mask,t,start,n).data,
++        puf_slice(r.logprobs,t,start,n).data,puf_slice(r.values,t,start,n).data,
++        puf_slice(r.rewards,t,start,n).data,puf_slice(r.terminals,t,start,n).data,
++        puf_slice(r.actions,t,start,n).data};
++}
++static void record_rollout_step(PuffeRL* p,int buf,int t,cudaStream_t stream) {
++    int B=p->hypers.total_agents/p->hypers.num_buffers,start=buf*B;
++    int slot=p->hypers.async?p->write_slot:0;
++    auto dst=record_view(p->rollouts,slot*p->hypers.horizon+t,start,B);
++    auto src=record_view(p->step_rollouts,0,start,B);
++    int O=B*p->step_rollouts.observations.shape[2],M=B*p->step_rollouts.action_mask.shape[2],A=B*p->step_rollouts.actions.shape[2];
++    record_step<<<grid_size(max(O,max(M,A))),BLOCK_SIZE,0,stream>>>(dst,src,O,M,A,B);
++}
++static void snapshot_rollout_start(PuffeRL* p,int buf,cudaStream_t stream) {
++    if(!p->rollouts.initial_states.data)return;
++    int start=buf*(p->hypers.total_agents/p->hypers.num_buffers);
++    int slot=p->hypers.async?p->write_slot:0;
++    for(int b=0;b<p->num_policies;b++) {
++        Policy* pol=&p->policies[b];if(pol->frozen)continue;
++        int off=p->vec->policy_layout[b],n=p->vec->policy_layout[b+1]-off;if(!n)continue;
++        Prec st=pol->buffer_states[buf];int count=st.shape[0]*n*st.shape[2];
++        zero_term_state<<<grid_size(count),BLOCK_SIZE,0,stream>>>(st,p->env.terminals,0,start+off,n);
++        snapshot_state<<<grid_size(count),BLOCK_SIZE,0,stream>>>(init_slot(p->rollouts.initial_states,slot),st,start+off,n);
++    }
++}
++#endif
++
+ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
+     Hypers* hypers = &pufferl->hypers;
+     // GPU rollout graphs the whole horizon; CPU still graphs one net step.
+     bool step_graph = hypers->cudagraphs && pufferl->rollout_graphs != NULL;
+     int graph_slot = hypers->async ? pufferl->write_slot : 0;
++#ifdef PUF_REUSE_ROLLOUT
++    int graph=(t==0?0:1)*hypers->num_buffers+buf;
++    if(t==0)snapshot_rollout_start(pufferl,buf,stream);
++#else
+     int graph = (graph_slot * hypers->horizon + t) * hypers->num_buffers + buf;
++#endif
+     profile_begin("fused_rollout", hypers->profile);
+ 
+     if (step_graph && pufferl->rollout_graphs[graph] != NULL) {
+         assert(cudaGraphLaunch(
+             pufferl->rollout_graphs[graph], stream) == cudaSuccess
+             && "cudaGraphLaunch failed");
++#ifdef PUF_REUSE_ROLLOUT
++        record_rollout_step(pufferl,buf,t,stream);
++#endif
+         profile_end(hypers->profile);
+         return;
+     }
+@@ -930,6 +993,9 @@
+         assert(cudaGraphLaunch(pufferl->rollout_graphs[graph], stream) == cudaSuccess
+                 && "cudaGraphLaunch failed");
+     }
++#ifdef PUF_REUSE_ROLLOUT
++    record_rollout_step(pufferl,buf,t,stream);
++#endif
+     profile_end(hypers->profile);
+ }
+ 
+@@ -2111,6 +2177,10 @@
+     int rollout_horizon = async_slots * horizon;
+     register_rollout_buffers(&pufferl->rollouts,
+         acts, rollout_horizon, total_agents, input_size, num_action_heads, act_n);
++#ifdef PUF_REUSE_ROLLOUT
++    assert(PUF_BACKEND==PUF_CPU);
++    register_rollout_buffers(&pufferl->step_rollouts,acts,1,total_agents,input_size,num_action_heads,act_n);
++#endif
+     // Carry path: per-slot initial RNN states. reset_every_horizon zeros train_state.
+     if (!hypers.reset_every_horizon) {
+         pufferl->rollouts.initial_states = {
+--- a/ocean/nethack/nethack.cu
++++ b/ocean/nethack/nethack.cu
+@@ -1,3 +1,11 @@
++#ifdef PUF_BYTE_OBS
++using nh_obs_t=unsigned char;
++__device__ __forceinline__ float nh_obs_float(nh_obs_t v){return (float)v;}
++#else
++using nh_obs_t=precision_t;
++__device__ __forceinline__ float nh_obs_float(nh_obs_t v){return to_float(v);}
++#endif
++
+ // NetHack CUDA encoder: one shared glyph embedding feeding two views of the
+ // full 79x21 map — an egocentric 9x9 crop at per-cell detail (flatten-linear)
+ // and a global 5x5-patch view (fused embed+flatten->16->128 max over 16x5 = 80 tokens) — plus
+@@ -370,11 +378,11 @@
+ 
+ // kernels
+ 
+-__device__ __forceinline__ int nh_bl_read_i32(const precision_t* p) {
+-    return (int)((unsigned int)(int)to_float(p[0])
+-               | ((unsigned int)(int)to_float(p[1]) << 8)
+-               | ((unsigned int)(int)to_float(p[2]) << 16)
+-               | ((unsigned int)(int)to_float(p[3]) << 24));
++__device__ __forceinline__ int nh_bl_read_i32(const nh_obs_t* p) {
++    return (int)((unsigned int)(int)nh_obs_float(p[0])
++               | ((unsigned int)(int)nh_obs_float(p[1]) << 8)
++               | ((unsigned int)(int)nh_obs_float(p[2]) << 16)
++               | ((unsigned int)(int)nh_obs_float(p[3]) << 24));
+ }
+ 
+ // Decode int16 LE glyph ids into an fp32 index buffer (full grid).
+@@ -475,7 +483,7 @@
+ // log1p(c)/log1p(1660)). Mirrors terrlab2 exactly: bands digitize([3,7,15]),
+ // hero cell counts as floor, all 17 classes counted incl. landmarks.
+ __global__ void nh_terr_feat_kernel(precision_t* __restrict__ tf,
+-    const float* __restrict__ gidx, const precision_t* __restrict__ obs,
++    const float* __restrict__ gidx, const nh_obs_t* __restrict__ obs,
+     const unsigned char* __restrict__ lut, const unsigned char* __restrict__ sblut,
+     int B) {
+     int b = blockIdx.x;
+@@ -485,7 +493,7 @@
+     for (int i = threadIdx.x; i < 8 * 4 * 17; i += blockDim.x) sec[i] = 0;
+     if (threadIdx.x < 12) lmkey[threadIdx.x] = 0xFFFFFFFFu;
+     __syncthreads();
+-    const precision_t* bl = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
++    const nh_obs_t* bl = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
+     int hx = nh_bl_read_i32(bl), hy = nh_bl_read_i32(bl + 4);
+     int hcell = hy * NH_MAPW + hx;
+     for (int cell = threadIdx.x; cell < NH_MGRID; cell += blockDim.x) {
+@@ -537,7 +545,7 @@
+ // token builder: 48-dim = [e_eff(glyph) 32 | dx dy cheb rank | type flags |
+ // diff speed | pad]. gid stores the mapped GLYPH id (shared embed table).
+ __global__ void nh_lab_tok_kernel(precision_t* __restrict__ tok, float* __restrict__ gid,
+-    const precision_t* __restrict__ obs, const precision_t* __restrict__ e_eff,
++    const nh_obs_t* __restrict__ obs, const precision_t* __restrict__ e_eff,
+     const unsigned char* __restrict__ haz, int list_off, int is_mon, int B) {
+     // thread per (b, token, out dim): pure independent writes -> bit-identical
+     // to the serial per-token version by construction.
+@@ -546,8 +554,8 @@
+     int d = t % NH_LAB_IN;
+     int bk = t / NH_LAB_IN;
+     int k = bk % NH_LABK;
+-    const precision_t* e = obs + (int64_t)(bk / NH_LABK) * NH_OBS_SIZE + list_off + k * NH_V3_MONF;
+-    int row = (int)to_float(e[0]) | ((int)to_float(e[1]) << 8);
++    const nh_obs_t* e = obs + (int64_t)(bk / NH_LABK) * NH_OBS_SIZE + list_off + k * NH_V3_MONF;
++    int row = (int)nh_obs_float(e[0]) | ((int)nh_obs_float(e[1]) << 8);
+     int g = row <= 0 ? -1
+           : is_mon ? row - 1
+           : (row < 454 ? NH_OBJ_LO + row - 1 : NH_BODY_OFF + row - 454);
+@@ -558,9 +566,9 @@
+         return;
+     }
+     if (d >= 46) { o[d] = from_float(0.0f); return; }
+-    int dx = (int)to_float(e[2]); if (dx >= 128) dx -= 256;
+-    int dy = (int)to_float(e[3]); if (dy >= 128) dy -= 256;
+-    int f4 = (int)to_float(e[4]), f5 = (int)to_float(e[5]), f6 = (int)to_float(e[6]);
++    int dx = (int)nh_obs_float(e[2]); if (dx >= 128) dx -= 256;
++    int dy = (int)nh_obs_float(e[3]); if (dy >= 128) dy -= 256;
++    int f4 = (int)nh_obs_float(e[4]), f5 = (int)nh_obs_float(e[5]), f6 = (int)nh_obs_float(e[6]);
+     int cheb = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+     float v = 0.0f;
+     switch (d) {
+@@ -596,12 +604,12 @@
+ }
+ 
+ __global__ void nh_decode_kernel(
+-    float* __restrict__ idx, const precision_t* __restrict__ obs, int B) {
++    float* __restrict__ idx, const nh_obs_t* __restrict__ obs, int B) {
+     int t = blockIdx.x * blockDim.x + threadIdx.x;
+     if (t >= B * NH_MGRID) return;
+     int b = t / NH_MGRID, cell = t % NH_MGRID;
+-    const precision_t* src = obs + (int64_t)b * NH_OBS_SIZE + 2 * cell;
+-    int g = (int)to_float(src[0]) | ((int)to_float(src[1]) << 8);
++    const nh_obs_t* src = obs + (int64_t)b * NH_OBS_SIZE + 2 * cell;
++    int g = (int)nh_obs_float(src[0]) | ((int)nh_obs_float(src[1]) << 8);
+     idx[t] = (float)max(0, min(g, NH_GLYPH_VOCAB - 1));
+ }
+ 
+@@ -609,11 +617,11 @@
+ // off-map cells get the pad glyph.
+ __global__ void nh_crop_kernel(
+     float* __restrict__ crop, const float* __restrict__ idx,
+-    const precision_t* __restrict__ obs, int B) {
++    const nh_obs_t* __restrict__ obs, int B) {
+     int t = blockIdx.x * blockDim.x + threadIdx.x;
+     if (t >= B * NH_CGRID) return;
+     int b = t / NH_CGRID, p = t % NH_CGRID;
+-    const precision_t* bl = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
++    const nh_obs_t* bl = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
+     int r = nh_bl_read_i32(bl + 4) - NH_CHALF + p / NH_CROP; // blstats[1] = y
+     int c = nh_bl_read_i32(bl)     - NH_CHALF + p % NH_CROP; // blstats[0] = x
+     crop[t] = (r < 0 || r >= NH_MAPH || c < 0 || c >= NH_MAPW)
+@@ -703,14 +711,14 @@
+     const precision_t* __restrict__ T, const precision_t* __restrict__ b1,
+     const precision_t* __restrict__ w_xy, const precision_t* __restrict__ w2,
+     const precision_t* __restrict__ b2, const float* __restrict__ idx,
+-    const precision_t* __restrict__ obs, int pad, int B) {
++    const nh_obs_t* __restrict__ obs, int pad, int B) {
+     __shared__ float w2s[NH_GLB_HID * NH_P1];
+     __shared__ float t16s[NH_TOK * NH_P1];
+     __shared__ float hero[2];
+     int b = blockIdx.x;
+     if (b >= B) return;
+     if (threadIdx.x == 0) {
+-        const precision_t* bl = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
++        const nh_obs_t* bl = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
+         hero[0] = (float)nh_bl_read_i32(bl); // x
+         hero[1] = (float)nh_bl_read_i32(bl + 4); // y
+     }
+@@ -1016,12 +1024,12 @@
+ // features (block map = the NH_F_* offsets). Warp per sample: one serial
+ // thread per sample is a 200-op latency chain.
+ __global__ void nh_blstats_kernel(
+-    precision_t* __restrict__ out, const precision_t* __restrict__ obs, int B) {
++    precision_t* __restrict__ out, const nh_obs_t* __restrict__ obs, int B) {
+     int tid = blockIdx.x * blockDim.x + threadIdx.x;
+     int b = tid / 32, lane = tid % 32;
+     if (b >= B) return;
+-    const precision_t* src = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
+-    const precision_t* ex = src + 4 * NH_BL_RAW;
++    const nh_obs_t* src = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
++    const nh_obs_t* ex = src + 4 * NH_BL_RAW;
+     precision_t* dst = out + (int64_t)b * NH_BL_FEAT;
+     for (int j = lane; j < NH_BL_FEAT; j += 32) {
+         float f;
+@@ -1098,7 +1106,7 @@
+ // stay contiguous because the topline is null-terminated, so consumers break
+ // at the first -1.
+ __global__ void nh_msg_ids_kernel(
+-    float* __restrict__ ids, const precision_t* __restrict__ obs, int B) {
++    float* __restrict__ ids, const nh_obs_t* __restrict__ obs, int B) {
+     int i = blockIdx.x * blockDim.x + threadIdx.x;
+     if (i >= B * NH_MSG_LEN) return;
+     int b = i / NH_MSG_LEN, t = i % NH_MSG_LEN;
+@@ -1106,8 +1114,8 @@
+         ids[i] = -1.0f;
+         return;
+     }
+-    const precision_t* m = obs + (int64_t)b * NH_OBS_SIZE + NH_MSG_OFF;
+-    int c0 = (int)to_float(m[t]), c1 = (int)to_float(m[t + 1]), c2 = (int)to_float(m[t + 2]);
++    const nh_obs_t* m = obs + (int64_t)b * NH_OBS_SIZE + NH_MSG_OFF;
++    int c0 = (int)nh_obs_float(m[t]), c1 = (int)nh_obs_float(m[t + 1]), c2 = (int)nh_obs_float(m[t + 2]);
+     if (c0 == 0 || c1 == 0 || c2 == 0) {
+         ids[i] = -1.0f;
+         return;
+@@ -1162,7 +1170,7 @@
+ __global__ void nh_spkey_kernel(precision_t* __restrict__ keys,
+     precision_t* __restrict__ sp_in, float* __restrict__ sp_idx,
+     const precision_t* __restrict__ spk_w, const precision_t* __restrict__ e_eff,
+-    const precision_t* __restrict__ obs, int B) {
++    const nh_obs_t* __restrict__ obs, int B) {
+     // thread per (b, slot, key row): rebuilds the float input (cached loads),
+     // computes one matvec row in the original MAC order -> bit-identical.
+     int t = blockIdx.x * blockDim.x + threadIdx.x;
+@@ -1170,17 +1178,17 @@
+     int r = t % NH_SPKEY;
+     int bs = t / NH_SPKEY;
+     int b = bs / NH_SPELL_SLOTS, s = bs % NH_SPELL_SLOTS;
+-    const precision_t* src = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF
++    const nh_obs_t* src = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF
+                            + 4 * (NH_BL_RAW + NH_EXTRA_SHOP + 2 + 1 + 4 * s);
+-    int id = (int)to_float(src[0]) | ((int)to_float(src[1]) << 8);
++    int id = (int)nh_obs_float(src[0]) | ((int)nh_obs_float(src[1]) << 8);
+     int g = id > 0 ? min(id + 1906, NH_GLYPH_VOCAB - 1) : -1;
+     float in[NH_SPIN];
+     for (int d = 0; d < NH_EMBED_DIM; d++)
+         in[d] = g >= 0 ? to_float(e_eff[(int64_t)g * NH_EMBED_DIM + d]) : 0.0f;
+-    int lev = (int)to_float(src[4]) | ((int)to_float(src[5]) << 8);
+-    int fail = (int)to_float(src[8]) | ((int)to_float(src[9]) << 8);
+-    int know = (int)to_float(src[12]) | ((int)to_float(src[13]) << 8)
+-             | ((int)to_float(src[14]) << 16);
++    int lev = (int)nh_obs_float(src[4]) | ((int)nh_obs_float(src[5]) << 8);
++    int fail = (int)nh_obs_float(src[8]) | ((int)nh_obs_float(src[9]) << 8);
++    int know = (int)nh_obs_float(src[12]) | ((int)nh_obs_float(src[13]) << 8)
++             | ((int)nh_obs_float(src[14]) << 16);
+     in[NH_EMBED_DIM + 0] = id > 0 ? 1.0f : 0.0f;
+     in[NH_EMBED_DIM + 1] = fminf((float)lev * 0.142857f, 1.0f);
+     in[NH_EMBED_DIM + 2] = fminf((float)fail * 0.01f, 1.0f);
+@@ -1227,16 +1235,16 @@
+ // exact doorstep scalars (all in [0,1]; no spells -> minfail 1, maxlev 0,
+ // n 0, minret 1).
+ __global__ void nh_sp_doorstep_kernel(precision_t* __restrict__ concat,
+-    const precision_t* __restrict__ obs, int B) {
++    const nh_obs_t* __restrict__ obs, int B) {
+     int t = blockIdx.x * blockDim.x + threadIdx.x;
+     if (t >= B * 4) return;
+     int b = t / 4, d = 2 * NH_SPM + t % 4;
+     float v;
+     {
+-        const precision_t* ex = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF + NH_BL_RAW * 4;
++        const nh_obs_t* ex = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF + NH_BL_RAW * 4;
+         int mf = 100, ml = 0, n = 0, mr = 20000;
+         for (int s = 0; s < NH_SPELL_SLOTS; s++) {
+-            const precision_t* q = ex + 4 * (NH_EXTRA_SHOP + 2 + 1 + 4 * s);
++            const nh_obs_t* q = ex + 4 * (NH_EXTRA_SHOP + 2 + 1 + 4 * s);
+             int sid = nh_bl_read_i32(q);
+             if (sid <= 0) continue;
+             n++;
+@@ -1369,12 +1377,12 @@
+ // inventory entity branch
+ 
+ __global__ void nh_inv_decode_kernel(
+-    float* __restrict__ idx, const precision_t* __restrict__ obs, int B, int off) {
++    float* __restrict__ idx, const nh_obs_t* __restrict__ obs, int B, int off) {
+     int t = blockIdx.x * blockDim.x + threadIdx.x;
+     if (t >= B * NH_INV) return;
+     int b = t / NH_INV, s = t % NH_INV;
+-    const precision_t* src = obs + (int64_t)b * NH_OBS_SIZE + off + 2 * s;
+-    int g = (int)to_float(src[0]) | ((int)to_float(src[1]) << 8);
++    const nh_obs_t* src = obs + (int64_t)b * NH_OBS_SIZE + off + 2 * s;
++    int g = (int)nh_obs_float(src[0]) | ((int)nh_obs_float(src[1]) << 8);
+     idx[t] = (float)max(0, min(g, NH_GLYPH_VOCAB - 1));
+ }
+ 
+@@ -1393,14 +1401,14 @@
+ // Expand the 8 gated int8 state fields into NH_SFEAT normalized features.
+ // Sentinels stay honest: unknown spe contributes (0 known-bit, 0 value).
+ __global__ void nh_inv_sfeat_kernel(precision_t* __restrict__ out,
+-    const precision_t* __restrict__ obs, int B) {
++    const nh_obs_t* __restrict__ obs, int B) {
+     int t = blockIdx.x * blockDim.x + threadIdx.x;
+     if (t >= B * NH_INV) return;
+     int b = t / NH_INV, s = t % NH_INV;
+-    const precision_t* src = obs + (int64_t)b * NH_OBS_SIZE + NH_INVST_OFF + s * NH_ST_RAW;
++    const nh_obs_t* src = obs + (int64_t)b * NH_OBS_SIZE + NH_INVST_OFF + s * NH_ST_RAW;
+     int st[NH_ST_RAW];
+     for (int j = 0; j < NH_ST_RAW; j++) {
+-        int v = (int)to_float(src[j]);
++        int v = (int)nh_obs_float(src[j]);
+         st[j] = v >= 128 ? v - 256 : v; // bytes -> int8
+     }
+     precision_t* f = out + (int64_t)t * NH_SFEAT;
+@@ -1418,8 +1426,8 @@
+     f[16] = from_float((float)st[6]);
+     // armor slot category one-hot (suit/shield/helm/gloves/boots/cloak/shirt)
+     // from the slot glyph via the engine's baked otyp->ARM_* table
+-    const precision_t* gsrc = obs + (int64_t)b * NH_OBS_SIZE + NH_INV_OFF + 2 * s;
+-    int g = (int)to_float(gsrc[0]) + ((int)to_float(gsrc[1]) << 8);
++    const nh_obs_t* gsrc = obs + (int64_t)b * NH_OBS_SIZE + NH_INV_OFF + 2 * s;
++    int g = (int)nh_obs_float(gsrc[0]) + ((int)nh_obs_float(gsrc[1]) << 8);
+     int ot = g - NH_GLYPH_OBJ_OFF;
+     int cat = (ot >= 0 && ot < NH_NUM_OBJECTS) ? nh_obj_armcat_dev[ot] : -1;
+     for (int c = 0; c < 7; c++)
+@@ -1791,13 +1799,13 @@
+ // identity embeddings: indices recovered from the one-hot obs block (align
+ // from blstats), table rows copied raw into the concat tail (bl-feats idiom)
+ __global__ void nh_idemb_kernel(precision_t* __restrict__ concat,
+-    float* __restrict__ idx_out, const precision_t* __restrict__ obs,
++    float* __restrict__ idx_out, const nh_obs_t* __restrict__ obs,
+     const precision_t* __restrict__ role_w, const precision_t* __restrict__ race_w,
+     const precision_t* __restrict__ gend_w, const precision_t* __restrict__ algn_w, int B) {
+     int b = blockIdx.x * blockDim.x + threadIdx.x;
+     if (b >= B) return;
+-    const precision_t* bl = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
+-    const precision_t* ex = bl + 4 * NH_BL_RAW;
++    const nh_obs_t* bl = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
++    const nh_obs_t* ex = bl + 4 * NH_BL_RAW;
+     int r = 0, rc = 0, g = 0;
+     for (int i = 0; i < 13; i++) if (nh_bl_read_i32(ex + 4 * (NH_EX_ROLEOH + i))) r = i;
+     for (int i = 0; i < 5; i++) if (nh_bl_read_i32(ex + 4 * (NH_EX_ROLEOH + 13 + i))) rc = i;
+@@ -1957,9 +1965,9 @@
+     nh_eff_embed_kernel<<<grid_size(NH_GLYPH_VOCAB * NH_EMBED_DIM), BLOCK_SIZE, 0, stream>>>(
+         a->e_eff.data, ew->embed_w.data, ew->ekind_w.data, ew->esub_w.data);
+     nh_decode_kernel<<<grid_size(B * NH_MGRID), BLOCK_SIZE, 0, stream>>>(
+-        a->glyph_idx.data, input.data, B);
++        a->glyph_idx.data, (const nh_obs_t*)input.data, B);
+     nh_crop_kernel<<<grid_size(B * NH_CGRID), BLOCK_SIZE, 0, stream>>>(
+-        a->crop_glyph.data, a->glyph_idx.data, input.data, B);
++        a->crop_glyph.data, a->glyph_idx.data, (const nh_obs_t*)input.data, B);
+     nh_loc3_gather_kernel<<<grid_size(B * NH_LOC_IN), BLOCK_SIZE, 0, stream>>>(
+         a->x_local.data, ew->locc_w.data, a->crop_glyph.data, nh_locc_lut_dev, B);
+     NH_MM_BR(&a->x_local, &ew->loc_w, &a->loc_h1, ew->loc_b);
+@@ -1968,21 +1976,21 @@
+     // terrain branch replaces the patch encoder: featurize (fwd-only, no
+     // input grads) -> 592 -> 256 -> 128 into the glb slot
+     nh_terr_feat_kernel<<<B, 256, 0, stream>>>(
+-        a->terr_tf.data, a->glyph_idx.data, input.data, nh_terrc_lut_dev,
++        a->terr_tf.data, a->glyph_idx.data, (const nh_obs_t*)input.data, nh_terrc_lut_dev,
+         nh_secband_lut_dev, B);
+     NH_MM_BR(&a->terr_tf, &ew->terr1_w, &a->terr_h, ew->terr1_b);
+     NH_MM_BR(&a->terr_h, &ew->terr2_w, &a->glb_out, ew->terr2_b);
+ 
+     nh_inv_decode_kernel<<<grid_size(B * NH_INV), BLOCK_SIZE, 0, stream>>>(
+-        a->inv_idx.data, input.data, B, NH_INV_OFF);
++        a->inv_idx.data, (const nh_obs_t*)input.data, B, NH_INV_OFF);
+     nh_inv_decode_kernel<<<grid_size(B * NH_INV), BLOCK_SIZE, 0, stream>>>(
+-        a->invt_idx.data, input.data, B, NH_INVTRUE_OFF);
++        a->invt_idx.data, (const nh_obs_t*)input.data, B, NH_INVTRUE_OFF);
+     nh_inv_table_kernel<<<grid_size(NH_GLYPH_VOCAB * NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
+         a->inv_T.data, a->e_eff.data, ew->inv1_w.data);
+     nh_inv_table_kernel<<<grid_size(NH_GLYPH_VOCAB * NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
+         a->invt_T.data, a->e_eff.data, ew->invt_w.data);
+     nh_inv_sfeat_kernel<<<grid_size(B * NH_INV), BLOCK_SIZE, 0, stream>>>(
+-        a->inv_sfeat.data, input.data, B);
++        a->inv_sfeat.data, (const nh_obs_t*)input.data, B);
+     nh_inv_gather_kernel<<<grid_size(B * NH_INV_FLAT), BLOCK_SIZE, 0, stream>>>(
+         a->inv_out.data, a->inv_T.data, ew->inv1_b.data, ew->inv1s_w.data,
+         a->inv_sfeat.data, a->inv_idx.data, a->invt_T.data, a->invt_idx.data, B);
+@@ -2006,14 +2014,14 @@
+ #endif
+ 
+     nh_blstats_kernel<<<grid_size(B * 32), BLOCK_SIZE, 0, stream>>>(
+-        a->bl_feats.data, input.data, B);
++        a->bl_feats.data, (const nh_obs_t*)input.data, B);
+     NH_MM_BR(&a->bl_feats, &ew->bl_w, &a->bl_out, ew->bl_b);
+ 
+ #ifdef NH_MSG_FROZEN
+     cudaMemcpyAsync(ew->msg_w.data, nh_msg_w0_dev, (size_t)NH_MSG_VOCAB * NH_MSG_HID * sizeof(precision_t), cudaMemcpyDeviceToDevice, stream);
+ #endif
+     nh_msg_ids_kernel<<<grid_size(B * NH_MSG_LEN), BLOCK_SIZE, 0, stream>>>(
+-        a->msg_ids.data, input.data, B);
++        a->msg_ids.data, (const nh_obs_t*)input.data, B);
+     nh_msg_pool_kernel<<<B, NH_MSG_HID, 0, stream>>>(
+         a->msg_out.data, ew->msg_w.data, a->msg_ids.data, B);
+ 
+@@ -2023,7 +2031,7 @@
+         a->bl_out.data, a->bl_feats.data, a->msg_out.data, B);
+     { // typed streams: tok -> deep values (48->64->64) -> 8-head pool
+     nh_lab_tok_kernel<<<grid_size(B * NH_LABK * NH_LAB_IN), BLOCK_SIZE, 0, stream>>>(
+-        a->lm_tok.data, a->lm_gid.data, input.data, a->e_eff.data,
++        a->lm_tok.data, a->lm_gid.data, (const nh_obs_t*)input.data, a->e_eff.data,
+         nh_haz_lut_dev,
+         NH_TOKM_OFF, 1, B);
+     { Prec tokf = {.data = a->lm_tok.data, .shape = {B * NH_LABK, NH_LAB_IN}};
+@@ -2042,7 +2050,7 @@
+         a->concat.data, a->mrp.data, a->lm_tok.data, a->lm_gid.data,
+         0, NH_MLM_OFF + 2 * NH_MV, B);
+     nh_lab_tok_kernel<<<grid_size(B * NH_LABK * NH_LAB_IN), BLOCK_SIZE, 0, stream>>>(
+-        a->li_tok.data, a->li_gid.data, input.data, a->e_eff.data, NULL, NH_TOKI_OFF, 0, B);
++        a->li_tok.data, a->li_gid.data, (const nh_obs_t*)input.data, a->e_eff.data, NULL, NH_TOKI_OFF, 0, B);
+     { Prec tokf = {.data = a->li_tok.data, .shape = {B * NH_LABK, NH_LAB_IN}};
+       Prec rpf = {.data = a->irp.data, .shape = {B * NH_LABK, NH_INV_HID}};
+       NH_MM_BR(&tokf, &ew->ir_w, &rpf, ew->ir_b); }
+@@ -2061,7 +2069,7 @@
+     }
+     nh_spkey_kernel<<<grid_size(B * NH_SPELL_SLOTS * NH_SPKEY), BLOCK_SIZE, 0, stream>>>(
+         a->spk_keys.data, a->spk_in.data, a->spell_idx.data,
+-        ew->spk_w.data, a->e_eff.data, input.data, B);
++        ew->spk_w.data, a->e_eff.data, (const nh_obs_t*)input.data, B);
+     { Prec kf = {.data = a->spk_keys.data, .shape = {B * NH_SPELL_SLOTS, NH_SPKEY}};
+       Prec hf = {.data = a->sph1.data, .shape = {B * NH_SPELL_SLOTS, NH_SPM}};
+       NH_MM_BR(&kf, &ew->spm1_w, &hf, ew->spm1_b); }
+@@ -2072,9 +2080,9 @@
+         a->concat.data, a->spvmax.data, a->spv.data, a->spell_idx.data,
+         0.25f, NH_SPELL_SLOTS, -1, NH_SPELL_CONCAT_OFF, B);
+     nh_sp_doorstep_kernel<<<grid_size(B * 4), BLOCK_SIZE, 0, stream>>>(
+-        a->concat.data, input.data, B);
++        a->concat.data, (const nh_obs_t*)input.data, B);
+     nh_idemb_kernel<<<grid_size(B), BLOCK_SIZE, 0, stream>>>(
+-        a->concat.data, a->ide_idx.data, input.data,
++        a->concat.data, a->ide_idx.data, (const nh_obs_t*)input.data,
+         ew->ide_role_w.data, ew->ide_race_w.data,
+         ew->ide_gend_w.data, ew->ide_algn_w.data, B);
+     NH_MM_BR(&a->concat, &ew->proj_w, &a->out, ew->proj_b);

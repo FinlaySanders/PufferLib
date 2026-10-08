@@ -1,0 +1,9 @@
+{
+  "patch": "/puffertank/experiments/nethack-overnight-20260917/shared-pool83.patch",
+  "base_sha256": "dd1700ac5220fad10be9a844baea44992471fb058483cc3236bcaab42d2f2a4e",
+  "result_sha256": "6dd50dba4fe4e5311d8234e5cbf3dac27a70f44f720f2dfe96f4b7bb98f0380c",
+  "header_sha256": "1405875bfabd8fc478ce81303a1af77f563121f5c0cbee3f8486479db456e1b4",
+  "reverse_forward_exact": true,
+  "activation": "-DPUF_ENV_POOL; PUF_POOL_WORKERS=20; 4 buffers; enginePGO61",
+  "scope": "Only existing sharedpool feature recovered, not rejected central-counter83 modification. Main checkout untouched; broader verification/training pending."
+}

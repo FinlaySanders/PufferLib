@@ -1,0 +1,103 @@
+{
+  "name": "retained",
+  "binary": "/puffertank/experiments/nethack-train-loop-20260918/retained/puffer_retained",
+  "flags": [
+    "PUF_MUON_BATCH_NORM",
+    "PUF_MINGRU_NOCOPY",
+    "PUF_SKIP_UNUSED_LOGPS",
+    "PUF_MUON_OUTPLACE",
+    "PUF_PPO_ZERO",
+    "PUF_BYTE_OBS",
+    "PUF_REUSE_ROLLOUT"
+  ],
+  "control_cases": [
+    "baseline-frozen-repeat",
+    "baseline-final1",
+    "baseline-final2"
+  ],
+  "candidate_cases": [
+    "memory-repeat1",
+    "memory-repeat2",
+    "retained-final1"
+  ],
+  "control_sps": 170747.3255528593,
+  "frozen_sps": 187260.56240606768,
+  "gain_percent": 9.671154028176133,
+  "validation": {
+    "memory-state": {
+      "master": {
+        "sha256": "cae68ae4879051f55b6b7dabc787ab4c5627557f0117d3d8cc32bacbee6f0466",
+        "matches_baseline": true
+      },
+      "momentum": {
+        "sha256": "54d6cd5ee170665f7aea00574e149f11b826cef3132d0b34ef65ce9a56c469a2",
+        "matches_baseline": true
+      },
+      "updates": {
+        "sha256": "6d8e8844461f31ee8b2544487c529a2bae7a9efd0385240b2b0d03087935f277",
+        "matches_baseline": true
+      },
+      "observation_proofs_match": true
+    },
+    "retained-state": {
+      "master": {
+        "sha256": "cae68ae4879051f55b6b7dabc787ab4c5627557f0117d3d8cc32bacbee6f0466",
+        "matches_baseline": true
+      },
+      "momentum": {
+        "sha256": "54d6cd5ee170665f7aea00574e149f11b826cef3132d0b34ef65ce9a56c469a2",
+        "matches_baseline": true
+      },
+      "updates": {
+        "sha256": "6d8e8844461f31ee8b2544487c529a2bae7a9efd0385240b2b0d03087935f277",
+        "matches_baseline": true
+      },
+      "observation_proofs_match": true
+    },
+    "early-memory-update": {
+      "master": {
+        "sha256": "14c878ee32c2fc2c7770d228b851644e0f52accfe584b2f86f118f2545279619",
+        "matches_baseline": true
+      },
+      "momentum": {
+        "sha256": "e8f828ab5d32f2a984681d45c8a939af8ad01c6a0180be4cf4c6fed0b3e23263",
+        "matches_baseline": true
+      },
+      "updates": {
+        "sha256": "a8904f6279c3194d9629616e1edc91b8ca86482a66c411d4836e1a033788a785",
+        "matches_baseline": true
+      },
+      "observation_proofs_match": true
+    },
+    "small-live-retained": {
+      "master": {
+        "sha256": "bdffaf7e43d6e9c87c8776c9a3b314023bf037fa582bbb2cbb50e72ca6cc06cc",
+        "matches_baseline": true
+      },
+      "momentum": {
+        "sha256": "d952d046d8daeff4e8362ce965a21cef4e8e8836ec6b8ebb126295d4bf79aec5",
+        "matches_baseline": true
+      },
+      "updates": {
+        "sha256": "0e5ef8c3bd3c6ae2c9a6c7091f809f9fd3f1ef164bab12c438b00356c6f2145a",
+        "matches_baseline": true
+      },
+      "observation_proofs_match": true
+    },
+    "reset-retained": {
+      "checkpoint_matches_baseline": true,
+      "observation_proofs_match": true,
+      "baseline": "reset-base"
+    },
+    "sync-retained": {
+      "checkpoint_matches_baseline": true,
+      "observation_proofs_match": true,
+      "baseline": "sync-base"
+    },
+    "minimal-update": {
+      "checkpoint_matches_baseline": true,
+      "observation_proofs_match": true,
+      "baseline": "baseline-update"
+    }
+  }
+}

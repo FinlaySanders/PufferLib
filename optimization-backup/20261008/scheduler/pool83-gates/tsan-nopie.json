@@ -1,0 +1,22 @@
+[
+  {
+    "attempt": 0,
+    "rc": 66,
+    "output": "FATAL: ThreadSanitizer: unexpected memory mapping 0x771d11472000-0x771d11900000\n"
+  },
+  {
+    "attempt": 1,
+    "rc": 66,
+    "output": "FATAL: ThreadSanitizer: unexpected memory mapping 0x782035e72000-0x782036300000\n"
+  },
+  {
+    "attempt": 2,
+    "rc": 66,
+    "output": "FATAL: ThreadSanitizer: unexpected memory mapping 0x74cb16872000-0x74cb16d00000\n"
+  },
+  {
+    "attempt": 3,
+    "rc": 0,
+    "output": "PASS: 60000 concurrent regions; changing sizes, zero work, exact visits/state, destroy/recreate\n"
+  }
+]
