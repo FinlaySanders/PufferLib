@@ -341,3 +341,11 @@ Pool idles during every forward and the GPU during every env phase; the PPO reli
 essential; the identity (games in flight = rows per forward × groups in flight) has now been tested at every corner: depth 1 (this), depth 2 at
 1024 resident (−10%), depth 4 at 128 rows (the recipe), depth 8 (−3 to −4%). The recipe is the measured optimum on this box. Better architecture
 is GPU-side separation (second GPU / partition) on a bigger box; at 15M the champion's 512×512 shape with mb 8192-16384 needs no cohort at all.
+
+## PPO anatomy, 15M/2048 mb 8192 (from the fwd_c128 sync node trace, PPO streams, 3 epochs; 21:05 UTC)
+Per epoch: 52,651 kernel launches, 1.06 s summed kernel time over 14 streams (wall 0.83 s), 56 optimizer steps. Kernel2 (cutlass) 26,936 launches
+441 ms mean 16 µs (481 small GEMMs per minibatch: entity MLP fwd/bwd/wgrad + Newton-Schulz); main GEMMs 128x64 tn 224×503 µs = 113 ms, NS GEMMs
+1120×62 + 1120×55 µs = 131 ms; mingru scans 73 ms (bwd 48, fwd 24.5); nh_relu_bias_bwd 47 ms (bandwidth-bound); splitKreduce 9,352 × 3 µs = 28 ms;
+muon_store_update 2,016 × 3.6 µs; gemmSN_NN 1,680 × 3 µs; launch-floor (<5 µs) kernels 15,964 launches = 47 ms. Levers: grouped/fused entity-MLP
+GEMMs, no-split-K for small GEMMs, Muon small-matrix fusion (tested null once at 15M/512 — re-check at mb 8192), scan chunking. Est. PPO wall
+0.83 → ~0.70 s (−15%) for a multi-day program → 15M/2048 ≈ 300K; the binding side at 15M, so unlike inference fusion the gain lands directly.
