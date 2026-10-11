@@ -1,0 +1,73 @@
+--- a/src/algo.cu
++++ b/src/algo.cu
+@@ -1711,7 +1711,8 @@
+     }
+ }
+ 
+-// GAE / full truncated IS (V-trace ρ/c): ρ̄ on δ, c̄ on λ product.
++// Critic residual A_v = ρδ + γλc(1-d)A_v' (returns = V + A_v). Actor adv drops the
++// current-step ρ/c, which PPO's ratio supplies: δ + γλ(1-d)A_v'. NULL importance → GAE.
+ // Same R_{t+1},D_{t+1} indexing as classic puffer_advantage.
+ __global__ void puff_advantage(const precision_t* values,
+         const precision_t* rewards, const precision_t* dones,
+@@ -1722,6 +1723,7 @@
+     int row = blockIdx.x * blockDim.x + threadIdx.x;
+     if (row >= num_steps) return;
+     int off = row * horizon;
++    const bool is = importance != NULL;
+     float lastlam = 0.f;
+     float next_v = to_float(values[off + horizon - 1]);
+     float next_d = to_float(dones[off + horizon - 1]);
+@@ -1729,35 +1731,39 @@
+ 
+     for (int seg = horizon / ADV_VEC_WIDTH - 1; seg >= 0; seg--) {
+         int base = off + seg * ADV_VEC_WIDTH;
+-        float v[ADV_VEC_WIDTH], r[ADV_VEC_WIDTH], d[ADV_VEC_WIDTH], imp[ADV_VEC_WIDTH];
++        float v[ADV_VEC_WIDTH], r[ADV_VEC_WIDTH], d[ADV_VEC_WIDTH];
++        float imp[ADV_VEC_WIDTH] = {};
+         float adv[ADV_VEC_WIDTH] = {};
++        float res[ADV_VEC_WIDTH] = {};
+         float ret[ADV_VEC_WIDTH];
+         adv_ld(values + base, v);
+         adv_ld(rewards + base, r);
+         adv_ld(dones + base, d);
+-        if (importance) {
++        if (is) {
+             adv_ld(importance + base, imp);
+-        } else {
+-            #pragma unroll
+-            for (int i = 0; i < ADV_VEC_WIDTH; i++) {
+-                imp[i] = 1.f;
+-            }
+         }
+         // Last index H-1 left 0. First seg starts at width-2.
+         int i0 = (seg + 1 == horizon / ADV_VEC_WIDTH) ? ADV_VEC_WIDTH - 2 : ADV_VEC_WIDTH - 1;
+         #pragma unroll
+         for (int i = i0; i >= 0; i--) {
+             float nnt = 1.f - next_d;
+-            float rho_t = fminf(imp[i], rho_clip);
+-            float c_t = fminf(imp[i], c_clip);
+-            float delta = rho_t * (next_r + gamma * next_v * nnt - v[i]);
+-            lastlam = delta + gamma * lambda * c_t * lastlam * nnt;
+-            adv[i] = lastlam;
++            float delta = next_r + gamma * next_v * nnt - v[i];
++            if (is) {
++                float rho_t = fminf(imp[i], rho_clip);
++                float c_t = fminf(imp[i], c_clip);
++                float tail = gamma * lambda * lastlam * nnt;
++                adv[i] = delta + tail;
++                lastlam = rho_t * delta + c_t * tail;
++            } else {
++                lastlam = delta + gamma * lambda * lastlam * nnt;
++                adv[i] = lastlam;
++            }
++            res[i] = lastlam;
+             next_v = v[i]; next_d = d[i]; next_r = r[i];
+         }
+         #pragma unroll
+         for (int i = 0; i < ADV_VEC_WIDTH; i++) {
+-            ret[i] = v[i] + adv[i];
++            ret[i] = v[i] + res[i];
+         }
+         adv_st(advantages + base, adv);
+         adv_st(returns + base, ret);
