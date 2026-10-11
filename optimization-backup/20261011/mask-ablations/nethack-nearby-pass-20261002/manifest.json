@@ -1,0 +1,117 @@
+{
+  "source_commit": "3719caaaf945025e4e1e59c6556560d2ba9e3d1c",
+  "engine_commit": "e7f6568568242745a7f7ebd8f730367123522cac",
+  "total_timesteps": 1000000000,
+  "expected_checkpoint_steps": 999817216,
+  "evaluation": {
+    "engine": "fork",
+    "seed": 7,
+    "episodes": 6000,
+    "burn_in": 4000,
+    "retained": 2000,
+    "masks": "same as training",
+    "verb_eps": 0
+  },
+  "parent_campaign": "/puffertank/experiments/nethack-mask-combined-20261002",
+  "baseline_campaign": "/puffertank/experiments/nethack-mask-ablations-20260929",
+  "wait_for": "/puffertank/experiments/nethack-mask-combined-20261002/DONE.json",
+  "purpose": "Isolate removal of the three nearby-entity passthroughs while preserving dimensions, parameter count, inventory passthroughs and all baseline masks.",
+  "compile_define": "NH_NO_NEARBY_PASS",
+  "ablated_concat_features": 48,
+  "expected_parameters": 15552136,
+  "seeds": [
+    2901,
+    2902,
+    2903,
+    2904,
+    2905
+  ],
+  "variants": [
+    {
+      "name": "no_nearby_pass",
+      "args": [],
+      "zt": 0
+    }
+  ],
+  "jobs": [
+    {
+      "index": 40,
+      "round": 1,
+      "seed": 2901,
+      "variant": "no_nearby_pass",
+      "run": "no_nearby_pass_s2901"
+    },
+    {
+      "index": 41,
+      "round": 2,
+      "seed": 2902,
+      "variant": "no_nearby_pass",
+      "run": "no_nearby_pass_s2902"
+    },
+    {
+      "index": 42,
+      "round": 3,
+      "seed": 2903,
+      "variant": "no_nearby_pass",
+      "run": "no_nearby_pass_s2903"
+    },
+    {
+      "index": 43,
+      "round": 4,
+      "seed": 2904,
+      "variant": "no_nearby_pass",
+      "run": "no_nearby_pass_s2904"
+    },
+    {
+      "index": 44,
+      "round": 5,
+      "seed": 2905,
+      "variant": "no_nearby_pass",
+      "run": "no_nearby_pass_s2905"
+    }
+  ],
+  "sha256": {
+    "achievements.json": "f7619cce3313ebcbdffd94a4d36f9cf5b53a307181edee48b7a8acbff6b24135",
+    "analyze.py": "cf4881748d60c5c9afcc9b3efda32c7525530c5017962fa4fca91e043af9d254",
+    "analyze_results.py": "efcc9836c2e418ea9ad05cdbd31c1456047f13c3b907fd6389ff58135feb58b1",
+    "build.py": "cb5591574549cd036e24d2e93956d5b1fd24d9a84ac325a33969b4f9330bc3b9",
+    "check_passthrough.cu": "2c534b02b1e0aeb6f4b0ed7dbf799044b9679525366b57711ef09391e644a2b8",
+    "common.py": "1223f327336a715df7e118c2033a1b47b813920c028298efe80b0b719c0c2a60",
+    "config/default.ini": "7f493977f49f2537a59c18c2a283f062e5d6063d9e130c2d15f6be075cda1084",
+    "config/nethack.ini": "9da0ed565d254657acd30b69f584406a62890f23bbde51fc8c529402d1ad527d",
+    "dat/nhdat": "4f58592379ba9d2c9e8f755700beed71dd3f6dbc221ad22d3ce79640e419b4d4",
+    "experiment.patch": "4c98fdbade0ff90028aae04a56356dd680edd503b83e68ec836762e04c07156a",
+    "lib/libnethack.so": "a3a4c32fc0c9107f748ccb8255d4901b85dd80beb9786fa851cd1f8f08f056a2",
+    "puffer_ablate": "566c98bda753539aa7b726e86ad9fc7c3690449321cdb1b000a049a6f87db42d",
+    "puffer_control": "671275047d8ab68ba0f3a467d988ac5dbf9499bcab09cdacdd617096ca5a6b11",
+    "puffer_reference": "59095fb74818d56ec72af64d816d4f0c88f1942c010cccb11b12abe9db3df5d1",
+    "queue.py": "710c164e4068363fdf95e760b7021fba3215633c03edaf678e0a8973b8fe9137",
+    "source/build.sh": "3682a835ef989391b11ab53cc02bede0551b46d9302e32e2f98758d598cb879a",
+    "source/ocean/nethack/README.md": "9c9f1ffbe55fa43aa4afc2b57aa76b61941860681d4578dd82e4dc93c89c81cf",
+    "source/ocean/nethack/depth.ini": "3c82c789b77e161b3f36a717a884182d5204453ed7e46cbf7bd2d8054c6c3c2c",
+    "source/ocean/nethack/fs.h": "c72818016a8d37a5c054ee38971ebe2392f1adf368e14fe84ecefe0175f9c786",
+    "source/ocean/nethack/glyph_map.h": "29e75affb9ece25d602603648a04b5eb05b73feb7673a69c1c2812f58a46d09a",
+    "source/ocean/nethack/macros.h": "341e303ef0912b2ce2aa7ee8ccccb7c53915958210bb660a88cfd97eccd1b370",
+    "source/ocean/nethack/nethack.c": "bdc944df5126a598214672518d4e3af0daed52cd124f117b493db622cb233e8b",
+    "source/ocean/nethack/nethack.cu": "419c056af80905c25d4669b2b9d50fd94800f449546bca296213059c6b4f5dec",
+    "source/ocean/nethack/nethack.h": "5b6ff08aa6103c90c8ba79bab5c946775b98edfb44c13c2e69df4d89a7ef4e60",
+    "source/ocean/nethack/nethack_policy.cu": "73e453f5f2c1d26450481097d84f172a68696b317ac2d0261352e023e8cd83f9",
+    "source/ocean/nethack/netlib.h": "7ecf36f47ded62187ec7f93ac0e12d0ed9a0e95ae6459b1bb5449c93efb3cfb3",
+    "source/ocean/nethack/web.sh": "ba2e9e6ba9bc60927c92ba0793c208b46baa02b68a12f32092f5f07d9a2581eb",
+    "source/ocean/nethack/web_shell.html": "da6f8c6c7b3e6c98c8e59b08a1ec618f947c1bb01207f1acdf8b909fd61498a0",
+    "source/src/algo.cu": "4f9a8c6189ebd3c2f058c78aa78f4bfec26ceee0df6995f65e3c306fd2ae9a65",
+    "source/src/constellation.c": "deda12600fb99755994dcb0a9b84c442dac76259b15910eea83e398150c1f6c4",
+    "source/src/ini.h": "cd4c83ba12ba40a7bef03ad810246cc0a5880f81e8566f6ac5a089b5c598859f",
+    "source/src/ocean.cu": "511ea7c7c516f3fa658eb6e55f3b4b7204b467d0ce1c816b152ed90f10c5f7ff",
+    "source/src/protein.cu": "7127fe4fa3e9b0ab76ae0b8a4703357318366b1292f835f02b23bd98a6c90538",
+    "source/src/puffercpu.c": "6bbcd2d5f37e133972f9bb6df45e3412b8b856893c23764e1ce77582550a7adf",
+    "source/src/pufferenv.h": "3324a670791e2b3e46cbe7d10d9233d52fbc258e0d7e37d5b0c470e580de880c",
+    "source/src/pufferl.cu": "8feb0cc5334468e60e2db6527121dee8e7028694beed1e431f96e8e2e7843d4a",
+    "start_after.py": "b41a59befa9b9cf6507ad8217b451f5cf4f1ad004750b8079ef52821c7694e24",
+    "status.py": "ed19aaad69e4e5ff8525b3c8914f6a07bfb279a6025907f2961e22e0165cda0f",
+    "validate.py": "c4c5d5d5b1aceb4d7cff5af17fea92ce6c8b2a9e94255c5cabc1136db4fc848a",
+    "validation/check_passthrough": "da727fe6926d12f98170b3c7cd826cc59d55d7f41db67f287c3bef7ac6e94a51",
+    "validation/gate_kernels.cuh": "843be5a3f8d0bb80fbf1d37e743948ee1fcfaf7e1f10e40653e1a6144ba09f8b",
+    "VALIDATED.json": "da5478d01f577904e868d3e7922f61cc0303eb3b680f2dbe6462e262b5c91130"
+  }
+}

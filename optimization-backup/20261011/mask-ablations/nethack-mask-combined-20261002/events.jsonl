@@ -1,0 +1,40 @@
+{"event": "QUEUE_START", "utc": "2026-10-02T10:30:34Z", "jobs": 5, "pid": 3378550}
+{"event": "START", "utc": "2026-10-02T10:30:34Z", "run": "all_three_removed_s2901", "variant": "all_three_removed", "seed": 2901, "phase": "train", "pid": 3378584}
+{"event": "EXIT", "utc": "2026-10-02T11:09:35Z", "run": "all_three_removed_s2901", "phase": "train", "returncode": -11}
+{"event": "REPLACEMENT_QUEUED", "utc": "2026-10-02T11:09:35Z", "failed_run": "all_three_removed_s2901", "index": 35, "round": 1, "seed": 10135, "variant": "all_three_removed", "run": "all_three_removed_s10135_replacement1", "attempt": 1}
+{"event": "START", "utc": "2026-10-02T11:09:35Z", "run": "all_three_removed_s2902", "variant": "all_three_removed", "seed": 2902, "phase": "train", "pid": 3404898}
+{"event": "EXIT", "utc": "2026-10-02T13:37:25Z", "run": "all_three_removed_s2902", "phase": "train", "returncode": 0}
+{"event": "MODEL_READY", "utc": "2026-10-02T13:37:25Z", "run": "all_three_removed_s2902", "checkpoint": "/puffertank/experiments/nethack-mask-combined-20261002/checkpoints/nethack/all_three_removed_s2902/0000000999817216.bin", "training_returncode": 0}
+{"event": "START", "utc": "2026-10-02T13:37:25Z", "run": "all_three_removed_s2902", "variant": "all_three_removed", "seed": 2902, "phase": "eval", "pid": 3483711}
+{"event": "EXIT", "utc": "2026-10-02T13:41:25Z", "run": "all_three_removed_s2902", "phase": "eval", "returncode": 0}
+{"event": "DONE", "utc": "2026-10-02T13:41:25Z", "run": "all_three_removed_s2902", "evaluation_ok": true, "mean_score": 12582.5035, "median_score": 7874.0}
+{"event": "START", "utc": "2026-10-02T13:41:25Z", "run": "all_three_removed_s2903", "variant": "all_three_removed", "seed": 2903, "phase": "train", "pid": 3485755}
+{"event": "EXIT", "utc": "2026-10-02T16:05:16Z", "run": "all_three_removed_s2903", "phase": "train", "returncode": 0}
+{"event": "MODEL_READY", "utc": "2026-10-02T16:05:16Z", "run": "all_three_removed_s2903", "checkpoint": "/puffertank/experiments/nethack-mask-combined-20261002/checkpoints/nethack/all_three_removed_s2903/0000000999817216.bin", "training_returncode": 0}
+{"event": "START", "utc": "2026-10-02T16:05:16Z", "run": "all_three_removed_s2903", "variant": "all_three_removed", "seed": 2903, "phase": "eval", "pid": 3492306}
+{"event": "EXIT", "utc": "2026-10-02T16:09:36Z", "run": "all_three_removed_s2903", "phase": "eval", "returncode": 0}
+{"event": "DONE", "utc": "2026-10-02T16:09:36Z", "run": "all_three_removed_s2903", "evaluation_ok": true, "mean_score": 14079.8585, "median_score": 8925.0}
+{"event": "START", "utc": "2026-10-02T16:09:36Z", "run": "all_three_removed_s2904", "variant": "all_three_removed", "seed": 2904, "phase": "train", "pid": 3492421}
+{"event": "INTERRUPTED_ATTEMPT_PRESERVED", "utc": "2026-10-02T17:15:22Z", "run": "all_three_removed_s2904", "reason": "Queue ended with KeyboardInterrupt; trainer absent. Interrupt origin unknown."}
+{"event": "REPLACEMENT_QUEUED", "utc": "2026-10-02T17:15:22Z", "failed_run": "all_three_removed_s2904", "index": 38, "round": 4, "seed": 10138, "variant": "all_three_removed", "run": "all_three_removed_s10138_replacement1", "attempt": 1}
+{"event": "QUEUE_RECOVERY_PREPARED", "utc": "2026-10-02T17:15:22Z", "jobs": ["all_three_removed_s2905", "all_three_removed_s10135_replacement1", "all_three_removed_s10138_replacement1"]}
+{"event": "QUEUE_START", "utc": "2026-10-02T17:15:29Z", "jobs": 3, "pid": 3507498}
+{"event": "START", "utc": "2026-10-02T17:15:29Z", "run": "all_three_removed_s2905", "variant": "all_three_removed", "seed": 2905, "phase": "train", "pid": 3507531}
+{"event": "EXIT", "utc": "2026-10-02T19:45:00Z", "run": "all_three_removed_s2905", "phase": "train", "returncode": 0}
+{"event": "MODEL_READY", "utc": "2026-10-02T19:45:00Z", "run": "all_three_removed_s2905", "checkpoint": "/puffertank/experiments/nethack-mask-combined-20261002/checkpoints/nethack/all_three_removed_s2905/0000000999817216.bin", "training_returncode": 0}
+{"event": "START", "utc": "2026-10-02T19:45:00Z", "run": "all_three_removed_s2905", "variant": "all_three_removed", "seed": 2905, "phase": "eval", "pid": 3584093}
+{"event": "EXIT", "utc": "2026-10-02T19:49:10Z", "run": "all_three_removed_s2905", "phase": "eval", "returncode": 0}
+{"event": "DONE", "utc": "2026-10-02T19:49:10Z", "run": "all_three_removed_s2905", "evaluation_ok": true, "mean_score": 13117.6175, "median_score": 8686.5}
+{"event": "START", "utc": "2026-10-02T19:49:10Z", "run": "all_three_removed_s10135_replacement1", "variant": "all_three_removed", "seed": 10135, "phase": "train", "pid": 3586494}
+{"event": "EXIT", "utc": "2026-10-02T22:13:11Z", "run": "all_three_removed_s10135_replacement1", "phase": "train", "returncode": 0}
+{"event": "MODEL_READY", "utc": "2026-10-02T22:13:11Z", "run": "all_three_removed_s10135_replacement1", "checkpoint": "/puffertank/experiments/nethack-mask-combined-20261002/checkpoints/nethack/all_three_removed_s10135_replacement1/0000000999817216.bin", "training_returncode": 0}
+{"event": "START", "utc": "2026-10-02T22:13:11Z", "run": "all_three_removed_s10135_replacement1", "variant": "all_three_removed", "seed": 10135, "phase": "eval", "pid": 3661357}
+{"event": "EXIT", "utc": "2026-10-02T22:17:21Z", "run": "all_three_removed_s10135_replacement1", "phase": "eval", "returncode": 0}
+{"event": "DONE", "utc": "2026-10-02T22:17:21Z", "run": "all_three_removed_s10135_replacement1", "evaluation_ok": true, "mean_score": 14202.406, "median_score": 8845.0}
+{"event": "START", "utc": "2026-10-02T22:17:21Z", "run": "all_three_removed_s10138_replacement1", "variant": "all_three_removed", "seed": 10138, "phase": "train", "pid": 3663542}
+{"event": "EXIT", "utc": "2026-10-03T00:42:52Z", "run": "all_three_removed_s10138_replacement1", "phase": "train", "returncode": 0}
+{"event": "MODEL_READY", "utc": "2026-10-03T00:42:52Z", "run": "all_three_removed_s10138_replacement1", "checkpoint": "/puffertank/experiments/nethack-mask-combined-20261002/checkpoints/nethack/all_three_removed_s10138_replacement1/0000000999817216.bin", "training_returncode": 0}
+{"event": "START", "utc": "2026-10-03T00:42:52Z", "run": "all_three_removed_s10138_replacement1", "variant": "all_three_removed", "seed": 10138, "phase": "eval", "pid": 3681298}
+{"event": "EXIT", "utc": "2026-10-03T00:47:02Z", "run": "all_three_removed_s10138_replacement1", "phase": "eval", "returncode": 0}
+{"event": "DONE", "utc": "2026-10-03T00:47:02Z", "run": "all_three_removed_s10138_replacement1", "evaluation_ok": true, "mean_score": 13146.8285, "median_score": 8530.0}
+{"event": "QUEUE_DONE", "utc": "2026-10-03T00:47:02Z"}

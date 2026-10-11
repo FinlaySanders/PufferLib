@@ -63,3 +63,5 @@ supporting evidence, not the large data/checkpoint backup discussed earlier.
   spec and results, pool_timing_report.py, thread_util.sh, sps_from_log.py) and `source-src/` = the 24h experiment trainer's src/ as run.
 Recommended config for collection-bound regimes: num_buffers 16 (32 at 4096 agents), cohort_buffers 4, cohort_steps 64, pool workers 24-26 pinned.
 Day result: 5M/2048 240K -> 320K, 5M/4096 350K, 15M/2048 263K. Engine stack: mt7 (fast-nle branch tip = mt7 + optional dv4).
+- `mask-ablations/`: consolidated results of the September/October mask, passthrough and zero-time-mask ablations
+  (MASK_ABLATIONS_RESULTS.md) with each campaign's RESULTS.md, manifest, validation and per-run results.json, plus the 29 Sep audit.

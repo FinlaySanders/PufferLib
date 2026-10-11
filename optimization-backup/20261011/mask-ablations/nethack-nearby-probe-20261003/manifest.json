@@ -1,0 +1,16 @@
+{
+  "models": {
+    "baseline_s2901": {
+      "path": "/puffertank/experiments/nethack-mask-ablations-20260929/checkpoints/nethack/baseline_s2901/0000000999817216.bin",
+      "sha256": "fab9d9fc595bd12e2e0b42b04958c61ba802f2d0960043bdc172577d57ae7d90"
+    },
+    "no_nearby_pass_s2901": {
+      "path": "/puffertank/experiments/nethack-nearby-pass-20261002/checkpoints/nethack/no_nearby_pass_s2901/0000000999817216.bin",
+      "sha256": "a350272aab785a61f443da5fad732d378b4b5bde08717c0fdf49921c593180e0"
+    }
+  },
+  "representation": "CPU float32 reconstruction of frozen checkpoint entity arms, validated against the C demo; not bit-identical native BF16 activations.",
+  "split": "Entire environment streams, shared across score/depth corpora: train 0\u20133, validation 4\u20135, test 6\u20137.",
+  "targets": "Reconstruct each policy's own omitted 16-dimensional summaries. Readouts are trained; encoders stay frozen.",
+  "limitation": "Shared off-policy historical corpus; decoding is not evidence of causal use or guaranteed on-policy generalization."
+}

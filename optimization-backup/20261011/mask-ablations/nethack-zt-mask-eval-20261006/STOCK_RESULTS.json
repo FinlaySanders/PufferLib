@@ -1,0 +1,72 @@
+{
+  "protocol": "stock C backend; fixed 2026-09-20 12:00 UTC; seed 21; 512 agents; 6,000 completions per arm; drop first 4,000 and retain next 2,000",
+  "mask_off": {
+    "n": 2000,
+    "mean_score": 14200.475,
+    "median_score": 9489.0,
+    "score_se": 360.4447928872704,
+    "mean_game_turn": 26668.8455,
+    "mean_max_depth": 3.5745,
+    "mean_max_xp": 7.8045,
+    "worst_clockless_median": 99.0,
+    "worst_clockless_p99": 10000.0,
+    "clockless_1000": 52,
+    "clockless_10000": 21,
+    "no_progress_timeout": 21,
+    "fraction_actions_without_turn_advance": 0.07295145815681603,
+    "macro_illegal_actions_per_episode": 39.723,
+    "role_counts": {
+      "0": 136,
+      "1": 136,
+      "2": 130,
+      "3": 150,
+      "4": 165,
+      "5": 162,
+      "6": 164,
+      "7": 161,
+      "8": 151,
+      "9": 172,
+      "10": 151,
+      "11": 171,
+      "12": 151
+    }
+  },
+  "mask_on": {
+    "n": 2000,
+    "mean_score": 13122.3845,
+    "median_score": 8721.0,
+    "score_se": 342.7416674123824,
+    "mean_game_turn": 25143.0635,
+    "mean_max_depth": 3.4955,
+    "mean_max_xp": 7.6855,
+    "worst_clockless_median": 89.0,
+    "worst_clockless_p99": 456.01,
+    "clockless_1000": 3,
+    "clockless_10000": 0,
+    "no_progress_timeout": 0,
+    "fraction_actions_without_turn_advance": 0.05683936650357224,
+    "macro_illegal_actions_per_episode": 22.404,
+    "role_counts": {
+      "0": 140,
+      "1": 135,
+      "2": 157,
+      "3": 152,
+      "4": 156,
+      "5": 164,
+      "6": 146,
+      "7": 172,
+      "8": 167,
+      "9": 164,
+      "10": 163,
+      "11": 132,
+      "12": 152
+    }
+  },
+  "score_difference_on_minus_off": -1078.0905000000002,
+  "score_difference_role_standardized": -915.8423949736825,
+  "role_standardized_means": {
+    "off": 14111.790189737945,
+    "on": 13195.947794764263
+  },
+  "note": "Stock and environment loggers can order games differently; score and clockless statistics use stock EPLOG, while depth/action statistics use environment EPLOG. This is one frozen policy and one eval seed, so the score difference needs replication."
+}

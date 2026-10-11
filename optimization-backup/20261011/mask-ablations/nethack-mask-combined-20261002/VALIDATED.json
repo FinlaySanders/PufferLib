@@ -1,0 +1,72 @@
+{
+  "training": [
+    {
+      "label": "reference",
+      "seconds": 16.929962158203125,
+      "parameters": 15552136,
+      "sha256": "a0976a8a2d36f6de8d4f887e536d948c77e7ffe088bd6d679945ba1e00b7e0c6"
+    },
+    {
+      "label": "baseline",
+      "seconds": 16.719355821609497,
+      "parameters": 15552136,
+      "sha256": "a0976a8a2d36f6de8d4f887e536d948c77e7ffe088bd6d679945ba1e00b7e0c6"
+    },
+    {
+      "label": "no_handless",
+      "seconds": 16.674449920654297,
+      "parameters": 15552136,
+      "sha256": "ed9953d12f5a113d58ac814661840bf014730d4c173115f22a3f70580ebe297d"
+    },
+    {
+      "label": "zero_time_on",
+      "seconds": 16.924389362335205,
+      "parameters": 15552136,
+      "sha256": "a50d3fbbdf3f69770ceef239a5a462bccb7177aafe57aa1c8446b4add688c632"
+    },
+    {
+      "label": "no_hostile_rays",
+      "seconds": 16.819799423217773,
+      "parameters": 15552136,
+      "sha256": "66b396b1864c8ae6eb74ace9b79dde5b4a775c5d731971081193c56dd02d2a79"
+    },
+    {
+      "label": "no_item_strategy",
+      "seconds": 16.784422397613525,
+      "parameters": 15552136,
+      "sha256": "c90ef11e96fa7005971bd89ab7cd28a75c60ffbdd8ed5e741e6ce1b4cb6b742f"
+    },
+    {
+      "label": "no_run_search20",
+      "seconds": 16.96882724761963,
+      "parameters": 15552136,
+      "sha256": "73480e725da4cd3ce75a3feb3158da49554cac7a327bf5fb44de91d67394a1af"
+    },
+    {
+      "label": "no_verb_eps",
+      "seconds": 16.865203380584717,
+      "parameters": 15552136,
+      "sha256": "dace2f98241d080e619ad448cdc9586e88428fcab3cada4cdddd2d37e7958348"
+    }
+  ],
+  "baseline_exact_match": true,
+  "mask_fixtures": true,
+  "episode_log_shape": [
+    10,
+    35
+  ],
+  "validation_provenance": "/puffertank/experiments/nethack-mask-combined-20261002/PARENT_VALIDATED.json",
+  "combined_validation": {
+    "utc": "2026-10-02T10:29:46Z",
+    "status": "PASS",
+    "training_steps": 2097152,
+    "parameters": 15552136,
+    "sha256": "010de7a6efbff8407bc55b153bbd28b09b31806c61dcc2045d5501ba0b8aafff",
+    "all_three_flags_active": true,
+    "episode_log_shape": [
+      15,
+      35
+    ],
+    "seconds": 17.913145542144775
+  }
+}

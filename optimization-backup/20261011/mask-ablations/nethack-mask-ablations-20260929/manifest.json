@@ -1,0 +1,280 @@
+{
+  "source_commit": "3719caaaf945025e4e1e59c6556560d2ba9e3d1c",
+  "engine_commit": "e7f6568568242745a7f7ebd8f730367123522cac",
+  "total_timesteps": 1000000000,
+  "expected_checkpoint_steps": 999817216,
+  "variants": [
+    {
+      "name": "baseline",
+      "args": [],
+      "zt": 0
+    },
+    {
+      "name": "no_handless",
+      "args": [
+        "--env.ablate_handless=1"
+      ],
+      "zt": 0
+    },
+    {
+      "name": "zero_time_on",
+      "args": [],
+      "zt": 1
+    },
+    {
+      "name": "no_hostile_rays",
+      "args": [
+        "--env.ablate_hostile_rays=1"
+      ],
+      "zt": 0
+    },
+    {
+      "name": "no_item_strategy",
+      "args": [
+        "--env.ablate_item_strategy=1"
+      ],
+      "zt": 0
+    },
+    {
+      "name": "no_run_search20",
+      "args": [
+        "--env.mask_run=1",
+        "--env.mask_search20=1"
+      ],
+      "zt": 0
+    },
+    {
+      "name": "no_verb_eps",
+      "args": [
+        "--train.verb_eps=0"
+      ],
+      "zt": 0
+    }
+  ],
+  "seeds": [
+    2901,
+    2902,
+    2903,
+    2904,
+    2905
+  ],
+  "jobs": [
+    {
+      "index": 0,
+      "round": 1,
+      "seed": 2901,
+      "variant": "baseline",
+      "run": "baseline_s2901"
+    },
+    {
+      "index": 1,
+      "round": 1,
+      "seed": 2901,
+      "variant": "no_handless",
+      "run": "no_handless_s2901"
+    },
+    {
+      "index": 2,
+      "round": 1,
+      "seed": 2901,
+      "variant": "zero_time_on",
+      "run": "zero_time_on_s2901"
+    },
+    {
+      "index": 3,
+      "round": 1,
+      "seed": 2901,
+      "variant": "no_hostile_rays",
+      "run": "no_hostile_rays_s2901"
+    },
+    {
+      "index": 4,
+      "round": 1,
+      "seed": 2901,
+      "variant": "no_item_strategy",
+      "run": "no_item_strategy_s2901"
+    },
+    {
+      "index": 5,
+      "round": 1,
+      "seed": 2901,
+      "variant": "no_run_search20",
+      "run": "no_run_search20_s2901"
+    },
+    {
+      "index": 6,
+      "round": 1,
+      "seed": 2901,
+      "variant": "no_verb_eps",
+      "run": "no_verb_eps_s2901"
+    },
+    {
+      "index": 7,
+      "round": 2,
+      "seed": 2902,
+      "variant": "no_handless",
+      "run": "no_handless_s2902"
+    },
+    {
+      "index": 8,
+      "round": 2,
+      "seed": 2902,
+      "variant": "zero_time_on",
+      "run": "zero_time_on_s2902"
+    },
+    {
+      "index": 9,
+      "round": 2,
+      "seed": 2902,
+      "variant": "no_hostile_rays",
+      "run": "no_hostile_rays_s2902"
+    },
+    {
+      "index": 10,
+      "round": 2,
+      "seed": 2902,
+      "variant": "no_item_strategy",
+      "run": "no_item_strategy_s2902"
+    },
+    {
+      "index": 13,
+      "round": 2,
+      "seed": 2902,
+      "variant": "baseline",
+      "run": "baseline_s2902"
+    },
+    {
+      "index": 14,
+      "round": 3,
+      "seed": 2903,
+      "variant": "zero_time_on",
+      "run": "zero_time_on_s2903"
+    },
+    {
+      "index": 15,
+      "round": 3,
+      "seed": 2903,
+      "variant": "no_hostile_rays",
+      "run": "no_hostile_rays_s2903"
+    },
+    {
+      "index": 16,
+      "round": 3,
+      "seed": 2903,
+      "variant": "no_item_strategy",
+      "run": "no_item_strategy_s2903"
+    },
+    {
+      "index": 19,
+      "round": 3,
+      "seed": 2903,
+      "variant": "baseline",
+      "run": "baseline_s2903"
+    },
+    {
+      "index": 20,
+      "round": 3,
+      "seed": 2903,
+      "variant": "no_handless",
+      "run": "no_handless_s2903"
+    },
+    {
+      "index": 21,
+      "round": 4,
+      "seed": 2904,
+      "variant": "no_hostile_rays",
+      "run": "no_hostile_rays_s2904"
+    },
+    {
+      "index": 22,
+      "round": 4,
+      "seed": 2904,
+      "variant": "no_item_strategy",
+      "run": "no_item_strategy_s2904"
+    },
+    {
+      "index": 25,
+      "round": 4,
+      "seed": 2904,
+      "variant": "baseline",
+      "run": "baseline_s2904"
+    },
+    {
+      "index": 26,
+      "round": 4,
+      "seed": 2904,
+      "variant": "no_handless",
+      "run": "no_handless_s2904"
+    },
+    {
+      "index": 27,
+      "round": 4,
+      "seed": 2904,
+      "variant": "zero_time_on",
+      "run": "zero_time_on_s2904"
+    },
+    {
+      "index": 28,
+      "round": 5,
+      "seed": 2905,
+      "variant": "no_item_strategy",
+      "run": "no_item_strategy_s2905"
+    },
+    {
+      "index": 31,
+      "round": 5,
+      "seed": 2905,
+      "variant": "baseline",
+      "run": "baseline_s2905"
+    },
+    {
+      "index": 32,
+      "round": 5,
+      "seed": 2905,
+      "variant": "no_handless",
+      "run": "no_handless_s2905"
+    },
+    {
+      "index": 33,
+      "round": 5,
+      "seed": 2905,
+      "variant": "zero_time_on",
+      "run": "zero_time_on_s2905"
+    },
+    {
+      "index": 34,
+      "round": 5,
+      "seed": 2905,
+      "variant": "no_hostile_rays",
+      "run": "no_hostile_rays_s2905"
+    }
+  ],
+  "evaluation": {
+    "engine": "fork",
+    "seed": 7,
+    "episodes": 6000,
+    "burn_in": 4000,
+    "retained": 2000,
+    "masks": "same as training",
+    "verb_eps": 0
+  },
+  "sha256": {
+    "puffer_reference": "eab27d7aa52b0e15237f574b2618b048cda275f1633d2ca40ecd536654d98e81",
+    "puffer_ablate": "59095fb74818d56ec72af64d816d4f0c88f1942c010cccb11b12abe9db3df5d1",
+    "lib/libnethack.so": "a3a4c32fc0c9107f748ccb8255d4901b85dd80beb9786fa851cd1f8f08f056a2",
+    "dat/nhdat": "4f58592379ba9d2c9e8f755700beed71dd3f6dbc221ad22d3ce79640e419b4d4",
+    "config/default.ini": "7f493977f49f2537a59c18c2a283f062e5d6063d9e130c2d15f6be075cda1084",
+    "config/nethack.ini": "9da0ed565d254657acd30b69f584406a62890f23bbde51fc8c529402d1ad527d",
+    "source/src/pufferl.cu": "8feb0cc5334468e60e2db6527121dee8e7028694beed1e431f96e8e2e7843d4a",
+    "source/src/algo.cu": "4f9a8c6189ebd3c2f058c78aa78f4bfec26ceee0df6995f65e3c306fd2ae9a65",
+    "source/ocean/nethack/nethack.h": "5b6ff08aa6103c90c8ba79bab5c946775b98edfb44c13c2e69df4d89a7ef4e60",
+    "source/ocean/nethack/nethack.cu": "35f69d1d712b55b4d00236d07948d4e0236bdb4edb8146f8e279eee9ae538180",
+    "source/ocean/nethack/nethack_policy.cu": "73e453f5f2c1d26450481097d84f172a68696b317ac2d0261352e023e8cd83f9",
+    "common.py": "1223f327336a715df7e118c2033a1b47b813920c028298efe80b0b719c0c2a60",
+    "queue.py": "dcd1522b2adc9a6a587c1108f54963e751eac0a9c470ef773a97c30030bf1e7a",
+    "analyze.py": "cf4881748d60c5c9afcc9b3efda32c7525530c5017962fa4fca91e043af9d254",
+    "analyze_results.py": "91c80380be8ada3e5da6336cca30c3a41360dec63c5720658fc4d47e0bd65daf",
+    "achievements.json": "f7619cce3313ebcbdffd94a4d36f9cf5b53a307181edee48b7a8acbff6b24135"
+  },
+  "cancellation_note": "Eight unstarted runs cancelled on 2026-09-30; both completed first-seed runs retained. Five continuing variants remain at five seeds each."
+}
