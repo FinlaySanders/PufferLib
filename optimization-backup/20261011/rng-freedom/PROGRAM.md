@@ -418,3 +418,14 @@ than the ~4 cell evaluations saved on the 41% of queries that resolve early, and
 Replay-mode ABBA (+13-16%) was regime drift (young games after divergence) — never time a non-bit-exact engine with replayed actions.
 VERDICT: RNG-stream freedom has now been spent on its only sized lever and returned nothing. Monster-turn items left are bit-exact and small:
 movers list (−3%), dochugw double canspotmon (−1%), per-move memoisation (−2..3%). The engine on this box is within ~5% of what the rules cost.
+
+## Early-vs-mature training cost (22:20 UTC; 5M 512×512 live from scratch with learning on, POOL_WORKER us_per_step; 15M champion replay for mature)
+| regime | mean game turn | env us/step | SPS at 5M/512 |
+| random policy, epoch 1 (dies every ~100 turns, resets) | 118 | 54 | 299K |
+| young surviving policy, epochs 10-110 (26M steps) | 800-3,600 | 29-34 | 428K (GPU-bound) |
+| mature champion (replayed stream / live) | 24-30K | 72-82 | 324K (env-bound, replay mb 4096) |
+Cost vs age under the mature stream: 10.6K turns 41 us → 12.9K 59 → 19K 69 → 24K+ 72-82 (plateau). The young→mature step cost ratio is ~2.5x
+(1-2 game turns and few monsters per step vs 6.9 turns and 27 live monsters); at 5M the regime flips from GPU-bound (428K) to env-bound (324K),
+−24% SPS; at 15M both are GPU-bound (~230K), no effect. So yes, the effect persists wherever the env binds, and its size is the game regime's,
+not the code's. LANDMINE: PUF_LIVE_AFTER_WARM goes live only after BENCH_CAPTURE_START epochs at width 1024 (replays before); with --start=0 the
+width-512 run was live from epoch 0 but the width-1024 run replayed throughout — check PERF_EPOCH mean_turn to know which regime a run is in.
