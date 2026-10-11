@@ -1,0 +1,104 @@
+[
+  {
+    "kind": "full",
+    "label": "cohort_full_base_a",
+    "binary": "identity_warp_v11",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "identity_full",
+    "binary": "identity_warp_v11",
+    "env": {
+      "NH_IDENTITY_WARP": 1,
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_two128",
+    "binary": "identity_warp_v11",
+    "env": {
+      "PUF_COHORT_BUFFERS": 2,
+      "PUF_COHORT_STEPS": 128,
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_two8",
+    "binary": "identity_warp_v11",
+    "env": {
+      "PUF_COHORT_BUFFERS": 2,
+      "PUF_COHORT_STEPS": 8,
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_two128_reduce",
+    "binary": "identity_warp_v11",
+    "env": {
+      "PUF_COHORT_BUFFERS": 2,
+      "PUF_COHORT_STEPS": 128,
+      "NH_EMBED_REDUCE": 7,
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_two8_reduce",
+    "binary": "identity_warp_v11",
+    "env": {
+      "PUF_COHORT_BUFFERS": 2,
+      "PUF_COHORT_STEPS": 8,
+      "NH_EMBED_REDUCE": 7,
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_full_base_b",
+    "binary": "identity_warp_v11",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

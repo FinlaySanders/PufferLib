@@ -1,0 +1,22 @@
+--- a/src/algo.cu
++++ b/src/algo.cu
+@@ -873,7 +873,8 @@
+         scan.state_ptr = state_i.data;
+         scan.input_ptr = a->saved_inputs[i].data;
+         scan.terminals_ptr = terminals.data;
+-        if (scan.T >= 256 && scan.B * scan.H <= 32768
++        if ((getenv("PUF_SCAN_ROW") && (atoi(getenv("PUF_SCAN_ROW")) & 1))
++                || scan.T >= 256 && scan.B * scan.H <= 32768
+                 || scan.T >= 128 && scan.H <= 32) {
+             dim3 block(MINGRU_TILE, MINGRU_TILE);
+             dim3 grid(scan.B, (scan.H + MINGRU_TILE - 1) / MINGRU_TILE);
+@@ -899,7 +900,8 @@
+     MinGRUActivations* a = (MinGRUActivations*)activations;
+     for (int i = m->num_layers - 1; i >= 0; i--) {
+         PrefixScan& scan = a->scan_bufs[i];
+-        if (scan.T >= 256 && scan.B * scan.H <= 32768
++        if ((getenv("PUF_SCAN_ROW") && (atoi(getenv("PUF_SCAN_ROW")) & 2))
++                || scan.T >= 256 && scan.B * scan.H <= 32768
+                 || scan.T >= 128 && scan.H <= 32) {
+             dim3 block(MINGRU_TILE, MINGRU_TILE);
+             dim3 grid(scan.B, (scan.H + MINGRU_TILE - 1) / MINGRU_TILE);

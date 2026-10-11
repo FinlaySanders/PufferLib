@@ -1,0 +1,32 @@
+--- a/include/objclass.h
++++ b/include/objclass.h
+@@ -219,6 +219,12 @@
+ #define newfruit() (struct fruit *) alloc(sizeof(struct fruit))
+ #define dealloc_fruit(rind) free((genericptr_t)(rind))
+ 
++#ifdef NLE_OBJECTS_GLOBAL
+ #define OBJ_NAME(obj) (obj_descr[(obj).oc_name_idx].oc_name)
+ #define OBJ_DESCR(obj) (obj_descr[(obj).oc_descr_idx].oc_descr)
++#else
++extern const char *nle_object_name(int index);
++#define OBJ_NAME(obj) (nle_object_name((obj).oc_name_idx))
++#define OBJ_DESCR(obj) (obj_descr_baseline[(obj).oc_descr_idx].oc_descr)
++#endif
+ #endif /* OBJCLASS_H */
+--- a/src/o_init.c
++++ b/src/o_init.c
+@@ -32,6 +32,14 @@
+     }
+     return (struct objdescr *) nh_cur->nh_lazy[41];
+ }
++/* Fruit naming is the sole runtime mutation of the description table. */
++const char *
++nle_object_name(int index)
++{
++    return index == SLIME_MOLD ? obj_descr[index].oc_name
++                              : obj_descr_baseline[index].oc_name;
++}
++
+ #include "lev.h" /* save & restore info */
+ 
+ STATIC_DCL void FDECL(setgemprobs, (d_level *));

@@ -1,0 +1,86 @@
+[
+  {
+    "kind": "capture",
+    "label": "model5m_small_capture",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--epochs=66",
+      "--start=64",
+      "--width=512",
+      "--batch-file=/puffertank/experiments/nethack-24h-20261009/model5m_20261010/mature_small.bin"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "model5m_small_gpu",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--width=512",
+      "--batch-file=/puffertank/experiments/nethack-24h-20261009/model5m_20261010/mature_small.bin",
+      "--trials=5"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "model5m_small_graph",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--epochs=68",
+      "--start=64",
+      "--end=66",
+      "--width=512",
+      "--profile=graph"
+    ]
+  }
+]

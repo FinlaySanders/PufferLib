@@ -1,0 +1,114 @@
+--- a/ocean/nethack/nethack.cu
++++ b/ocean/nethack/nethack.cu
+@@ -26,10 +26,76 @@
+     if (idx >= total) return;
+     data[idx] = from_float(to_float(data[idx]) + to_float(bias[idx % dim]));
+ }
++
++#include <vector>
++struct NhEpiloguePlan {
++    int M, N, K;
++    cublasLtMatmulDesc_t desc;
++    cublasLtMatrixLayout_t weights, input, output;
++    cublasLtMatmulAlgo_t algo;
++    bool available;
++};
++thread_local std::vector<NhEpiloguePlan> nh_epilogue_plans;
++thread_local bool nh_fused_br_active = false;
++static int nh_fused_br_mode = getenv("NH_FUSED_BR") ? atoi(getenv("NH_FUSED_BR")) : 0;
++
++static bool nh_fused_br(Prec* input, Prec* weights, Prec* output, Prec bias, cudaStream_t stream) {
++    if (!nh_fused_br_active) return false;
++    int M = batch_size(input->shape) * input->shape[ndim(input->shape)-2];
++    int K = input->shape[ndim(input->shape)-1];
++    int N = weights->shape[ndim(weights->shape)-2];
++    NhEpiloguePlan* p = NULL;
++    for (NhEpiloguePlan& plan : nh_epilogue_plans)
++        if (plan.M == M && plan.N == N && plan.K == K) { p = &plan; break; }
++    if (!p) {
++        NhEpiloguePlan plan = {};
++        plan.M=M; plan.N=N; plan.K=K;
++        assert(g_nh_epilogue_handle);
++        assert(cublasLtMatmulDescCreate(&plan.desc, CUBLAS_COMPUTE, CUDA_R_32F) == CUBLAS_STATUS_SUCCESS);
++        cublasOperation_t trans = CUBLAS_OP_T;
++        cublasLtEpilogue_t epilogue = CUBLASLT_EPILOGUE_RELU_BIAS;
++        assert(cublasLtMatmulDescSetAttribute(plan.desc, CUBLASLT_MATMUL_DESC_TRANSA, &trans, sizeof(trans)) == CUBLAS_STATUS_SUCCESS);
++        assert(cublasLtMatmulDescSetAttribute(plan.desc, CUBLASLT_MATMUL_DESC_EPILOGUE, &epilogue, sizeof(epilogue)) == CUBLAS_STATUS_SUCCESS);
++        assert(cublasLtMatmulDescSetAttribute(plan.desc, CUBLASLT_MATMUL_DESC_BIAS_DATA_TYPE, &CUBLAS_PRECISION, sizeof(CUBLAS_PRECISION)) == CUBLAS_STATUS_SUCCESS);
++        assert(cublasLtMatmulDescSetAttribute(plan.desc, CUBLASLT_MATMUL_DESC_BIAS_POINTER, &bias.data, sizeof(bias.data)) == CUBLAS_STATUS_SUCCESS);
++        assert(cublasLtMatrixLayoutCreate(&plan.weights,CUBLAS_PRECISION,K,N,K) == CUBLAS_STATUS_SUCCESS);
++        assert(cublasLtMatrixLayoutCreate(&plan.input,CUBLAS_PRECISION,K,M,K) == CUBLAS_STATUS_SUCCESS);
++        assert(cublasLtMatrixLayoutCreate(&plan.output,CUBLAS_PRECISION,N,M,N) == CUBLAS_STATUS_SUCCESS);
++        cublasLtMatmulPreference_t pref;
++        assert(cublasLtMatmulPreferenceCreate(&pref) == CUBLAS_STATUS_SUCCESS);
++        size_t workspace = 4UL << 20;
++        assert(cublasLtMatmulPreferenceSetAttribute(pref,CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES,&workspace,sizeof(workspace)) == CUBLAS_STATUS_SUCCESS);
++        cublasLtMatmulHeuristicResult_t result;
++        int count=0;
++        assert(cublasLtMatmulAlgoGetHeuristic(g_nh_epilogue_handle,plan.desc,plan.weights,plan.input,
++            plan.output,plan.output,pref,1,&result,&count) == CUBLAS_STATUS_SUCCESS);
++        plan.available = count > 0 && result.state == CUBLAS_STATUS_SUCCESS;
++        if (plan.available) plan.algo=result.algo;
++        cublasLtMatmulPreferenceDestroy(pref);
++        fprintf(stderr,"NH_FUSED_PLAN M=%d N=%d K=%d available=%d\n",M,N,K,plan.available);
++        nh_epilogue_plans.push_back(plan);
++        p = &nh_epilogue_plans.back();
++    }
++    if (!p->available) return false;
++    assert(cublasLtMatmulDescSetAttribute(p->desc,CUBLASLT_MATMUL_DESC_BIAS_POINTER,&bias.data,sizeof(bias.data)) == CUBLAS_STATUS_SUCCESS);
++    void* workspace = NULL;
++    for (int i=0;i<g_num_cublas_streams;i++)
++        if (g_cublas_streams[i].stream==stream) { workspace=g_cublas_streams[i].workspace; break; }
++    assert(workspace);
++    float alpha=1.0f,beta=0.0f;
++    assert(cublasLtMatmul(g_nh_epilogue_handle,p->desc,&alpha,weights->data,p->weights,
++        input->data,p->input,&beta,output->data,p->output,output->data,p->output,
++        &p->algo,workspace,4UL<<20,stream) == CUBLAS_STATUS_SUCCESS);
++    return true;
++}
++
+ // GEMM + bias + relu (16 launches per forward)
+-#define NH_MM_BR(A, W, O, BIAS) do { puf_mm((A), (W), (O), stream); \
+-    int64_t nn_ = numel((O)->shape); int dd_ = (int)(O)->shape[ndim((O)->shape) - 1]; \
+-    nh_bias_relu_kernel<<<grid_size(nn_), BLOCK_SIZE, 0, stream>>>((O)->data, (BIAS).data, (int)nn_, dd_); } while (0)
++#define NH_MM_BR(A, W, O, BIAS) do { \
++    if (!nh_fused_br((A), (W), (O), (BIAS), stream)) { \
++        puf_mm((A), (W), (O), stream); \
++        int64_t nn_ = numel((O)->shape); int dd_ = (int)(O)->shape[ndim((O)->shape) - 1]; \
++        nh_bias_relu_kernel<<<grid_size(nn_), BLOCK_SIZE, 0, stream>>>((O)->data, (BIAS).data, (int)nn_, dd_); \
++    } } while (0)
+ // constants
+ // Obs layout (must match ocean/nethack/nethack.h):
+ //   [0, 2*NH_MGRID)  full 79x21 glyph grid, int16 LE (map memory included)
+@@ -1873,6 +1939,7 @@
+ };
+ 
+ struct NethackEncoderActivations {
++    bool training;
+     Float glyph_idx, crop_glyph; // decoded grid + crop glyph ids
+     Prec e_eff; // materialized E_res + E_kind + E_sub
+     Prec x_local; // crop embeds (grad aliases it)
+@@ -1963,6 +2030,7 @@
+ static Prec nethack_encoder_forward(void* w, void* activations, Prec input, cudaStream_t stream) {
+     NethackEncoderWeights* ew = (NethackEncoderWeights*)w;
+     NethackEncoderActivations* a = (NethackEncoderActivations*)activations;
++    nh_fused_br_active = (nh_fused_br_mode & (a->training ? 2 : 1)) != 0;
+     int B = input.shape[0];
+ 
+     if (nh_refresh_tables) {
+@@ -2578,6 +2646,7 @@
+ static void nethack_encoder_reg_train(void* w, void* activations, Allocator* acts, Allocator* grads, int B_TT) {
+     NethackEncoderWeights* ew = (NethackEncoderWeights*)w;
+     NethackEncoderActivations* a = (NethackEncoderActivations*)activations;
++    a->training = true;
+     *a = {};
+     a->glyph_idx = {.shape = {B_TT, NH_MGRID}};
+     a->crop_glyph = {.shape = {B_TT, NH_CGRID}};
+@@ -2761,6 +2830,7 @@
+ static void nethack_encoder_reg_rollout(void* w, void* activations, Allocator* alloc, int B) {
+     NethackEncoderWeights* ew = (NethackEncoderWeights*)w;
+     NethackEncoderActivations* a = (NethackEncoderActivations*)activations;
++    a->training = false;
+     a->glyph_idx = {.shape = {B, NH_MGRID}};
+     a->crop_glyph = {.shape = {B, NH_CGRID}};
+     a->e_eff = {.shape = {NH_GLYPH_VOCAB, NH_EMBED_DIM}};

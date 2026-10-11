@@ -1,0 +1,94 @@
+[
+  {
+    "kind": "time",
+    "label": "weight_cast_gpu_base_a",
+    "binary": "weight_cast_v29",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_FUSED_WEIGHT_CAST": 0
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "weight_cast_gpu_global",
+    "binary": "weight_cast_v29",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_FUSED_WEIGHT_CAST": 1
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "weight_cast_gpu_matrix",
+    "binary": "weight_cast_v29",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_FUSED_WEIGHT_CAST": 2
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "weight_cast_gpu_base_b",
+    "binary": "weight_cast_v29",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_FUSED_WEIGHT_CAST": 0
+    },
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

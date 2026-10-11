@@ -1,0 +1,182 @@
+{
+  "rows": [
+    {
+      "label": "pool_timing_base_a",
+      "sps": 210031.4200961439,
+      "phases": {
+        "ROLLOUT_DETAIL": {
+          "means": {
+            "complete_ms": 1230.8636625333334,
+            "model_ms": 109.0261637,
+            "env_ms": 947.85811975,
+            "copy_ms": 68.75644103333333
+          },
+          "by_buffer": {
+            "0": {
+              "complete_ms": 1232.5548331333334,
+              "model_ms": 109.4053954,
+              "env_ms": 953.2445638666667,
+              "copy_ms": 67.97602286666667
+            },
+            "1": {
+              "complete_ms": 1231.2946795333332,
+              "model_ms": 108.80426693333334,
+              "env_ms": 946.3490072,
+              "copy_ms": 69.1958818
+            },
+            "2": {
+              "complete_ms": 1227.0108858666667,
+              "model_ms": 109.37389673333334,
+              "env_ms": 944.002417,
+              "copy_ms": 68.7046014
+            },
+            "3": {
+              "complete_ms": 1232.5942516,
+              "model_ms": 108.52109573333334,
+              "env_ms": 947.8364909333334,
+              "copy_ms": 69.14925806666666
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "pool_timing_timing",
+      "sps": 210437.12194626013,
+      "phases": {
+        "ROLLOUT_DETAIL": {
+          "means": {
+            "complete_ms": 1226.5182057833333,
+            "model_ms": 109.7909646,
+            "env_ms": 942.8593780666666,
+            "copy_ms": 68.70949805000001
+          },
+          "by_buffer": {
+            "0": {
+              "complete_ms": 1223.9111423333334,
+              "model_ms": 111.1496388,
+              "env_ms": 943.7280762,
+              "copy_ms": 69.06491253333333
+            },
+            "1": {
+              "complete_ms": 1222.5376447333333,
+              "model_ms": 109.64255813333334,
+              "env_ms": 940.9730591333333,
+              "copy_ms": 68.97910013333333
+            },
+            "2": {
+              "complete_ms": 1235.5320134666667,
+              "model_ms": 109.37749433333333,
+              "env_ms": 948.2585124,
+              "copy_ms": 67.7237224
+            },
+            "3": {
+              "complete_ms": 1224.0920226,
+              "model_ms": 108.99416713333333,
+              "env_ms": 938.4778645333333,
+              "copy_ms": 69.07025713333333
+            }
+          }
+        },
+        "POOL_TIMING": {
+          "means": {
+            "samples": 128.0,
+            "claim_wall_ms": 655.9121703666667,
+            "tail_wall_ms": 286.22246808333335,
+            "drain_wall_ms": 0.61377295,
+            "claim_cpu_ms": 509.49467646666665,
+            "tail_cpu_ms": 111.37447545,
+            "drain_cpu_ms": 0.14511771666666667
+          },
+          "by_buffer": {
+            "0": {
+              "samples": 128.0,
+              "claim_wall_ms": 657.9950416666667,
+              "tail_wall_ms": 284.46853746666665,
+              "drain_wall_ms": 1.1492342666666666,
+              "claim_cpu_ms": 514.2139156,
+              "tail_cpu_ms": 116.32686933333333,
+              "drain_cpu_ms": 0.14326193333333334
+            },
+            "1": {
+              "samples": 128.0,
+              "claim_wall_ms": 663.9293007333333,
+              "tail_wall_ms": 276.25881053333336,
+              "drain_wall_ms": 0.6752484666666667,
+              "claim_cpu_ms": 521.651914,
+              "tail_cpu_ms": 113.8208684,
+              "drain_cpu_ms": 0.14702433333333334
+            },
+            "2": {
+              "samples": 128.0,
+              "claim_wall_ms": 650.4649702666667,
+              "tail_wall_ms": 297.2892366,
+              "drain_wall_ms": 0.39183286666666667,
+              "claim_cpu_ms": 501.0895400666667,
+              "tail_cpu_ms": 107.35087626666666,
+              "drain_cpu_ms": 0.14372393333333333
+            },
+            "3": {
+              "samples": 128.0,
+              "claim_wall_ms": 651.2593688,
+              "tail_wall_ms": 286.8732877333333,
+              "drain_wall_ms": 0.2387762,
+              "claim_cpu_ms": 501.0233362,
+              "tail_cpu_ms": 107.9992878,
+              "drain_cpu_ms": 0.14646066666666666
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "pool_timing_base_b",
+      "sps": 209560.24790731035,
+      "phases": {
+        "ROLLOUT_DETAIL": {
+          "means": {
+            "complete_ms": 1233.8129083166666,
+            "model_ms": 108.86080433333333,
+            "env_ms": 957.80525005,
+            "copy_ms": 68.54426778333334
+          },
+          "by_buffer": {
+            "0": {
+              "complete_ms": 1235.6443088,
+              "model_ms": 108.63118633333333,
+              "env_ms": 964.4283569333334,
+              "copy_ms": 67.76558366666667
+            },
+            "1": {
+              "complete_ms": 1232.6308091333333,
+              "model_ms": 108.65051786666666,
+              "env_ms": 955.5525431333333,
+              "copy_ms": 69.4969682
+            },
+            "2": {
+              "complete_ms": 1228.5731632666666,
+              "model_ms": 109.87356199999999,
+              "env_ms": 956.7442505333333,
+              "copy_ms": 68.7880732
+            },
+            "3": {
+              "complete_ms": 1238.4033520666667,
+              "model_ms": 108.28795113333334,
+              "env_ms": 954.4958496,
+              "copy_ms": 68.12644606666667
+            }
+          }
+        }
+      }
+    }
+  ],
+  "loop_epoch_window": [
+    64,
+    78
+  ],
+  "detail_epoch_window": [
+    65,
+    79
+  ],
+  "caveat": "Per-buffer stages overlap across buffers and are not additive pipeline wall time."
+}

@@ -1,0 +1,13 @@
+{
+  "command": [
+    "nvcc",
+    "-O3",
+    "-arch=sm_89",
+    "-std=c++17",
+    "bias_direct_smoke.cu",
+    "-o",
+    "bias_direct_smoke"
+  ],
+  "output": "BIAS_DIRECT_SMOKE cases=60 elements=55389172 exact=1\n",
+  "seconds": 1.5131504535675049
+}

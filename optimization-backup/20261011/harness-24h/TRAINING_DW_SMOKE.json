@@ -1,0 +1,18 @@
+{
+  "command": [
+    "nvcc",
+    "-O3",
+    "-arch=sm_89",
+    "-std=c++17",
+    "training_dw_selector_smoke.cu",
+    "-lcublas",
+    "-lcublasLt",
+    "-o",
+    "training_dw_selector_smoke"
+  ],
+  "seconds": 1.3690896034240723,
+  "binary_sha256": "b695063b55f189793dca5ec885cbf3f09317ebead5aba782463b37220dcba132",
+  "source_sha256": "54b2d1b1b35ac382a8a1fc47a49417735a5576e591427ca8d4f296aced5dad9e",
+  "header_sha256": "0f5d6c30322533a4615f37b8a61b5a7d4bd51428b24c70b066816802f9ed0b54",
+  "result": "TRAIN_DW_LT index=1 count=5 id=30 workspace=0\nseed=713 count=3145728 rel_l2=0.00212298830813 max_abs=1 finite=1 graph=1\nseed=1779 count=3145728 rel_l2=0.00212605745348 max_abs=1 finite=1 graph=1\n"
+}

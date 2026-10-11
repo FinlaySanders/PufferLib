@@ -1,0 +1,28 @@
+[
+  {
+    "kind": "full",
+    "label": "horizon_sleep_smoke_base",
+    "binary": "finish_sleep_v21",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "horizon_sleep_smoke_both",
+    "binary": "finish_sleep_v21",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_FINISH_SLEEP": 1,
+      "PUF_COLLECTOR_SLEEP": 1
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  }
+]

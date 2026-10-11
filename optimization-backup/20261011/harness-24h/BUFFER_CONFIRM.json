@@ -1,0 +1,68 @@
+[
+  {
+    "kind": "full",
+    "label": "buffers_repeat_base_a",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_WORKERS": 24
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64",
+      "--buffers=4"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "buffers8_combo_repeat",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_WORKERS": 24,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "PUF_OUTPLACE": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64",
+      "--buffers=8"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "buffers8_repeat",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_WORKERS": 24
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64",
+      "--buffers=8"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "buffers_repeat_base_b",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_WORKERS": 24
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64",
+      "--buffers=4"
+    ]
+  }
+]

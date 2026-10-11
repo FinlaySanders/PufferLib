@@ -1,0 +1,42 @@
+{
+  "source": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/source",
+  "fields": [
+    "oc_weight",
+    "oc_cost",
+    "oc_wsdam",
+    "oc_wldam",
+    "oc_subtyp",
+    "oc_skill",
+    "oc_armcat",
+    "oc_class",
+    "oc_nutrition",
+    "oc_delay",
+    "oc_magic",
+    "oc_charged",
+    "oc_oprop",
+    "oc_big",
+    "oc_bimanual",
+    "oc_bulky",
+    "oc_merge",
+    "oc_uses_known",
+    "oc_unique",
+    "oc_nowish",
+    "oc_oc1",
+    "oc_oc2",
+    "oc_hitbon",
+    "oc_level",
+    "a_ac",
+    "a_can"
+  ],
+  "files": {
+    "include/objclass.h": {
+      "sha256": "212d582b1c30a64e2adbd891a3aaf42c113d2958c2878de6ef2fc1c574e7a3a1"
+    },
+    "src/o_init.c": {
+      "sha256": "67dc57c8ae86ba8da6faa698688abc09d9b7a1efea12e9d29e233741f34b2d94"
+    }
+  },
+  "hypothesis": "Avoid private readonly string-descriptor table lookups; preserve per-game fruit-name override.",
+  "audit": "Only runtime table assignment found is obj_descr[SLIME_MOLD].oc_name in options.c. Build-tool global path unchanged. Existing invariant smoke augmented with exact name/description pointer checks and a per-context fruit override.",
+  "status": "Prepared, not applied or tested"
+}

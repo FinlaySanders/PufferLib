@@ -1,0 +1,164 @@
+[
+  {
+    "profile": null,
+    "label": "rank_component_rank1",
+    "kind": "proof",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 4.035858154296875,
+    "trials": [
+      {
+        "trial": 0,
+        "milliseconds": 1082.587136,
+        "model_ms": 1078.70208
+      }
+    ],
+    "mean_ms": 1082.587136,
+    "state_hashes": {
+      "momentum.bin": "0a9283c6962ba46710c2eb20c3ee7bd280ecc2aca3765bc5522b270afed03611",
+      "updates.bin": "bb92ebde52219c908d46ecb1bab7b4f0c0567272c5bb1c4407b03095bbb3af07",
+      "master.bin": "48d04ae42fd3b5d903d63f80dc5ed1ef33e4f4efd41fc69c538c89f6a1254b7d",
+      "params.bin": "44b2ca162545e6566bbdbe3e3c3d990988e6db6cc5dea31472d53bdd15bf86dd",
+      "raw_gradients.bin": "7e02c5e1d245ddee118ef7dacd3186add935aef45d9fc693f73a147560cf6339"
+    }
+  },
+  {
+    "profile": null,
+    "label": "rank_component_scan",
+    "kind": "proof",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 4.033046245574951,
+    "trials": [
+      {
+        "trial": 0,
+        "milliseconds": 1129.916416,
+        "model_ms": 1125.967872
+      }
+    ],
+    "mean_ms": 1129.916416,
+    "state_hashes": {
+      "momentum.bin": "dfa14479e516e9be651e0cd33c79cab55c60cb9814145c85c59756ae21cd7564",
+      "updates.bin": "018f1e6696fa73c7e61b6d69a545d11d0b0365491f0f67bb18c4d41e96dcb8cc",
+      "master.bin": "ca4f93b451752bd6f0fce7ee2a7ead88bb6463d3dafe4f202a3cae2c69240ad8",
+      "params.bin": "5c5b512326df33f0c7dc11d4408be94d178fc6624897fec090205c2bf6124a4e",
+      "raw_gradients.bin": "78f978b3f40d470e8780f1dc963ba5c7396b7ae36dec0cfc45eeb3cc3a1e400b"
+    }
+  },
+  {
+    "profile": null,
+    "label": "rank_component_embed",
+    "kind": "proof",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 4.036112070083618,
+    "trials": [
+      {
+        "trial": 0,
+        "milliseconds": 1111.139328,
+        "model_ms": 1107.193856
+      }
+    ],
+    "mean_ms": 1111.139328,
+    "state_hashes": {
+      "momentum.bin": "546d41a23715e9a21ef28df58905ea5257a61a2e1c57827e0a4ba26359fccd3f",
+      "updates.bin": "907bd075192e4d2e124ebcbbe11ce0fb6a7c9a70c53b0266c4f07560f8c06df8",
+      "master.bin": "01264fe6476e69cee521d5e1f2877ffe933fb14f78cdb8c80c1a7df4a00ab604",
+      "params.bin": "3497fc785d9f66dc04a44c650657668ee3ca604775f6ba40552b37690b66b7e7",
+      "raw_gradients.bin": "b13178ec20b1391e90fcfea8f086a6a72c1717859f9fcec406db887a021b3f98"
+    }
+  },
+  {
+    "profile": null,
+    "label": "rank_component_fused",
+    "kind": "proof",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 4.030806541442871,
+    "trials": [
+      {
+        "trial": 0,
+        "milliseconds": 1149.961216,
+        "model_ms": 1146.015744
+      }
+    ],
+    "mean_ms": 1149.961216,
+    "state_hashes": {
+      "momentum.bin": "d94cab5ade43f920a3dc7c10ce77c46fe7d6504b3d27babd61b38267c03fa04f",
+      "updates.bin": "79191589794abfdd61dfa424b2e90baba6511c65e45e00165fff0fad48c9ee9f",
+      "master.bin": "26d396933c5341722aab70d3757559258b3b6fc1635274995d619cc7a99934f4",
+      "params.bin": "83ac8173bea45a1a8b14d24a28d2a2993e34b19a3444b89acb93151ea74bfd9d",
+      "raw_gradients.bin": "4aeaa3af43267d4d6402ec56306c0817a5e6b48424fd599f97346fe9a414b930"
+    }
+  },
+  {
+    "profile": null,
+    "label": "rank_component_inventory",
+    "kind": "proof",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 4.029973983764648,
+    "trials": [
+      {
+        "trial": 0,
+        "milliseconds": 1148.761088,
+        "model_ms": 1144.819712
+      }
+    ],
+    "mean_ms": 1148.761088,
+    "state_hashes": {
+      "momentum.bin": "0d1f05a94a69cf2ea733d74ef7eb655bd28286ed7663563582c36a7228fa32c7",
+      "updates.bin": "a38a820b490bbd97363483457023b3188fdfa3ab2ae61d315febfce6c856ae7c",
+      "master.bin": "06f72c05b9f0bbfc7c72104d66326e3e3eb332c437032dc258d1f8e5d6f9395f",
+      "params.bin": "2a636a3b8d9af8b9f1ba1d795954b0fcabb0a7ad6d3592109ac226cbe9c0682e",
+      "raw_gradients.bin": "f10aac284e50b7db068ba06e0142c20b7d719ba5a91a0b1147b1f51da1fe527d"
+    }
+  },
+  {
+    "profile": null,
+    "label": "rank_component_identity",
+    "kind": "proof",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 4.032829999923706,
+    "trials": [
+      {
+        "trial": 0,
+        "milliseconds": 1167.661056,
+        "model_ms": 1163.717632
+      }
+    ],
+    "mean_ms": 1167.661056,
+    "state_hashes": {
+      "momentum.bin": "0d1f05a94a69cf2ea733d74ef7eb655bd28286ed7663563582c36a7228fa32c7",
+      "updates.bin": "a38a820b490bbd97363483457023b3188fdfa3ab2ae61d315febfce6c856ae7c",
+      "master.bin": "06f72c05b9f0bbfc7c72104d66326e3e3eb332c437032dc258d1f8e5d6f9395f",
+      "params.bin": "2a636a3b8d9af8b9f1ba1d795954b0fcabb0a7ad6d3592109ac226cbe9c0682e",
+      "raw_gradients.bin": "f10aac284e50b7db068ba06e0142c20b7d719ba5a91a0b1147b1f51da1fe527d"
+    }
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "hypothesis": "Large recurrent forward/dX/dW GEMMs remain a major GPU cost. Prior Lt heuristic search only covered M512 inference. Screen fixed training shapes M4096/hidden1024 before editing trainer.",
+  "scope": "Standalone hot-operand graph timing; not full training gain. BF16 operands/output, FP32 accumulation/reduction, same4MiB workspace. Up to32 heuristics per shape, bracketed cuBLAS defaults.",
+  "shapes": [
+    "NT4096x3072x1024",
+    "NN4096x1024x3072",
+    "TN3072x1024x4096"
+  ],
+  "gates": "Finite output and relativeL2<0.03 against originalcuBLAS forscreen; freshtimingrepeatandrealPPOquantificationrequiredforanywinner.",
+  "source_sha256": "8ab6144de64327241c693f4392d9b27eb4415689b0c9b3758482d187f7a9c92d"
+}

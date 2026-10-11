@@ -1,0 +1,110 @@
+--- before/src/pufferl.cu
++++ after/src/pufferl.cu
+@@ -574,6 +574,7 @@
+     int* act_sizes;        // device ACT_SIZES (NUM_ATNS ints)
+     float* losses;         // device loss accumulator (NUM_LOSSES)
+     PPOBufs ppo_bufs; // Pre-allocated buffers for ppo_loss_fwd_bwd
++    cudaAccessPolicyWindow actor_cache;
+     Prec actor_param;      // async flat actor params
+     Prec grad;
+     long* rng_offset;      // device counters (num_buffers+1)
+@@ -963,6 +964,43 @@
+ }
+ #endif
+ 
++
++// Startup/capture-only experiment; no changes to model arithmetic or graph ordering.
++static int actor_cache_graph(cudaGraph_t graph, cudaAccessPolicyWindow window) {
++    if (!window.num_bytes) return 0;
++    size_t count = 0;
++    assert(cudaGraphGetNodes(graph, NULL, &count) == cudaSuccess);
++    cudaGraphNode_t* nodes = (cudaGraphNode_t*)malloc(count * sizeof(cudaGraphNode_t));
++    assert(nodes || !count);
++    assert(cudaGraphGetNodes(graph, nodes, &count) == cudaSuccess);
++    int kernels = 0;
++    for (size_t i = 0; i < count; i++) {
++        cudaGraphNodeType type;
++        assert(cudaGraphNodeGetType(nodes[i], &type) == cudaSuccess);
++        if (type == cudaGraphNodeTypeKernel) {
++            cudaKernelNodeAttrValue attr = {};
++            attr.accessPolicyWindow = window;
++            assert(cudaGraphKernelNodeSetAttribute(nodes[i],
++                cudaKernelNodeAttributeAccessPolicyWindow, &attr) == cudaSuccess);
++            cudaKernelNodeAttrValue got = {};
++            assert(cudaGraphKernelNodeGetAttribute(nodes[i],
++                cudaKernelNodeAttributeAccessPolicyWindow, &got) == cudaSuccess);
++            assert(got.accessPolicyWindow.base_ptr == window.base_ptr);
++            assert(got.accessPolicyWindow.num_bytes == window.num_bytes);
++            assert(got.accessPolicyWindow.hitRatio == window.hitRatio);
++            assert(got.accessPolicyWindow.hitProp == window.hitProp);
++            assert(got.accessPolicyWindow.missProp == window.missProp);
++            kernels++;
++        } else if (type == cudaGraphNodeTypeGraph) {
++            cudaGraph_t child;
++            assert(cudaGraphChildGraphNodeGetGraph(nodes[i], &child) == cudaSuccess);
++            kernels += actor_cache_graph(child, window);
++        }
++    }
++    free(nodes);
++    return kernels;
++}
++
+ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
+     Hypers* hypers = &pufferl->hypers;
+     // GPU rollout graphs the whole horizon; CPU still graphs one net step.
+@@ -997,6 +1035,9 @@
+         cudaGraph_t _graph;
+         assert(cudaStreamEndCapture(stream, &_graph) == cudaSuccess
+                 && "cudaStreamEndCapture failed");
++        int cache_kernels = actor_cache_graph(_graph, pufferl->actor_cache);
++        if (cache_kernels && t == 0 && graph_slot == 0)
++            fprintf(stderr, "ACTOR_CACHE_GRAPH buffer=%d kernels=%d\n", buf, cache_kernels);
+         assert(cudaGraphInstantiate(&pufferl->rollout_graphs[graph], _graph, 0)
+                 == cudaSuccess && "cudaGraphInstantiate failed");
+         cudaGraphDestroy(_graph);
+@@ -2388,6 +2429,32 @@
+         pufferl->rollout_graphs = (cudaGraphExec_t*)calloc(1,
+             rollout_graph_slots*horizon*num_buffers*sizeof(cudaGraphExec_t));
+     }
++    if (const char* value = getenv("PUF_ACTOR_CACHE_MB")) {
++        int requested_mib = atoi(value);
++        assert(requested_mib >= 0);
++        if (requested_mib) {
++            assert(hypers.async);
++            int limit = 0, max_window = 0;
++            assert(cudaDeviceGetAttribute(&limit, cudaDevAttrMaxPersistingL2CacheSize,
++                hypers.gpu_id) == cudaSuccess);
++            assert(cudaDeviceGetAttribute(&max_window, cudaDevAttrMaxAccessPolicyWindowSize,
++                hypers.gpu_id) == cudaSuccess);
++            size_t reserve = (size_t)requested_mib * 1024 * 1024;
++            assert(reserve <= (size_t)limit);
++            size_t bytes = numel(pufferl->actor_param.shape) * sizeof(precision_t);
++            assert(bytes <= (size_t)max_window);
++            assert(cudaDeviceSetLimit(cudaLimitPersistingL2CacheSize, reserve) == cudaSuccess);
++            size_t actual = 0;
++            assert(cudaDeviceGetLimit(&actual, cudaLimitPersistingL2CacheSize) == cudaSuccess);
++            pufferl->actor_cache.base_ptr = pufferl->actor_param.data;
++            pufferl->actor_cache.num_bytes = bytes;
++            pufferl->actor_cache.hitRatio = reserve < bytes ? (float)reserve / bytes : 1.0f;
++            pufferl->actor_cache.hitProp = cudaAccessPropertyPersisting;
++            pufferl->actor_cache.missProp = cudaAccessPropertyNormal;
++            fprintf(stderr, "ACTOR_CACHE requested=%zu actual=%zu bytes=%zu ratio=%.9f\n",
++                reserve, actual, bytes, pufferl->actor_cache.hitRatio);
++        }
++    }
+     pufferl->streams = (cudaStream_t*)calloc(1, num_buffers * sizeof(cudaStream_t));
+     for (int i = 0; i < num_buffers; i++) {
+         if (hypers.async) {
+@@ -2395,6 +2462,12 @@
+                 &pufferl->streams[i], cudaStreamNonBlocking) == cudaSuccess);
+         } else {
+             assert(cudaStreamCreate(&pufferl->streams[i]) == cudaSuccess);
++        }
++        if (pufferl->actor_cache.num_bytes) {
++            cudaStreamAttrValue attr = {};
++            attr.accessPolicyWindow = pufferl->actor_cache;
++            assert(cudaStreamSetAttribute(pufferl->streams[i],
++                cudaStreamAttributeAccessPolicyWindow, &attr) == cudaSuccess);
+         }
+     }
+ 

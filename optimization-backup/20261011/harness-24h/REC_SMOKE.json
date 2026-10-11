@@ -1,0 +1,21 @@
+[
+  {
+    "kind": "inference",
+    "label": "rec_base_a",
+    "binary": "wait_rec_v8",
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "inference",
+    "label": "rec_algo0",
+    "binary": "wait_rec_v8",
+    "env": {
+      "NH_REC_LT": 0
+    },
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

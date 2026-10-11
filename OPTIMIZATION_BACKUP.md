@@ -52,3 +52,14 @@ and `scheduler/best.json` to identify the retained variants.
 `optimization-backup/20261008/MANIFEST.json` records the original path, size and
 SHA-256 of each copied file. This branch preserves optimisation code and compact
 supporting evidence, not the large data/checkpoint backup discussed earlier.
+
+## Addendum — 11 October 2026 (`optimization-backup/20261011/`)
+- `trainer-cohort/`: `trainer_cohort_ini_keys.patch` ([vec] cohort_buffers / cohort_steps, validated: rollout proofs identical, +26% at 5M/2048),
+  `trainer_cohort_knobs.patch` (same plus two refuted probes), and `overlay/` = the full experiment trainer as last built (env pool, cohort knobs,
+  generalised pinning, per-worker stats, 64-agent replay relaxation).
+- `engine-scaling/`: PROGRAM.md (chronological ledger), HANDOFF.md (close-outs), designs, footprint/branch/function censuses, every chain script,
+  layer generators, the cohort harness (harness_cohort/replay_cohort.c) and the engine patches (engine_mt7stack_*, engine_dv4stack_*).
+- `harness-24h/`: the frozen-policy trainer harness (run_scale.py with --extra/--source/--buffers 32/64, campaign_ablate.py, every ablate_*.json
+  spec and results, pool_timing_report.py, thread_util.sh, sps_from_log.py) and `source-src/` = the 24h experiment trainer's src/ as run.
+Recommended config for collection-bound regimes: num_buffers 16 (32 at 4096 agents), cohort_buffers 4, cohort_steps 64, pool workers 24-26 pinned.
+Day result: 5M/2048 240K -> 320K, 5M/4096 350K, 15M/2048 263K. Engine stack: mt7 (fast-nle branch tip = mt7 + optional dv4).

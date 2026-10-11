@@ -1,0 +1,102 @@
+[
+  {
+    "kind": "time",
+    "label": "regs_gpu_base_a",
+    "binary": "scan_regs_v14",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "regs_gpu_tile2",
+    "binary": "scan_regs_v14",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_SCAN_REGS": 3,
+      "PUF_SCAN_REG_TILE": 2
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "regs_gpu_tile4",
+    "binary": "scan_regs_v14",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_SCAN_REGS": 3,
+      "PUF_SCAN_REG_TILE": 4
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "regs_gpu_tile8",
+    "binary": "scan_regs_v14",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_SCAN_REGS": 3,
+      "PUF_SCAN_REG_TILE": 8
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "regs_gpu_forward",
+    "binary": "scan_regs_v14",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_SCAN_REGS": 1,
+      "PUF_SCAN_REG_TILE": 4
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "regs_gpu_backward",
+    "binary": "scan_regs_v14",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_SCAN_REGS": 2,
+      "PUF_SCAN_REG_TILE": 4
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "regs_gpu_row4",
+    "binary": "scan_regs_v14",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "regs_gpu_base_b",
+    "binary": "scan_regs_v14",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

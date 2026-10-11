@@ -1,0 +1,44 @@
+--- src/pufferl.cu
++++ src/pufferl.cu
+@@ -427,7 +427,10 @@
+ 
+ // Env batch. Device IO is always PuffeRL.env (EnvBuf).
+ // CPU: host pins + workers. GPU: single-buffer device envs (no host pins).
++#include "env_pages.h"
++
+ struct VecEnv {
++    size_t env_mapping_bytes;
+     Env* envs;  // CPU: host array. GPU: device base (batch).
+     int size;
+     int total_agents;
+@@ -1150,7 +1153,8 @@
+     vec->envs = my_vec_init(&num_envs, vec->env_starts,
+         vec->env_counts, vk, ek);
+ #else
+-    Env* envs = (Env*)calloc(total_agents, sizeof(Env));
++    int env_pages = getenv("PUF_ENV_PAGES") ? atoi(getenv("PUF_ENV_PAGES")) : 0;
++    Env* envs = (Env*)puf_env_array_allocate(total_agents, sizeof(Env), env_pages, &vec->env_mapping_bytes);
+     int agents_created = 0;
+     while (agents_created < total_agents) {
+         envs[num_envs].rng = getenv("PUF_BATCH_REPLAY")
+@@ -1160,7 +1164,7 @@
+         agents_created += envs[num_envs].num_agents;
+         num_envs++;
+     }
+-    envs = (Env*)realloc(envs, num_envs * sizeof(Env));
++    if (!vec->env_mapping_bytes) envs = (Env*)realloc(envs, num_envs * sizeof(Env));
+     int buf = 0, buf_agents = 0;
+     for (int i = 0; i < num_envs; i++) {
+         buf_agents += envs[i].num_agents;
+@@ -1695,6 +1699,11 @@
+ #ifdef MY_VEC_CLOSE
+     my_vec_close(vec->envs);
+ #endif
++    if (vec->env_mapping_bytes) {
++        puf_env_array_free(vec->envs, vec->env_mapping_bytes);
++        vec->envs = NULL;
++        vec->env_mapping_bytes = 0;
++    }
+ }
+ 
+ void vec_log(VecEnv* vec, Dict* out, int clear) {

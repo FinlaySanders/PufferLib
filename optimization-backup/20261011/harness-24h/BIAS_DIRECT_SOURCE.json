@@ -1,0 +1,7 @@
+{
+  "hypothesis": "Fast-stack trace has88.27ms/226updates in fused ReLU+bias backward. For dim>=blockSize, CTA threads have distinct columns, so shared accumulator initialization, two barriers and shared staging are redundant.",
+  "method": "Keep identical grid, per-thread FP32 accumulation order, BF16 masks/stores, and fixed-point quantization. Wide columns add their quantized value directly to global bias accumulator; narrow columns unchanged. No new precision or rounding intended.",
+  "gate": "Extract actual kernels for synthetic exactness smoke, then interleaved saved-batch GPU timing. Full pipeline only if useful timing.",
+  "literal_launch_sites_replaced": 13,
+  "sha256": "47c9bdd7f64ee7905efb01ef52c1065ba6d84c8420d46ad4f186c9e82f36a3bb"
+}

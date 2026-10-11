@@ -1,0 +1,101 @@
+--- ocean/nethack/nethack.cu
++++ ocean/nethack/nethack.cu
+@@ -1757,6 +1757,35 @@
+     return (int)g;
+ }
+ 
++#include "pool_bwd.cuh"
++
++template<int N, int PAD, int OFF, int DIM>
++static void nh_entity_pool_backward(precision_t* dv, const precision_t* gc,
++        const float* am, const float* gid, const precision_t* out,
++        long long* bias, float eps, int B, cudaStream_t stream) {
++    static int mode = getenv("NH_POOL_BWD") ? atoi(getenv("NH_POOL_BWD")) : 0;
++    assert(mode >= 0 && mode <= 2);
++    int64_t total = (int64_t)B * N * DIM;
++    int bias_grid = nh_colsum_grid(total, DIM);
++#ifndef NH_ENT_LINPOOL
++    if (NH_MV == 64 && DIM == 64 && mode == 2) {
++        pool_dv_relu_bias<N,PAD,OFF><<<bias_grid, BLOCK_SIZE, DIM * sizeof(long long), stream>>>(
++            dv, gc, am, gid, eps, B, out, bias);
++        return;
++    }
++    if (NH_MV == 64 && DIM == 64 && mode == 1) {
++        pool_dv_specialized<N,PAD,OFF><<<grid_size(total), BLOCK_SIZE, 0, stream>>>(
++            dv, gc, am, gid, eps, B);
++    } else
++#endif
++    {
++        nh_min_dv_kernel<<<grid_size(total), BLOCK_SIZE, 0, stream>>>(
++            dv, gc, am, gid, eps, N, PAD, OFF, B);
++    }
++    NH_ENT_LAST_BWD<<<bias_grid, BLOCK_SIZE, DIM * sizeof(long long), stream>>>(
++        dv, out, bias, total, DIM);
++}
++
+ static void nh_relu_bias_backward(precision_t* grad, const precision_t* out,
+     long long* bias_acc, int64_t total, int dim, cudaStream_t stream) {
+     static thread_local int direct = -1;
+@@ -2422,12 +2451,9 @@
+     // (mirrors the max-bwd's write-all contract); wield readout adds next.
+     cudaMemsetAsync(a->mv1b_acc.data, 0, NH_MV * sizeof(long long), stream);
+     cudaMemsetAsync(a->mv2b_acc.data, 0, NH_MV * sizeof(long long), stream);
+-    nh_min_dv_kernel<<<grid_size((int64_t)B * NH_INV * NH_MV), BLOCK_SIZE, 0, stream>>>(
++    nh_entity_pool_backward<NH_INV, NH_PAD_GLYPH, NH_MINV_OFF, NH_MV>(
+         a->mdv.data, grad_concat.data, a->mvmax.data, a->inv_idx.data,
+-        0.2f, NH_INV, NH_PAD_GLYPH, NH_MINV_OFF, B);
+-    NH_ENT_LAST_BWD<<<nh_colsum_grid((int64_t)B * NH_INV * NH_MV, NH_MV), BLOCK_SIZE, NH_MV * sizeof(long long), stream>>>(
+-        a->mdv.data, a->mvv.data, (long long*)a->mv2b_acc.data,
+-        (int64_t)B * NH_INV * NH_MV, NH_MV);
++        a->mvv.data, (long long*)a->mv2b_acc.data, 0.2f, B, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_MV), BLOCK_SIZE, 0, stream>>>(
+         a->mv2_bgrad.data, (long long*)a->mv2b_acc.data, NH_MV);
+     { Prec dvf = {.data = a->mdv.data, .shape = {B * NH_INV, NH_MV}};
+@@ -2535,14 +2561,11 @@
+     cudaMemsetAsync(a->dE_i.data, 0, (size_t)NH_GLYPH_VOCAB * NH_EMBED_DIM * sizeof(long long), stream);
+     // spell block backward: dv (sum+max routing) -> MLP chain -> trunk dkeys
+     // staged into spk_dkeys, then pointer grads added + key relu gate.
+-    nh_min_dv_kernel<<<grid_size((int64_t)B * NH_SPELL_SLOTS * NH_SPM), BLOCK_SIZE, 0, stream>>>(
+-        a->spdv.data, grad_concat.data, a->spvmax.data, a->spell_idx.data,
+-        0.25f, NH_SPELL_SLOTS, -1, NH_SPELL_CONCAT_OFF, B);
+     cudaMemsetAsync(a->spm1b_acc.data, 0, NH_SPM * sizeof(long long), stream);
+     cudaMemsetAsync(a->spm2b_acc.data, 0, NH_SPM * sizeof(long long), stream);
+-    NH_ENT_LAST_BWD<<<nh_colsum_grid((int64_t)B * NH_SPELL_SLOTS * NH_SPM, NH_SPM), BLOCK_SIZE, NH_SPM * sizeof(long long), stream>>>(
+-        a->spdv.data, a->spv.data, (long long*)a->spm2b_acc.data,
+-        (int64_t)B * NH_SPELL_SLOTS * NH_SPM, NH_SPM);
++    nh_entity_pool_backward<NH_SPELL_SLOTS, -1, NH_SPELL_CONCAT_OFF, NH_SPM>(
++        a->spdv.data, grad_concat.data, a->spvmax.data, a->spell_idx.data,
++        a->spv.data, (long long*)a->spm2b_acc.data, 0.25f, B, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_SPM), BLOCK_SIZE, 0, stream>>>(
+         a->spm2_bgrad.data, (long long*)a->spm2b_acc.data, NH_SPM);
+     { Prec dvf = {.data = a->spdv.data, .shape = {B * NH_SPELL_SLOTS, NH_SPM}};
+@@ -2576,12 +2599,9 @@
+     cudaMemsetAsync(a->mrb_acc.data, 0, NH_INV_HID * sizeof(long long), stream);
+     cudaMemsetAsync(a->mm1b_acc.data, 0, NH_MV * sizeof(long long), stream);
+     cudaMemsetAsync(a->mm2b_acc.data, 0, NH_MV * sizeof(long long), stream);
+-    nh_min_dv_kernel<<<grid_size((int64_t)B * NH_LABK * NH_MV), BLOCK_SIZE, 0, stream>>>(
++    nh_entity_pool_backward<NH_LABK, -1, NH_MLM_OFF, NH_MV>(
+         a->mdvm.data, grad_concat.data, a->mvmaxm.data, a->lm_gid.data,
+-        0.25f, NH_LABK, -1, NH_MLM_OFF, B);
+-    NH_ENT_LAST_BWD<<<nh_colsum_grid((int64_t)B * NH_LABK * NH_MV, NH_MV), BLOCK_SIZE, NH_MV * sizeof(long long), stream>>>(
+-        a->mdvm.data, a->mvm.data, (long long*)a->mm2b_acc.data,
+-        (int64_t)B * NH_LABK * NH_MV, NH_MV);
++        a->mvm.data, (long long*)a->mm2b_acc.data, 0.25f, B, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_MV), BLOCK_SIZE, 0, stream>>>(
+         a->mm2_bgrad.data, (long long*)a->mm2b_acc.data, NH_MV);
+     { Prec dvf = {.data = a->mdvm.data, .shape = {B * NH_LABK, NH_MV}};
+@@ -2614,12 +2634,9 @@
+     cudaMemsetAsync(a->irb_acc.data, 0, NH_INV_HID * sizeof(long long), stream);
+     cudaMemsetAsync(a->im1b_acc.data, 0, NH_MV * sizeof(long long), stream);
+     cudaMemsetAsync(a->im2b_acc.data, 0, NH_MV * sizeof(long long), stream);
+-    nh_min_dv_kernel<<<grid_size((int64_t)B * NH_LABK * NH_MV), BLOCK_SIZE, 0, stream>>>(
++    nh_entity_pool_backward<NH_LABK, -1, NH_MLI_OFF, NH_MV>(
+         a->mdvi.data, grad_concat.data, a->mvmaxi.data, a->li_gid.data,
+-        0.25f, NH_LABK, -1, NH_MLI_OFF, B);
+-    NH_ENT_LAST_BWD<<<nh_colsum_grid((int64_t)B * NH_LABK * NH_MV, NH_MV), BLOCK_SIZE, NH_MV * sizeof(long long), stream>>>(
+-        a->mdvi.data, a->mvi.data, (long long*)a->im2b_acc.data,
+-        (int64_t)B * NH_LABK * NH_MV, NH_MV);
++        a->mvi.data, (long long*)a->im2b_acc.data, 0.25f, B, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_MV), BLOCK_SIZE, 0, stream>>>(
+         a->im2_bgrad.data, (long long*)a->im2b_acc.data, NH_MV);
+     { Prec dvf = {.data = a->mdvi.data, .shape = {B * NH_LABK, NH_MV}};

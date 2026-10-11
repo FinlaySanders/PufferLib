@@ -1,0 +1,71 @@
+[
+  {
+    "label": "rec_fused_inference_base_a",
+    "kind": "inference",
+    "binary": "rec_fused_v30",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_FUSED_RECURRENT": 0
+    },
+    "args": [
+      "--trials=5"
+    ]
+  },
+  {
+    "label": "rec_fused_inference_fused",
+    "kind": "inference",
+    "binary": "rec_fused_v30",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_FUSED_RECURRENT": 1
+    },
+    "args": [
+      "--trials=5"
+    ]
+  },
+  {
+    "label": "rec_fused_inference_base_b",
+    "kind": "inference",
+    "binary": "rec_fused_v30",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_FUSED_RECURRENT": 0
+    },
+    "args": [
+      "--trials=5"
+    ]
+  }
+]

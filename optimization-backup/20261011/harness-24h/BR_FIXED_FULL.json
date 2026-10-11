@@ -1,0 +1,54 @@
+[
+  {
+    "kind": "full",
+    "label": "br_fixed_full_base_a",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 0
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "br_fixed_full_infer",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "br_fixed_full_train",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 2
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "br_fixed_full_base_b",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 0
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

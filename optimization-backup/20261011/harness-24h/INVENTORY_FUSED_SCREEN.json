@@ -1,0 +1,176 @@
+{
+  "control_us": 17.839599959552288,
+  "control_drift_percent": -7.060193222193067,
+  "rows": [
+    {
+      "index": 0,
+      "config": null,
+      "microseconds": 18.492399528622627,
+      "trials": [
+        18.511999398469925,
+        18.49599927663803,
+        18.479999154806137,
+        18.479999154806137,
+        18.494000658392906
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 3.162398934364319e-05,
+      "gain_percent": -3.5300966110965337
+    },
+    {
+      "index": 1,
+      "config": [
+        4,
+        1,
+        false
+      ],
+      "microseconds": 6.817900016903877,
+      "trials": [
+        6.84799998998642,
+        6.812999956309795,
+        6.812499836087227,
+        6.816000211983919,
+        6.800000090152025
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 0.4857468008995056,
+      "gain_percent": 161.65828063365396
+    },
+    {
+      "index": 2,
+      "config": [
+        4,
+        2,
+        false
+      ],
+      "microseconds": 6.792199984192848,
+      "trials": [
+        6.7980000749230385,
+        6.783999968320131,
+        6.800000090152025,
+        6.783999968320131,
+        6.794999819248915
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 0.14967691618949175,
+      "gain_percent": 162.64833192587832
+    },
+    {
+      "index": 3,
+      "config": [
+        8,
+        1,
+        false
+      ],
+      "microseconds": 11.019499972462654,
+      "trials": [
+        11.04000024497509,
+        11.018499732017517,
+        10.991999879479408,
+        11.022999882698059,
+        11.024000123143196
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 0.150781674310565,
+      "gain_percent": 61.89119292284428
+    },
+    {
+      "index": 4,
+      "config": [
+        4,
+        1,
+        true
+      ],
+      "microseconds": 8.40659998357296,
+      "trials": [
+        8.410000242292881,
+        8.39999970048666,
+        8.39999970048666,
+        8.394000120460987,
+        8.429000154137611
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 0.169182107783854,
+      "gain_percent": 112.2094544097735
+    },
+    {
+      "index": 5,
+      "config": [
+        8,
+        2,
+        false
+      ],
+      "microseconds": 11.013600043952465,
+      "trials": [
+        11.024000123143196,
+        11.008000001311302,
+        11.020000092685223,
+        11.008000001311302,
+        11.008000001311302
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 0.15087769739329815,
+      "gain_percent": 61.97791719654791
+    },
+    {
+      "index": 6,
+      "config": null,
+      "microseconds": 17.18680039048195,
+      "trials": [
+        17.16800034046173,
+        17.184000462293625,
+        17.184000462293625,
+        17.198000103235245,
+        17.20000058412552
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 6.611831486225128e-05,
+      "gain_percent": 3.7982611902088514
+    }
+  ],
+  "source_sha256": "d295a0fd01226051b93e7d81b25a6efea2814a5eae7926e90acfbb5f92248e79",
+  "reference_sha256": "1ed3052ecc17a9e51fdb4c0cefaabe6a6fd6a0aaa0f87adb2f901d64f4668c1b",
+  "scope": "Inventory 16->64->64 bias/ReLU plus masked sum/max; 512 games,55slots. Baseline uses current inference cuBLASLt fused bias/ReLU and exact extracted pool. Pointer keys untouched. Synthetic inputs; reduction/order differences quantified. No training claim."
+}

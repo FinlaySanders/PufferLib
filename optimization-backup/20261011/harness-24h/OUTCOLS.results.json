@@ -1,0 +1,296 @@
+[
+  {
+    "profile": null,
+    "label": "inference_micro_smoke",
+    "kind": "inference",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 3.037165880203247,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 0.397076011,
+        "model_ms": 0.397076011
+      },
+      {
+        "trial": -1,
+        "milliseconds": 0.39762786,
+        "model_ms": 0.39762786
+      },
+      {
+        "trial": 0,
+        "milliseconds": 0.398019135,
+        "model_ms": 0.398019135
+      },
+      {
+        "trial": 1,
+        "milliseconds": 0.398202389,
+        "model_ms": 0.398202389
+      },
+      {
+        "trial": 2,
+        "milliseconds": 0.397859991,
+        "model_ms": 0.397859991
+      },
+      {
+        "trial": 3,
+        "milliseconds": 0.398266762,
+        "model_ms": 0.398266762
+      }
+    ],
+    "mean_ms": 0.39808706925000004
+  },
+  {
+    "profile": null,
+    "label": "outcols_base_a",
+    "kind": "time",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 10.026772260665894,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 1153.001472,
+        "model_ms": 1149.105152
+      },
+      {
+        "trial": -1,
+        "milliseconds": 1150.440448,
+        "model_ms": 1146.537984
+      },
+      {
+        "trial": 0,
+        "milliseconds": 1152.152576,
+        "model_ms": 1148.24704
+      },
+      {
+        "trial": 1,
+        "milliseconds": 1153.782784,
+        "model_ms": 1149.874176
+      },
+      {
+        "trial": 2,
+        "milliseconds": 1154.105344,
+        "model_ms": 1150.201856
+      },
+      {
+        "trial": 3,
+        "milliseconds": 1154.14016,
+        "model_ms": 1150.22336
+      }
+    ],
+    "mean_ms": 1153.545216
+  },
+  {
+    "profile": null,
+    "label": "outcols_outplace",
+    "kind": "time",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 10.02539873123169,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 1130.985472,
+        "model_ms": 1127.0912
+      },
+      {
+        "trial": -1,
+        "milliseconds": 1130.384384,
+        "model_ms": 1126.479872
+      },
+      {
+        "trial": 0,
+        "milliseconds": 1130.60864,
+        "model_ms": 1126.700032
+      },
+      {
+        "trial": 1,
+        "milliseconds": 1130.5728,
+        "model_ms": 1126.667264
+      },
+      {
+        "trial": 2,
+        "milliseconds": 1130.514432,
+        "model_ms": 1126.605824
+      },
+      {
+        "trial": 3,
+        "milliseconds": 1130.30144,
+        "model_ms": 1126.393856
+      }
+    ],
+    "mean_ms": 1130.4993279999999
+  },
+  {
+    "profile": null,
+    "label": "outcols_cols128",
+    "kind": "time",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 10.024888038635254,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 1193.558016,
+        "model_ms": 1189.664768
+      },
+      {
+        "trial": -1,
+        "milliseconds": 1192.367104,
+        "model_ms": 1188.461568
+      },
+      {
+        "trial": 0,
+        "milliseconds": 1191.857152,
+        "model_ms": 1187.9424
+      },
+      {
+        "trial": 1,
+        "milliseconds": 1192.050688,
+        "model_ms": 1188.14208
+      },
+      {
+        "trial": 2,
+        "milliseconds": 1192.474624,
+        "model_ms": 1188.56192
+      },
+      {
+        "trial": 3,
+        "milliseconds": 1192.00768,
+        "model_ms": 1188.097024
+      }
+    ],
+    "mean_ms": 1192.097536
+  },
+  {
+    "profile": null,
+    "label": "outcols_cols256",
+    "kind": "time",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 10.037227630615234,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 1162.733568,
+        "model_ms": 1158.84032
+      },
+      {
+        "trial": -1,
+        "milliseconds": 1161.27232,
+        "model_ms": 1157.372928
+      },
+      {
+        "trial": 0,
+        "milliseconds": 1161.157632,
+        "model_ms": 1157.251072
+      },
+      {
+        "trial": 1,
+        "milliseconds": 1161.423872,
+        "model_ms": 1157.510144
+      },
+      {
+        "trial": 2,
+        "milliseconds": 1161.32864,
+        "model_ms": 1157.426176
+      },
+      {
+        "trial": 3,
+        "milliseconds": 1161.281536,
+        "model_ms": 1157.372928
+      }
+    ],
+    "mean_ms": 1161.29792
+  },
+  {
+    "profile": null,
+    "label": "outcols_cols512",
+    "kind": "time",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 10.026991844177246,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 1151.159296,
+        "model_ms": 1147.271168
+      },
+      {
+        "trial": -1,
+        "milliseconds": 1149.873152,
+        "model_ms": 1145.974784
+      },
+      {
+        "trial": 0,
+        "milliseconds": 1149.810688,
+        "model_ms": 1145.9072
+      },
+      {
+        "trial": 1,
+        "milliseconds": 1149.512704,
+        "model_ms": 1145.61024
+      },
+      {
+        "trial": 2,
+        "milliseconds": 1150.23872,
+        "model_ms": 1146.338304
+      },
+      {
+        "trial": 3,
+        "milliseconds": 1149.580288,
+        "model_ms": 1145.674752
+      }
+    ],
+    "mean_ms": 1149.7856000000002
+  },
+  {
+    "profile": null,
+    "label": "outcols_base_b",
+    "kind": "time",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 10.0277099609375,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 1155.585024,
+        "model_ms": 1151.6928
+      },
+      {
+        "trial": -1,
+        "milliseconds": 1153.862656,
+        "model_ms": 1149.955072
+      },
+      {
+        "trial": 0,
+        "milliseconds": 1153.646592,
+        "model_ms": 1149.740032
+      },
+      {
+        "trial": 1,
+        "milliseconds": 1153.898496,
+        "model_ms": 1149.993984
+      },
+      {
+        "trial": 2,
+        "milliseconds": 1153.864704,
+        "model_ms": 1149.956096
+      },
+      {
+        "trial": 3,
+        "milliseconds": 1154.056192,
+        "model_ms": 1150.150656
+      }
+    ],
+    "mean_ms": 1153.866496
+  }
+]

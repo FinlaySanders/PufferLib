@@ -1,0 +1,26 @@
+[
+  {
+    "kind": "proof",
+    "label": "br_fixed_proof_base",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 0
+    },
+    "args": [
+      "--trials=1"
+    ]
+  },
+  {
+    "kind": "proof",
+    "label": "br_fixed_proof_infer",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 1
+    },
+    "args": [
+      "--trials=1"
+    ]
+  }
+]

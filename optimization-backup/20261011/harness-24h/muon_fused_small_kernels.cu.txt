@@ -1,0 +1,81 @@
+
+// Experimental BF16-only small-matrix Newton-Schulz fusion. Each CTA owns
+// one complete matrix and preserves every BF16 intermediate and all5steps.
+#include <mma.h>
+#include <type_traits>
+struct MuonFusedDesc { long offset; int R, C; };
+__device__ __constant__ float muon_fused_coeffs[5][3] = {
+    {4.0848f,-6.8946f,2.9270f}, {3.9505f,-6.3029f,2.6377f},
+    {3.7418f,-5.5913f,2.3037f}, {2.8769f,-3.1427f,1.2046f},
+    {2.8366f,-3.0525f,1.2012f}
+};
+template<bool TRANS_B>
+__device__ void muon_small_mm(const __nv_bfloat16* A,
+        const __nv_bfloat16* B, __nv_bfloat16* C,
+        const __nv_bfloat16* add, int M, int N, int K,
+        float alpha, float beta, float* scratch) {
+    using namespace nvcuda;
+    int warp=threadIdx.x/32, lane=threadIdx.x%32;
+    int tiles=(M/16)*(N/16);
+    for(int tile=warp;tile<tiles;tile+=blockDim.x/32) {
+        int row=tile/(N/16)*16, col=tile%(N/16)*16;
+        wmma::fragment<wmma::matrix_a,16,16,16,__nv_bfloat16,wmma::row_major> a;
+        wmma::fragment<wmma::accumulator,16,16,16,float> acc;
+        wmma::fill_fragment(acc,0.0f);
+        for(int k=0;k<K;k+=16) {
+            wmma::load_matrix_sync(a,A+row*64+k,64);
+            if constexpr(TRANS_B) {
+                wmma::fragment<wmma::matrix_b,16,16,16,__nv_bfloat16,wmma::col_major> b;
+                wmma::load_matrix_sync(b,B+col*64+k,64);
+                wmma::mma_sync(acc,a,b,acc);
+            } else {
+                wmma::fragment<wmma::matrix_b,16,16,16,__nv_bfloat16,wmma::row_major> b;
+                wmma::load_matrix_sync(b,B+k*64+col,64);
+                wmma::mma_sync(acc,a,b,acc);
+            }
+        }
+        float* out=scratch+warp*256;
+        wmma::store_matrix_sync(out,acc,16,wmma::mem_row_major);
+        __syncwarp();
+        for(int j=lane;j<256;j+=32) {
+            int off=(row+j/16)*64+col+j%16;
+            float value=alpha*out[j];
+            if(add) value+=beta*__bfloat162float(add[off]);
+            C[off]=__float2bfloat16(value);
+        }
+        __syncwarp();
+    }
+    __syncthreads();
+}
+__global__ void muon_fused_small(__nv_bfloat16* grads,const MuonFusedDesc* desc) {
+    MuonFusedDesc d=desc[blockIdx.x];
+    int M=min(d.R,d.C),N=max(d.R,d.C);
+    int PM=(M+15)/16*16,PN=(N+15)/16*16;
+    __shared__ __align__(32) __nv_bfloat16 sm[4*64*64];
+    __shared__ __align__(32) float scratch[8*256];
+    __nv_bfloat16 *x=sm,*y=sm+4096,*gram=sm+8192,*gram2=sm+12288;
+    for(int off=threadIdx.x;off<4096;off+=blockDim.x) {
+        int row=off/64,col=off%64;
+        float value=0.0f;
+        if(row<M && col<N) {
+            int index=d.R>d.C ? col*d.C+row : row*d.C+col;
+            value=__bfloat162float(grads[d.offset+index]);
+        }
+        x[off]=__float2bfloat16(value);
+    }
+    __syncthreads();
+    for(int step=0;step<5;step++) {
+        muon_small_mm<true>(x,x,gram,NULL,PM,PM,PN,1.0f,0.0f,scratch);
+        muon_small_mm<false>(gram,gram,gram2,gram,PM,PM,PM,
+            muon_fused_coeffs[step][2],muon_fused_coeffs[step][1],scratch);
+        muon_small_mm<false>(gram2,x,y,x,PM,PN,PM,
+            1.0f,muon_fused_coeffs[step][0],scratch);
+        __nv_bfloat16* tmp=x;x=y;y=tmp;
+    }
+    float scale=sqrtf(fmaxf(1.0f,(float)d.R/(float)d.C));
+    for(int i=threadIdx.x;i<d.R*d.C;i+=blockDim.x) {
+        int row=i/d.C,col=i%d.C;
+        int off=d.R>d.C ? col*64+row : row*64+col;
+        grads[d.offset+i]=__float2bfloat16(scale*__bfloat162float(x[off]));
+    }
+}

@@ -1,0 +1,95 @@
+--- before/src/env_pool.h
++++ after/src/env_pool.h
+@@ -9,11 +9,31 @@
+ #include <string.h>
+ 
+ typedef struct {
++    double cost;
++    int offset;
++} EPTaskCost;
++
++static double ep_task_clock() {
++    struct timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return ts.tv_sec + ts.tv_nsec * 1e-9;
++}
++
++static int ep_cost_compare(const void* a, const void* b) {
++    const EPTaskCost* x = (const EPTaskCost*)a;
++    const EPTaskCost* y = (const EPTaskCost*)b;
++    if (x->cost != y->cost) return x->cost > y->cost ? -1 : 1;
++    return (x->offset > y->offset) - (x->offset < y->offset);
++}
++
++typedef struct {
+     pthread_mutex_t mu;
+     pthread_cond_t quiet;
+     int active, readers, start, count, done;
+     unsigned long generation;
+     int* next;
++    EPTaskCost* tasks;
++    int task_count;
+ } EPRegion;
+ typedef struct {
+     double claim_wall, tail_wall, drain_wall;
+@@ -34,7 +54,7 @@
+ typedef struct { EnvPool* pool; int id; } EPWorker;
+ struct EnvPool {
+     int workers, buffers, stop, buffer_focus, buffer_fair;
+-    int sleep_tail, check_claim, buffer_lead, batch_done;
++    int sleep_tail, check_claim, buffer_lead, batch_done, cost_order;
+     unsigned long epoch;
+     pthread_mutex_t mu;
+     pthread_cond_t ready;
+@@ -65,7 +85,15 @@
+             int n = __atomic_fetch_add(&r->next[home * 16], 1, __ATOMIC_RELAXED);
+             int offset = home + n * p->workers;
+             if (offset >= r->count) break;
+-            p->step(p->context, r->start + offset);
++            if (p->cost_order) {
++                EPTaskCost* task = &r->tasks[offset];
++                double begin = ep_task_clock();
++                p->step(p->context, r->start + task->offset);
++                double elapsed = ep_task_clock() - begin;
++                task->cost = task->cost ? 0.875 * task->cost + 0.125 * elapsed : elapsed;
++            } else {
++                p->step(p->context, r->start + offset);
++            }
+             worked++;
+             if (!p->batch_done) ep_completed(p, r, 1);
+         }
+@@ -158,6 +186,8 @@
+     p->sleep_tail = getenv("PUF_POOL_SLEEP") != NULL;
+     p->check_claim = getenv("PUF_POOL_CHECK_CLAIM") != NULL;
+     p->batch_done = getenv("PUF_POOL_DONE_BATCH") != NULL;
++    p->cost_order = getenv("PUF_POOL_COST") ? atoi(getenv("PUF_POOL_COST")) : 0;
++    assert(p->cost_order >= 0 && p->cost_order <= 2);
+     p->workers = workers; p->buffers = buffers; p->step = step; p->context = context;
+     if (getenv("PUF_POOL_TIMING")) {
+         assert(sizeof(EPTiming) == 64);
+@@ -191,6 +221,17 @@
+     if (p->timing) ep_clocks(&w0, &c0);
+     pthread_mutex_lock(&r->mu);
+     assert(!r->active && !r->readers);
++    if (p->cost_order) {
++        if (r->task_count != count) {
++            free(r->tasks);
++            r->tasks = (EPTaskCost*)calloc(count, sizeof(EPTaskCost));
++            assert(r->tasks || !count);
++            r->task_count = count;
++            for (int i = 0; i < count; i++) r->tasks[i].offset = i;
++        }
++        if (p->cost_order == 2)
++            qsort(r->tasks, count, sizeof(EPTaskCost), ep_cost_compare);
++    }
+     r->start = start; r->count = count; r->generation++;
+     __atomic_store_n(&r->done, 0, __ATOMIC_RELAXED);
+     for (int w = 0; w < p->workers; w++) r->next[w * 16] = 0;
+@@ -239,6 +280,7 @@
+         assert(!p->region[b].active && !p->region[b].readers);
+         pthread_mutex_destroy(&p->region[b].mu);
+         pthread_cond_destroy(&p->region[b].quiet);
++        free(p->region[b].tasks);
+         free(p->region[b].next);
+     }
+     pthread_mutex_destroy(&p->mu); pthread_cond_destroy(&p->ready);

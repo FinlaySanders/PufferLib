@@ -1,0 +1,360 @@
+{
+  "source": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/source",
+  "fields": [
+    "oc_weight",
+    "oc_cost",
+    "oc_wsdam",
+    "oc_wldam",
+    "oc_subtyp",
+    "oc_skill",
+    "oc_armcat",
+    "oc_class",
+    "oc_nutrition",
+    "oc_delay",
+    "oc_magic",
+    "oc_charged",
+    "oc_oprop",
+    "oc_big",
+    "oc_bimanual",
+    "oc_bulky",
+    "oc_merge",
+    "oc_uses_known",
+    "oc_unique",
+    "oc_nowish",
+    "oc_oc1",
+    "oc_oc2",
+    "oc_hitbon",
+    "oc_level",
+    "a_ac",
+    "a_can"
+  ],
+  "files": {
+    "include/hack.h": {
+      "count": 2,
+      "sha256": "70bc59ba74f024add81d86eaa8f841295a43e5b9821d4aa10fa88f3c27d5c9b7"
+    },
+    "include/obj.h": {
+      "count": 31,
+      "sha256": "12673e8c4fe64db06432c2b9ff71e49e665091cd17af695441b1afe25d2bd866"
+    },
+    "src/apply.c": {
+      "count": 1,
+      "sha256": "d287d344dfa94abdaa1b919b8e1f3e599698562aace9123f1c788f0f9b9b28f6"
+    },
+    "src/artifact.c": {
+      "count": 6,
+      "sha256": "9d008b9f7370f2853aac01e29ce8ca86710f8f05c82ee4af6a9ad39e3c48933a"
+    },
+    "src/bones.c": {
+      "count": 1,
+      "sha256": "983f2c13e0653abb4b678a377f8a76d9210adf028759e46c30c90123141bc8d1"
+    },
+    "src/cmd.c": {
+      "count": 1,
+      "sha256": "41514282fd0ef56c5e51e9aaaedb214753b48004088740ce7c1719ea7245a6c4"
+    },
+    "src/detect.c": {
+      "count": 4,
+      "sha256": "54efbba9e217a716b73158db8ac46dc54625c333d336721426011fb6f44d2cb6"
+    },
+    "src/do_name.c": {
+      "count": 2,
+      "sha256": "0cf19aa3e2476d970feeddae5c66dd3ff3f72a0e1a2994b0267eb51b6827f06b"
+    },
+    "src/do_wear.c": {
+      "count": 17,
+      "sha256": "ae7bcccab7ff79be09fcb0d85925d388d2c0f501bcd2f4a30522018cf2d5a114"
+    },
+    "src/dogmove.c": {
+      "count": 3,
+      "sha256": "4f49f6fa252d6f0dd053dc69a557af9bbc8c7ec6076f4e067c8cac9c835a53fa"
+    },
+    "src/dokick.c": {
+      "count": 2,
+      "sha256": "7099fa0a7e4a26435d759c1fddd4e61e46b3944cbe9587e9a41a0f7e03ec21ea"
+    },
+    "src/dothrow.c": {
+      "count": 7,
+      "sha256": "fe7ffaa52b18c430827fcf416b0d95f790943a493bcb58601e99183aeedc2de2"
+    },
+    "src/eat.c": {
+      "count": 12,
+      "sha256": "74debbd6313e0f7793bc93388ca1d34ce314fa539b3b5e24e9658a408b62ce53"
+    },
+    "src/end.c": {
+      "count": 2,
+      "sha256": "b2dc9df07ecd3161e33a4f40ec45992481db13ea99131e33f9fa2dc9c00570e7"
+    },
+    "src/fountain.c": {
+      "count": 1,
+      "sha256": "14d880fab1fb114d098452d9f9e022e367e43c183cbb15067af2ab3cc5850cbc"
+    },
+    "src/invent.c": {
+      "count": 7,
+      "sha256": "305d75427ea53965eceb234dbe7ca5f3d1d79b6ce02bffcbfa8d6877654e66cf"
+    },
+    "src/lock.c": {
+      "count": 4,
+      "sha256": "dba552b5bb508a164cab67c0bb79799c19cb44f19c57165cd603c3e43fb7774b"
+    },
+    "src/mapglyph.c": {
+      "count": 3,
+      "sha256": "a3fc3c4fe686cfef9818944710ca975e2cc7c68937019c65fc6d172ec8a1a8e9"
+    },
+    "src/mhitu.c": {
+      "count": 1,
+      "sha256": "d5143b1b1615456c9d64a1f7de3976e2958b245dc88e7fc65dc526647f02d64d"
+    },
+    "src/mkobj.c": {
+      "count": 15,
+      "sha256": "25808c89bc8873aeea8cf253244706cacf8512148438127f58e3156a21dcdc75"
+    },
+    "src/mon.c": {
+      "count": 3,
+      "sha256": "d831085b6986224975bca09a098497c7c0eb26f87dee0fee1e0e96981af7d311"
+    },
+    "src/mondata.c": {
+      "count": 2,
+      "sha256": "a7992bdc49111269865ffb92d353890a792574b92026e1763dae2639dd77ab5d"
+    },
+    "src/mplayer.c": {
+      "count": 1,
+      "sha256": "fdc2c64bb0fe0c9009eb528bcf64f24c14b45c012c180235f6e420d23b314e22"
+    },
+    "src/mthrowu.c": {
+      "count": 4,
+      "sha256": "cbe9e2d307751d0c0877e2d9faf7de5ec7e8f369f6207d93e5c2e694055a68cf"
+    },
+    "src/muse.c": {
+      "count": 2,
+      "sha256": "9491f32e224355e7ce46747bf2a1fbfe61a95df2d3e875fd3093ed186816be06"
+    },
+    "src/music.c": {
+      "count": 1,
+      "sha256": "0ebe1f60fa6782a0a2c78b52b5f35b91b9afdb4b363df310ddb50e63347732c6"
+    },
+    "src/nle.c": {
+      "count": 5,
+      "sha256": "e19dcb77b2a770e56ed225ac1d45b822f5f96c2890948882534439967e2b0e39"
+    },
+    "src/o_init.c": {
+      "count": 19,
+      "sha256": "67dc57c8ae86ba8da6faa698688abc09d9b7a1efea12e9d29e233741f34b2d94"
+    },
+    "src/objnam.c": {
+      "count": 19,
+      "sha256": "ebb473c6c9ba7bf912107a60b2d4f7e64691bbd2128a5e9900e09e03832e2c3a"
+    },
+    "src/options.c": {
+      "count": 2,
+      "sha256": "4d23e3bfb77d65f9179060b5c91227b7e68e42b06f25c48ab33dc7e649b60a85"
+    },
+    "src/pickup.c": {
+      "count": 2,
+      "sha256": "329772bfe25015a803bea700e3799b19fcd14238fbc576ce8dd7b7a134e160d3"
+    },
+    "src/potion.c": {
+      "count": 3,
+      "sha256": "d3ec92b3abe5169ce1db2864c457932cd705d285228d966883be84f8bfe98f7f"
+    },
+    "src/pray.c": {
+      "count": 1,
+      "sha256": "e210fc82f8cb640a7867245fe2e7d8302c240af6f02317b6c6df38abc0ff72a9"
+    },
+    "src/read.c": {
+      "count": 7,
+      "sha256": "780dd2155b374820f4934cfe7992f24e6bedea60ce02330414ebbfbb4a756e10"
+    },
+    "src/shk.c": {
+      "count": 10,
+      "sha256": "15a5d1dbf3d7915f368afa04e8a1ed5577a378cfc741db5bfa6be0a97b2ae00d"
+    },
+    "src/shknam.c": {
+      "count": 3,
+      "sha256": "6f79dcb83b3981b2ede80e09b612f2abbaebdbd74cd43e57c901e7abd84c24e4"
+    },
+    "src/sit.c": {
+      "count": 2,
+      "sha256": "0ce94ca42ccb7952325fdff400a8b2e5160fe0f2a7b74f7349b77b7527d8c5a0"
+    },
+    "src/sp_lev.c": {
+      "count": 2,
+      "sha256": "49033463059a16e345bccb77044a305806583d994aa560d297f6e5546e56efff"
+    },
+    "src/spell.c": {
+      "count": 21,
+      "sha256": "ccae00ac5c31beef119cd47821876baba42b8a10ba844e9fb042f494d65e580d"
+    },
+    "src/steal.c": {
+      "count": 2,
+      "sha256": "a7e1d48e778c2eac688403d2f3ace11fa0188f53db8317d5d883d3d7ceb30deb"
+    },
+    "src/teleport.c": {
+      "count": 1,
+      "sha256": "aeb1ea15ae545ad55df48d239f582a9de49521a7f9d605ee5b33bf5feaf86f26"
+    },
+    "src/trap.c": {
+      "count": 2,
+      "sha256": "dadc411c7180a138d75956c478e30e40399e49bd1b1dd701440dd43fe796a01c"
+    },
+    "src/u_init.c": {
+      "count": 5,
+      "sha256": "f49b8c0295aa3a784ca9d8eb98215f2ba418403d8abeb4d6f092e0fe1e56e6b3"
+    },
+    "src/uhitm.c": {
+      "count": 1,
+      "sha256": "17a8df7cf5d6ae29eaceab75f2643f4636717530e012cdc1c2d05cd50b39702e"
+    },
+    "src/vault.c": {
+      "count": 1,
+      "sha256": "a591f44c2596afe954ee30862028186614324e885f9b5adcea90c95108a82b91"
+    },
+    "src/weapon.c": {
+      "count": 8,
+      "sha256": "4167d95a8e2f9803f751aeebf2591a93e54d06a22842d51ca297643d286893dc"
+    },
+    "src/wield.c": {
+      "count": 1,
+      "sha256": "a03fc52dcf042d4fe73d8b329351e95afdb8906c16b60a2426d5c1f0ff195699"
+    },
+    "src/worn.c": {
+      "count": 11,
+      "sha256": "f7a719c9b84808a6a2659e553ec64515381bf501bdf88d6e6babff5728860661"
+    },
+    "src/write.c": {
+      "count": 2,
+      "sha256": "9247cedc168c0e01c264e4fcacc77b3ad43a2da81adbb7e16418817a20257e45"
+    },
+    "src/zap.c": {
+      "count": 10,
+      "sha256": "51d80023824b4f396d0d4de3763ddebaf81abdc6f5bf052b98de5c8c35e54d03"
+    },
+    "sys/wince/mhmap.c": {
+      "count": 2,
+      "sha256": "1c65e9ee8d4cf6a0d66016ac0ba2ce7343faafcc4cd160cd882ffeec3811056b"
+    },
+    "util/lev_main.c": {
+      "count": 3,
+      "sha256": "5cb7513896a021d90224e1bc644a30a6f00b04deb567862fcc7cf21fec1c9804"
+    },
+    "util/makedefs.c": {
+      "count": 4,
+      "sha256": "4af4cd83f40c76ac8c03e069b7ae02e9baeab235a122d295aaf2763c01a50dc9"
+    },
+    "win/rl/winrl.cc": {
+      "count": 1,
+      "sha256": "287cb79bf8783e75b07eb121e714973656020751d4d85717cb02fb589b3f4887"
+    },
+    "win/win32/mhmap.c": {
+      "count": 2,
+      "sha256": "73d20e38bdad963aa3b0f8fb754fdedd33e07d81133af31b359f08639498f55a"
+    },
+    "include/objclass.h": {
+      "count": 0,
+      "sha256": "212d582b1c30a64e2adbd891a3aaf42c113d2958c2878de6ef2fc1c574e7a3a1"
+    }
+  },
+  "counts": {
+    "a_ac": 2,
+    "oc_skill": 49,
+    "oc_bimanual": 2,
+    "oc_armcat": 12,
+    "oc_cost": 15,
+    "oc_unique": 7,
+    "oc_class": 59,
+    "oc_oprop": 28,
+    "oc_uses_known": 9,
+    "oc_merge": 12,
+    "oc_weight": 10,
+    "oc_charged": 16,
+    "oc_delay": 16,
+    "oc_nutrition": 8,
+    "oc_bulky": 1,
+    "oc_magic": 14,
+    "oc_wldam": 3,
+    "a_can": 1,
+    "oc_big": 1,
+    "oc_wsdam": 4,
+    "oc_nowish": 1,
+    "oc_level": 16,
+    "oc_hitbon": 1
+  },
+  "examples": [
+    {
+      "file": "include/hack.h",
+      "expression": "objects[(obj)->otyp].a_ac"
+    },
+    {
+      "file": "include/hack.h",
+      "expression": "objects[(obj)->otyp].a_ac"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    },
+    {
+      "file": "include/obj.h",
+      "expression": "objects[otmp->otyp].oc_skill"
+    }
+  ],
+  "total_replacements": 287,
+  "status": "Prepared only; not applied, built or benchmarked",
+  "hypothesis": "Shared baseline metadata avoids per-game object-table reads for fields that never change, and enables constant folding for literal type indices.",
+  "exclusions": [
+    "oc_dir: WAN_NOTHING is randomized in o_init.c",
+    "oc_material, oc_color, oc_tough, oc_descr_idx: appearance shuffling",
+    "oc_name_idx, oc_uname, oc_name_known, oc_pre_discovered: naming and discovery",
+    "oc_prob: depth-dependent generation probabilities"
+  ],
+  "caveats": [
+    "Direct field-assignment audit found no writes for selected fields. Whole-table initialization and save/restore still need runtime invariant checks.",
+    "Alias access paths are intentionally not rewritten.",
+    "Regex excludes nested index brackets; this is a partial read-path prototype, not a new data layout.",
+    "Need isolated source build, property/invariant smoke and replay proof before retaining."
+  ],
+  "preparation_note": "First preparation stopped on a legacy non-UTF8 source file, before writing artifacts. Retried using lossless Latin-1 decoding/encoding for patch bytes."
+}

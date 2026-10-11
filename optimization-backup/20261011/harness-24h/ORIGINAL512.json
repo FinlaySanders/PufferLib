@@ -1,0 +1,110 @@
+[
+  {
+    "kind": "full",
+    "label": "original512_large_a",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--epochs=64",
+      "--start=24",
+      "--width=1024"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "original512_small_a",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--epochs=64",
+      "--start=24",
+      "--width=512"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "original512_small_b",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--epochs=64",
+      "--start=24",
+      "--width=512"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "original512_large_b",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--epochs=64",
+      "--start=24",
+      "--width=1024"
+    ]
+  }
+]

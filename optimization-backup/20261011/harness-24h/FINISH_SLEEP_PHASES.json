@@ -1,0 +1,151 @@
+{
+  "rows": [
+    {
+      "label": "finish_sleep_fast32_base_a",
+      "sps": 206320.86404525203,
+      "means": {
+        "complete_ms": 1253.9729714666666,
+        "model_ms": 195.8974884,
+        "env_ms": 880.8906128,
+        "copy_ms": 68.02816373333333
+      },
+      "buffer_means": {
+        "0": {
+          "complete_ms": 1260.7987720666667,
+          "model_ms": 194.0141622,
+          "env_ms": 886.8062377333333,
+          "copy_ms": 67.31620633333334
+        },
+        "1": {
+          "complete_ms": 1253.220288,
+          "model_ms": 194.77571413333334,
+          "env_ms": 878.0217123333333,
+          "copy_ms": 68.565304
+        },
+        "2": {
+          "complete_ms": 1253.2982031333333,
+          "model_ms": 196.99272866666666,
+          "env_ms": 884.9684326,
+          "copy_ms": 68.19374133333334
+        },
+        "3": {
+          "complete_ms": 1248.5746226666668,
+          "model_ms": 197.8073486,
+          "env_ms": 873.7660685333333,
+          "copy_ms": 68.03740326666667
+        }
+      }
+    },
+    {
+      "label": "finish_sleep_fast32_collector",
+      "sps": 208051.0051862401,
+      "means": {
+        "complete_ms": 1243.3511774166666,
+        "model_ms": 195.75424705,
+        "env_ms": 875.4941824,
+        "copy_ms": 67.7533841
+      },
+      "buffer_means": {
+        "0": {
+          "complete_ms": 1240.1192189333333,
+          "model_ms": 193.3174286,
+          "env_ms": 872.3357423333333,
+          "copy_ms": 67.667649
+        },
+        "1": {
+          "complete_ms": 1246.8463738666667,
+          "model_ms": 196.6587922,
+          "env_ms": 872.7349325333333,
+          "copy_ms": 67.69062373333334
+        },
+        "2": {
+          "complete_ms": 1244.8345661333333,
+          "model_ms": 195.08690193333334,
+          "env_ms": 883.8393473333333,
+          "copy_ms": 67.2698358
+        },
+        "3": {
+          "complete_ms": 1241.6045507333333,
+          "model_ms": 197.95386546666666,
+          "env_ms": 873.0667074,
+          "copy_ms": 68.38542786666667
+        }
+      }
+    },
+    {
+      "label": "finish_sleep_fast32_both",
+      "sps": 206845.36106653494,
+      "means": {
+        "complete_ms": 1251.01158625,
+        "model_ms": 196.37966263333334,
+        "env_ms": 877.2992064666666,
+        "copy_ms": 68.4977448
+      },
+      "buffer_means": {
+        "0": {
+          "complete_ms": 1255.2024365333334,
+          "model_ms": 195.60098993333332,
+          "env_ms": 881.1662027333333,
+          "copy_ms": 68.22882446666667
+        },
+        "1": {
+          "complete_ms": 1250.7951259333333,
+          "model_ms": 197.5030864,
+          "env_ms": 870.5962808666667,
+          "copy_ms": 68.98246666666667
+        },
+        "2": {
+          "complete_ms": 1249.9365013333334,
+          "model_ms": 197.5605866,
+          "env_ms": 877.5607746666667,
+          "copy_ms": 68.52926993333334
+        },
+        "3": {
+          "complete_ms": 1248.1122812,
+          "model_ms": 194.8539876,
+          "env_ms": 879.8735676,
+          "copy_ms": 68.25041813333334
+        }
+      }
+    },
+    {
+      "label": "finish_sleep_fast32_base_b",
+      "sps": 206437.6009366867,
+      "means": {
+        "complete_ms": 1254.7629635166666,
+        "model_ms": 196.16146193333333,
+        "env_ms": 884.73323465,
+        "copy_ms": 67.54979838333334
+      },
+      "buffer_means": {
+        "0": {
+          "complete_ms": 1255.7646116666667,
+          "model_ms": 197.62883106666666,
+          "env_ms": 885.5891114,
+          "copy_ms": 67.13226606666666
+        },
+        "1": {
+          "complete_ms": 1254.5159182,
+          "model_ms": 196.31517033333333,
+          "env_ms": 882.465393,
+          "copy_ms": 67.19569553333334
+        },
+        "2": {
+          "complete_ms": 1253.8585822,
+          "model_ms": 195.92628673333334,
+          "env_ms": 886.4929605333333,
+          "copy_ms": 67.7102706
+        },
+        "3": {
+          "complete_ms": 1254.912742,
+          "model_ms": 194.7755596,
+          "env_ms": 884.3854736666667,
+          "copy_ms": 68.16096133333333
+        }
+      }
+    }
+  ],
+  "limitation": "Per-buffer durations overlap; not additive pipeline walltime. Completion isrelative to rolloutstart.",
+  "superseded_by": "FINISH_SLEEP_FULL_PHASES.json",
+  "reason": "Oldderivedphasewindowusedpost-traincounter64..78insteadof65..79;SPSunchanged."
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "kind": "proof",
+    "label": "local_reduce_exact_proof",
+    "binary": "pool_embed_v10",
+    "env": {
+      "NH_EMBED_REDUCE": 4
+    }
+  },
+  {
+    "kind": "full",
+    "label": "embed_full_base_a",
+    "binary": "pool_embed_v10",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "embed_full_all",
+    "binary": "pool_embed_v10",
+    "env": {
+      "NH_EMBED_REDUCE": 7,
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "embed_full_base_b",
+    "binary": "pool_embed_v10",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

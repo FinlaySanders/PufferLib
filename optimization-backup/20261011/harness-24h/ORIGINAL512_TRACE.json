@@ -1,0 +1,113 @@
+[
+  {
+    "kind": "full",
+    "label": "original512_large_graph",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--epochs=28",
+      "--start=24",
+      "--end=26",
+      "--width=1024",
+      "--profile=graph"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "original512_small_graph",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--epochs=28",
+      "--start=24",
+      "--end=26",
+      "--width=512",
+      "--profile=graph"
+    ]
+  },
+  {
+    "kind": "capture",
+    "label": "original512_large_capture",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--epochs=26",
+      "--start=24",
+      "--width=1024"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "original512_large_gpu",
+    "binary": "attribution_v37",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_TIMING": 1,
+      "PUF_FINISH_SLEEP": 1
+    },
+    "args": [
+      "--width=1024",
+      "--trials=5"
+    ]
+  }
+]

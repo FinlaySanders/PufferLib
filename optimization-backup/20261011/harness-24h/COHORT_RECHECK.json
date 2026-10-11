@@ -1,0 +1,90 @@
+[
+  {
+    "kind": "full",
+    "label": "cohort_full_base_a",
+    "binary": "pool_embed_v10",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_two128",
+    "binary": "pool_embed_v10",
+    "env": {
+      "PUF_COHORT_BUFFERS": 2,
+      "PUF_COHORT_STEPS": 128,
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_two8",
+    "binary": "pool_embed_v10",
+    "env": {
+      "PUF_COHORT_BUFFERS": 2,
+      "PUF_COHORT_STEPS": 8,
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_two128_reduce",
+    "binary": "pool_embed_v10",
+    "env": {
+      "PUF_COHORT_BUFFERS": 2,
+      "PUF_COHORT_STEPS": 128,
+      "NH_EMBED_REDUCE": 7,
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_two8_reduce",
+    "binary": "pool_embed_v10",
+    "env": {
+      "PUF_COHORT_BUFFERS": 2,
+      "PUF_COHORT_STEPS": 8,
+      "NH_EMBED_REDUCE": 7,
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_full_base_b",
+    "binary": "pool_embed_v10",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

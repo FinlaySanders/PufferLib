@@ -1,0 +1,15 @@
+{
+  "command": [
+    "nvcc",
+    "-O3",
+    "-arch=sm_89",
+    "-std=c++17",
+    "msg_shards_smoke.cu",
+    "-o",
+    "msg_shards_smoke"
+  ],
+  "seconds": 1.6948895454406738,
+  "binary_sha256": "9f92379b40fba31d3cc79473bb740733e07f40438935b8916df940da13cc9b21",
+  "source_sha256": "715f9af4804304cde9df21617bfb2a743712fbe3b735a00e6e380f07083b8fea",
+  "result": "MSG_SHARDS_SMOKE cases=64 accumulator_and_bf16_values=16777216 exact=1\n"
+}

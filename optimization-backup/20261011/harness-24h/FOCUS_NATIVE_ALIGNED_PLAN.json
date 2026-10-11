@@ -1,0 +1,19 @@
+{
+  "hypothesis": "Check focus scheduling on32workers over the same8320..10240 action range as fullpipeline measured window, before spending fulltiming on it. No game/engine/source changes. Defaults unchanged.",
+  "command": [
+    "python",
+    "native_pool/snapshot_test.py",
+    "focus32_aligned",
+    "2048",
+    "0:1920,1:1920,0:1920",
+    "--workers",
+    "32",
+    "--unpin",
+    "--warm",
+    "8320",
+    "--engine",
+    "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/build"
+  ],
+  "expected_final_obs": "b97835c62aaf388f",
+  "gate": "Useful repeatednativegain>=0.8% andexactendpoints beforeFOCUS_FAST32fullscreen"
+}

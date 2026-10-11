@@ -1,0 +1,12 @@
+--- before/nethack.cu
++++ after/nethack.cu
+@@ -2702,8 +2702,8 @@
+ static void nethack_encoder_reg_train(void* w, void* activations, Allocator* acts, Allocator* grads, int B_TT) {
+     NethackEncoderWeights* ew = (NethackEncoderWeights*)w;
+     NethackEncoderActivations* a = (NethackEncoderActivations*)activations;
++    *a = {};
+     a->training = true;
+-    *a = {};
+     a->glyph_idx = {.shape = {B_TT, NH_MGRID}};
+     a->crop_glyph = {.shape = {B_TT, NH_CGRID}};
+     a->e_eff = {.shape = {NH_GLYPH_VOCAB, NH_EMBED_DIM}};

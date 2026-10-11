@@ -1,0 +1,296 @@
+[
+  {
+    "profile": null,
+    "label": "horizon_sleep_smoke_base",
+    "kind": "full",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 10.040083646774292,
+    "epochs": [
+      {
+        "epoch": 0.0,
+        "seconds": 3.547572374,
+        "rollout_tail": 0.0,
+        "ppo_tail": 1.808866262,
+        "used_mib": 7802.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 1.0,
+        "seconds": 2.500475168,
+        "rollout_tail": 0.0,
+        "ppo_tail": 1.723751068,
+        "used_mib": 8840.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 2.0,
+        "seconds": 1.246327162,
+        "rollout_tail": 0.0,
+        "ppo_tail": 0.390648365,
+        "used_mib": 8840.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 3.0,
+        "seconds": 1.132759809,
+        "rollout_tail": 0.0,
+        "ppo_tail": 1.526274443,
+        "used_mib": 8840.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      }
+    ],
+    "clocks": [
+      {
+        "epoch": 0.0,
+        "time": 1791602557.8066874
+      },
+      {
+        "epoch": 1.0,
+        "time": 1791602560.312511
+      },
+      {
+        "epoch": 2.0,
+        "time": 1791602561.5623596
+      },
+      {
+        "epoch": 3.0,
+        "time": 1791602562.6979237
+      }
+    ],
+    "ages": [
+      {
+        "epoch": 0.0,
+        "steps": 262144.0,
+        "seconds": 3.547572374,
+        "mean_turn": 1743.69,
+        "max_turn": 2838.0,
+        "over1k": 1940.0,
+        "over10k": 0.0,
+        "depth8": 0.0,
+        "envs": 2048.0
+      },
+      {
+        "epoch": 1.0,
+        "steps": 524288.0,
+        "seconds": 2.500475168,
+        "mean_turn": 2759.52,
+        "max_turn": 4060.0,
+        "over1k": 2016.0,
+        "over10k": 0.0,
+        "depth8": 0.0,
+        "envs": 2048.0
+      },
+      {
+        "epoch": 2.0,
+        "steps": 786432.0,
+        "seconds": 1.246327162,
+        "mean_turn": 3777.12,
+        "max_turn": 5408.0,
+        "over1k": 2000.0,
+        "over10k": 0.0,
+        "depth8": 0.0,
+        "envs": 2048.0
+      },
+      {
+        "epoch": 3.0,
+        "steps": 1048576.0,
+        "seconds": 1.132759809,
+        "mean_turn": 3777.12,
+        "max_turn": 5408.0,
+        "over1k": 2000.0,
+        "over10k": 0.0,
+        "depth8": 0.0,
+        "envs": 2048.0
+      }
+    ],
+    "proofs": [
+      [
+        "0",
+        "0375f42a96cddeee",
+        "15552136",
+        "4"
+      ],
+      [
+        "1",
+        "ff5b905b6870fb65",
+        "15552136",
+        "4"
+      ],
+      [
+        "2",
+        "167efab0075754ff",
+        "15552136",
+        "4"
+      ],
+      [
+        "3",
+        "167efab0075754ff",
+        "15552136",
+        "4"
+      ]
+    ],
+    "sps": 139598.9771706983,
+    "initial_sha": "6541c5212ae4aae45e3c419bec2bf150883c457188117743d546cfb1d62a2718",
+    "final_sha": "6541c5212ae4aae45e3c419bec2bf150883c457188117743d546cfb1d62a2718"
+  },
+  {
+    "profile": null,
+    "label": "horizon_sleep_smoke_both",
+    "kind": "full",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 10.030575513839722,
+    "epochs": [
+      {
+        "epoch": 0.0,
+        "seconds": 3.794713974,
+        "rollout_tail": 0.0,
+        "ppo_tail": 1.901207447,
+        "used_mib": 7802.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 1.0,
+        "seconds": 2.611717463,
+        "rollout_tail": 0.0,
+        "ppo_tail": 1.846783638,
+        "used_mib": 8840.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 2.0,
+        "seconds": 1.247237921,
+        "rollout_tail": 0.0,
+        "ppo_tail": 0.39908576,
+        "used_mib": 8840.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      },
+      {
+        "epoch": 3.0,
+        "seconds": 1.132417202,
+        "rollout_tail": 0.0,
+        "ppo_tail": 1.543504,
+        "used_mib": 8840.1,
+        "batch": 262144.0,
+        "mb": 4096.0,
+        "updates": 113.0
+      }
+    ],
+    "clocks": [
+      {
+        "epoch": 0.0,
+        "time": 1791602568.1513565
+      },
+      {
+        "epoch": 1.0,
+        "time": 1791602570.7766314
+      },
+      {
+        "epoch": 2.0,
+        "time": 1791602572.0375774
+      },
+      {
+        "epoch": 3.0,
+        "time": 1791602573.1818998
+      }
+    ],
+    "ages": [
+      {
+        "epoch": 0.0,
+        "steps": 262144.0,
+        "seconds": 3.794713974,
+        "mean_turn": 1743.69,
+        "max_turn": 2838.0,
+        "over1k": 1940.0,
+        "over10k": 0.0,
+        "depth8": 0.0,
+        "envs": 2048.0
+      },
+      {
+        "epoch": 1.0,
+        "steps": 524288.0,
+        "seconds": 2.611717463,
+        "mean_turn": 2759.52,
+        "max_turn": 4060.0,
+        "over1k": 2016.0,
+        "over10k": 0.0,
+        "depth8": 0.0,
+        "envs": 2048.0
+      },
+      {
+        "epoch": 2.0,
+        "steps": 786432.0,
+        "seconds": 1.247237921,
+        "mean_turn": 3777.12,
+        "max_turn": 5408.0,
+        "over1k": 2000.0,
+        "over10k": 0.0,
+        "depth8": 0.0,
+        "envs": 2048.0
+      },
+      {
+        "epoch": 3.0,
+        "steps": 1048576.0,
+        "seconds": 1.132417202,
+        "mean_turn": 3777.12,
+        "max_turn": 5408.0,
+        "over1k": 2000.0,
+        "over10k": 0.0,
+        "depth8": 0.0,
+        "envs": 2048.0
+      }
+    ],
+    "proofs": [
+      [
+        "0",
+        "0375f42a96cddeee",
+        "15552136",
+        "4"
+      ],
+      [
+        "1",
+        "ff5b905b6870fb65",
+        "15552136",
+        "4"
+      ],
+      [
+        "2",
+        "167efab0075754ff",
+        "15552136",
+        "4"
+      ],
+      [
+        "3",
+        "167efab0075754ff",
+        "15552136",
+        "4"
+      ]
+    ],
+    "sps": 134909.4683943403,
+    "initial_sha": "6541c5212ae4aae45e3c419bec2bf150883c457188117743d546cfb1d62a2718",
+    "final_sha": "6541c5212ae4aae45e3c419bec2bf150883c457188117743d546cfb1d62a2718"
+  }
+]

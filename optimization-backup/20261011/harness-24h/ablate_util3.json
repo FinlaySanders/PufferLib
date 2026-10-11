@@ -1,0 +1,74 @@
+[
+ {
+  "label": "util3_ctrl",
+  "runner": "scale",
+  "kind": "full",
+  "binary": "incpack_v39",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=70",
+   "--start=32",
+   "--width=512",
+   "--buffers=4",
+   "--agents=2048",
+   "--horizon=128",
+   "--minibatch=4096"
+  ]
+ },
+ {
+  "label": "util3_b16c4s64",
+  "runner": "scale",
+  "kind": "full",
+  "binary": "incpack_v39",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1,
+   "PUF_COHORT_BUFFERS": 4,
+   "PUF_COHORT_STEPS": 64
+  },
+  "args": [
+   "--epochs=70",
+   "--start=32",
+   "--width=512",
+   "--buffers=16",
+   "--agents=2048",
+   "--horizon=128",
+   "--minibatch=4096"
+  ]
+ }
+]

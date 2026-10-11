@@ -1,0 +1,387 @@
+[
+ {
+  "label": "ablfast5m2048_full_a",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_all_off",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 0,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/pufferlib/vendor/fast-nle/build",
+   "NH_GRAD_PIPELINE": 0,
+   "CUDA_DEVICE_MAX_CONNECTIONS": 8
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512",
+   "--lanes=1"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_eng_stock",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/pufferlib/vendor/fast-nle/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_eng_sept14",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-perf-20260917/tight-loop/campaign2h/final",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_eng_precompact",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-locality-target-20261008/engines/persist/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_gpufast_off",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/build",
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_entity_off",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 0,
+   "NH_ENTITY_TRAIN_FUSED": 0,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_lanes1",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512",
+   "--lanes=1"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_gradpipe_off",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1,
+   "NH_GRAD_PIPELINE": 0,
+   "CUDA_DEVICE_MAX_CONNECTIONS": 8
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_prio_off",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 0,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_wait_off",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_workers16",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 16,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ },
+ {
+  "label": "ablfast5m2048_full_b",
+  "runner": "model",
+  "kind": "full",
+  "binary": "attribution_v37",
+  "env": {
+   "PUF_POOL_WORKERS": 32,
+   "PUF_INFER_PRIORITY": 1,
+   "PUF_ROLLOUT_DETAIL": 1,
+   "PUF_POOL_TIMING": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/movement_object_presence_pgo_followthrough/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512"
+  ]
+ }
+]

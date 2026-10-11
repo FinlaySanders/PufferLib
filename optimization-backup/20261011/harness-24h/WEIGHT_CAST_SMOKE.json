@@ -1,0 +1,16 @@
+{
+  "command": [
+    "nvcc",
+    "-O3",
+    "-arch=sm_89",
+    "-std=c++17",
+    "weight_cast_smoke.cu",
+    "-o",
+    "weight_cast_smoke"
+  ],
+  "seconds": 1.3859550952911377,
+  "binary_sha256": "5764b8c0e9775a75344c5a5ff754aaf9a87fe202ddb84b1983b3a795a3435f26",
+  "source_sha256": "258c9077e1113ae1be19c57dc27a537b1f89d340a531455ecba7b95c7133eaf2",
+  "result": "n=1 scale=1 mode=1 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=1 scale=1 mode=2 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=1 scale=1.73205 mode=1 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=1 scale=1.73205 mode=2 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=17 scale=1 mode=1 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=17 scale=1 mode=2 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=17 scale=1.73205 mode=1 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=17 scale=1.73205 mode=2 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=1024 scale=1 mode=1 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=1024 scale=1 mode=2 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=1024 scale=1.73205 mode=1 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=1024 scale=1.73205 mode=2 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=65539 scale=1 mode=1 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=65539 scale=1 mode=2 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=65539 scale=1.73205 mode=1 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=65539 scale=1.73205 mode=2 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=3145728 scale=1 mode=1 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=3145728 scale=1 mode=2 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=3145728 scale=1.73205 mode=1 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nn=3145728 scale=1.73205 mode=2 master_diffs=0 param_diffs=0 maxabs=0 rel_l2=0\nWEIGHT_CAST_SMOKE cases=20 triples=12849236 update_exact=1 master_finite=1\n",
+  "fix": "Preserve original dynamic weight-decay expression in combined store/update/cast; literal zero changed compiler contraction."
+}

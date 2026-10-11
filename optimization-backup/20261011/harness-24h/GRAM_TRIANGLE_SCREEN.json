@@ -1,0 +1,45 @@
+{
+  "command": [
+    "nvcc",
+    "-O3",
+    "-arch=sm_89",
+    "-std=c++17",
+    "gram_triangle_screen.cu",
+    "-lcublas",
+    "-o",
+    "gram_triangle_screen"
+  ],
+  "seconds": 1.653132677078247,
+  "binary_sha256": "e2ce62c078dd90cf5fb6750499c35d22c063c6b12abc952799780dd1af4dc415",
+  "source_sha256": "e658d0fcd02b802bd5b53e6340e3a2fd6cf21f0f4654464e98ecd962fc6f7215",
+  "control_us": 41.3429508209,
+  "control_drift_percent": -8.369895706189634,
+  "rows": [
+    {
+      "parts": 0,
+      "microseconds": 43.148701477,
+      "gain_percent": -4.184947853094812
+    },
+    {
+      "parts": 2,
+      "microseconds": 49.5876998902,
+      "gain_percent": -16.62660112801362
+    },
+    {
+      "parts": 4,
+      "microseconds": 50.1335014342,
+      "gain_percent": -17.534284184872984
+    },
+    {
+      "parts": 8,
+      "microseconds": 47.7525001526,
+      "gain_percent": -13.422437173378066
+    },
+    {
+      "parts": -1,
+      "microseconds": 39.5372001648,
+      "gain_percent": 4.567219349304508
+    }
+  ],
+  "scope": "Synthetic isolated1024x1024 Gram withK3072;includes mirror. Not trainingSPS."
+}

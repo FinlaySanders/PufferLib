@@ -1,0 +1,7 @@
+{
+  "source_sha": "08f50aec02a734806857d459875abf385a7b82a531a50df21b3b643ea03afbd7",
+  "cause": "reg_train assigned training=true then *a={} reset it to false",
+  "affected": "NH_FUSED_BR runtime-mode dispatch in isolated prototype; mode1 previously fused PPO encoder too",
+  "unaffected": "Production, clean_wait, feature-off runs including current ACTOR_CACHE_FULL",
+  "validation_required": "NH_FUSED_BR=1 saved-batch 113 updates must match feature-off exactly; fresh timing required for corrected combinations"
+}

@@ -1,0 +1,111 @@
+--- a/src/algo.cu
++++ b/src/algo.cu
+@@ -1272,6 +1272,35 @@
+ }
+ 
+ // wb = wb * (1 - lr*wd) - lr * update  (update already scaled; one call for all params)
++__global__ void muon_store_apply_cast(precision_t* __restrict__ update,
++        const precision_t* __restrict__ src, float* __restrict__ weights,
++        precision_t* __restrict__ params, const float* __restrict__ lr_ptr,
++        float scale, float wd, int n) {
++    float lr = *lr_ptr;
++    float wd_scale = 1.0f - lr * wd;
++    int i = blockIdx.x * blockDim.x + threadIdx.x;
++    if (i < n) {
++        precision_t u = from_float(scale * to_float(src[i]));
++        update[i] = u;
++        float w = weights[i] * wd_scale - lr * to_float(u);
++        weights[i] = w;
++        params[i] = from_float(w);
++    }
++}
++
++__global__ void muon_apply_cast(float* __restrict__ weights,
++        precision_t* __restrict__ params, const precision_t* __restrict__ update,
++        const float* __restrict__ lr_ptr, float wd, int n) {
++    float lr = *lr_ptr;
++    float wd_scale = 1.0f - lr * wd;
++    int i = blockIdx.x * blockDim.x + threadIdx.x;
++    if (i < n) {
++        float w = weights[i] * wd_scale - lr * to_float(update[i]);
++        weights[i] = w;
++        params[i] = from_float(w);
++    }
++}
++
+ __global__ void muon_weight_update(float* __restrict__ wb,
+         const precision_t* __restrict__ update,
+         const float* __restrict__ lr_ptr, float wd, int n) {
+@@ -1701,7 +1730,10 @@
+ }
+ 
+ void muon_step(Muon* m, Float weights, Prec grads,
+-        float max_grad_norm, cudaStream_t stream = 0) {
++        float max_grad_norm, cudaStream_t stream = 0, precision_t* cast_params = NULL) {
++    bool apply_per_matrix = cast_params && getenv("PUF_FUSED_WEIGHT_CAST") &&
++        atoi(getenv("PUF_FUSED_WEIGHT_CAST")) == 2;
++    if (apply_per_matrix) assert(!m->fused_count && !m->batch_matrices);
+ #ifdef PUF_LT_MUON
+     g_muon_active = true;
+ #endif
+@@ -1740,6 +1772,11 @@
+         precision_t* gc_ptr = grads.data + m->offsets[_i];
+         long ne = numel(e.shape);
+         if (ndim(e.shape) < 2) {
++            if (apply_per_matrix) {
++                muon_apply_cast<<<grid_size(ne), BLOCK_SIZE, 0, main_stream>>>(
++                    weights.data + m->offsets[_i], cast_params + m->offsets[_i],
++                    gc_ptr, m->lr, 0.0f, (int)ne);
++            }
+             continue;
+         }
+ 
+@@ -1817,8 +1854,14 @@
+ #endif
+         }
+         float scale = sqrtf(fmaxf(1.0f, (float)R / (float)C));
+-        muon_store_update<<<grid_size(ne), BLOCK_SIZE, 0, stream>>>(
+-            gc_ptr, x_buf.data, scale, (int)ne);
++        if (apply_per_matrix) {
++            muon_store_apply_cast<<<grid_size(ne), BLOCK_SIZE, 0, stream>>>(
++                gc_ptr, x_buf.data, weights.data + m->offsets[_i],
++                cast_params + m->offsets[_i], m->lr, scale, 0.0f, (int)ne);
++        } else {
++            muon_store_update<<<grid_size(ne), BLOCK_SIZE, 0, stream>>>(
++                gc_ptr, x_buf.data, scale, (int)ne);
++        }
+         if(m->profile_matrices) cudaEventRecordWithFlags(m->matrix_end[_i],stream,cudaEventRecordExternal);
+     }
+ #ifdef PUF_MUON_PARALLEL
+@@ -1829,8 +1872,13 @@
+     }
+     stream = main_stream;
+ #endif
+-    muon_weight_update<<<grid_size(n_grad), BLOCK_SIZE, 0, stream>>>(
+-        weights.data, grads.data, m->lr, 0.0f, n_grad);
++    if (cast_params && !apply_per_matrix) {
++        muon_apply_cast<<<grid_size(n_grad), BLOCK_SIZE, 0, stream>>>(
++            weights.data, cast_params, grads.data, m->lr, 0.0f, n_grad);
++    } else if (!apply_per_matrix) {
++        muon_weight_update<<<grid_size(n_grad), BLOCK_SIZE, 0, stream>>>(
++            weights.data, grads.data, m->lr, 0.0f, n_grad);
++    }
+ #ifdef PUF_LT_MUON
+     g_muon_active = false;
+ #endif
+--- a/src/pufferl.cu
++++ b/src/pufferl.cu
+@@ -1932,9 +1932,11 @@
+         puf_stamp<<<1,1,0,stream>>>(phase+3);
+ #endif
+         Float update_weights = pufferl->perf_frozen ? pufferl->perf_shadow_master : primary->master_weights;
++        precision_t* cast_params = pufferl->perf_frozen ? pufferl->perf_shadow_param.data : primary->param.data;
++        bool fused_cast = USE_BF16 && getenv("PUF_FUSED_WEIGHT_CAST") && atoi(getenv("PUF_FUSED_WEIGHT_CAST"));
+         muon_step(&pufferl->muon, update_weights,
+-            pufferl->grad, hypers->max_grad_norm, stream);
+-        if (USE_BF16) {
++            pufferl->grad, hypers->max_grad_norm, stream, fused_cast ? cast_params : NULL);
++        if (USE_BF16 && !fused_cast) {
+             int n = numel(primary->param.shape);
+             cast<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
+                 pufferl->perf_frozen ? pufferl->perf_shadow_param.data : primary->param.data,

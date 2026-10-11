@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "allowed_dot_input_precisions": [
+      "tf32",
+      "tf32x3",
+      "ieee",
+      "bf16x3",
+      "bf16x6"
+    ],
+    "arch": "sm89",
+    "backend_name": "cuda",
+    "debug": false,
+    "default_dot_input_precision": "tf32",
+    "deprecated_fp8_dot_operand_dtypes": [],
+    "enable_fp_fusion": true,
+    "enable_reflect_ftz": true,
+    "extern_libs": [
+      [
+        "libdevice",
+        "/puffertank/venv/lib/python3.12/site-packages/triton/backends/nvidia/lib/libdevice.10.bc"
+      ]
+    ],
+    "global_scratch_align": 1,
+    "global_scratch_size": 0,
+    "hash": "ad6ec21a77231ac1535c9f80365d20f2f8b801f48c0056a55dd2ee98e021b508",
+    "instrumentation_mode": "",
+    "ir_override": null,
+    "launch_cooperative_grid": false,
+    "launch_pdl": false,
+    "max_num_imprecise_acc_default": 0,
+    "maxnreg": null,
+    "name": "inventory_fused",
+    "num_ctas": 1,
+    "num_stages": 2,
+    "num_warps": 4,
+    "profile_scratch_align": 1,
+    "profile_scratch_size": 0,
+    "ptx_options": null,
+    "ptx_version": null,
+    "sanitize_overflow": true,
+    "shared": 8192,
+    "supported_fp8_dtypes": [
+      "fp8e4b15",
+      "fp8e4nv",
+      "fp8e5"
+    ],
+    "target": "GPUTarget(backend='cuda', arch=89, warp_size=32)",
+    "tensordesc_meta": [],
+    "tmem_size": 0,
+    "triton_version": "3.6.0",
+    "warp_size": 32
+  },
+  "cubin_sha256": "3f2735784d69bf998a4bb5e6819da92a29c12abafaf8037cb0fb792426fcfa78",
+  "source_sha256": "d295a0fd01226051b93e7d81b25a6efea2814a5eae7926e90acfbb5f92248e79"
+}

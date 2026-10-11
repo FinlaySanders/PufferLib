@@ -1,0 +1,224 @@
+[
+  {
+    "profile": null,
+    "label": "wait_proof_base",
+    "kind": "proof",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 4.0348289012908936,
+    "trials": [
+      {
+        "trial": 0,
+        "milliseconds": 1151.707136,
+        "model_ms": 1147.815936
+      }
+    ],
+    "mean_ms": 1151.707136,
+    "state_hashes": {
+      "momentum.bin": "0d1f05a94a69cf2ea733d74ef7eb655bd28286ed7663563582c36a7228fa32c7",
+      "updates.bin": "a38a820b490bbd97363483457023b3188fdfa3ab2ae61d315febfce6c856ae7c",
+      "master.bin": "06f72c05b9f0bbfc7c72104d66326e3e3eb332c437032dc258d1f8e5d6f9395f",
+      "params.bin": "2a636a3b8d9af8b9f1ba1d795954b0fcabb0a7ad6d3592109ac226cbe9c0682e",
+      "raw_gradients.bin": "f10aac284e50b7db068ba06e0142c20b7d719ba5a91a0b1147b1f51da1fe527d"
+    }
+  },
+  {
+    "profile": null,
+    "label": "wait_proof_block",
+    "kind": "proof",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 4.024868965148926,
+    "trials": [
+      {
+        "trial": 0,
+        "milliseconds": 1151.885312,
+        "model_ms": 1147.98592
+      }
+    ],
+    "mean_ms": 1151.885312,
+    "state_hashes": {
+      "momentum.bin": "0d1f05a94a69cf2ea733d74ef7eb655bd28286ed7663563582c36a7228fa32c7",
+      "updates.bin": "a38a820b490bbd97363483457023b3188fdfa3ab2ae61d315febfce6c856ae7c",
+      "master.bin": "06f72c05b9f0bbfc7c72104d66326e3e3eb332c437032dc258d1f8e5d6f9395f",
+      "params.bin": "2a636a3b8d9af8b9f1ba1d795954b0fcabb0a7ad6d3592109ac226cbe9c0682e",
+      "raw_gradients.bin": "f10aac284e50b7db068ba06e0142c20b7d719ba5a91a0b1147b1f51da1fe527d"
+    }
+  },
+  {
+    "profile": null,
+    "label": "sym_gpu_base_a",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 10.029760599136353,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 1151.630336,
+        "model_ms": 1147.72992
+      },
+      {
+        "trial": -1,
+        "milliseconds": 1150.26944,
+        "model_ms": 1146.370048
+      },
+      {
+        "trial": 0,
+        "milliseconds": 1153.69472,
+        "model_ms": 1149.792256
+      },
+      {
+        "trial": 1,
+        "milliseconds": 1153.876992,
+        "model_ms": 1149.970432
+      },
+      {
+        "trial": 2,
+        "milliseconds": 1153.650688,
+        "model_ms": 1149.7472
+      },
+      {
+        "trial": 3,
+        "milliseconds": 1153.728512,
+        "model_ms": 1149.815808
+      }
+    ],
+    "mean_ms": 1153.737728
+  },
+  {
+    "profile": null,
+    "label": "sym_gpu_test",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 10.03027606010437,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 1158.639616,
+        "model_ms": 1154.745344
+      },
+      {
+        "trial": -1,
+        "milliseconds": 1156.996096,
+        "model_ms": 1153.094656
+      },
+      {
+        "trial": 0,
+        "milliseconds": 1157.0944,
+        "model_ms": 1153.190912
+      },
+      {
+        "trial": 1,
+        "milliseconds": 1157.26848,
+        "model_ms": 1153.357824
+      },
+      {
+        "trial": 2,
+        "milliseconds": 1157.374976,
+        "model_ms": 1153.473536
+      },
+      {
+        "trial": 3,
+        "milliseconds": 1156.968448,
+        "model_ms": 1153.056768
+      }
+    ],
+    "mean_ms": 1157.176576
+  },
+  {
+    "profile": null,
+    "label": "sym_gpu_base_b",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 10.03405475616455,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 1152.785408,
+        "model_ms": 1148.89728
+      },
+      {
+        "trial": -1,
+        "milliseconds": 1151.280128,
+        "model_ms": 1147.385856
+      },
+      {
+        "trial": 0,
+        "milliseconds": 1151.22688,
+        "model_ms": 1147.326464
+      },
+      {
+        "trial": 1,
+        "milliseconds": 1151.341568,
+        "model_ms": 1147.437056
+      },
+      {
+        "trial": 2,
+        "milliseconds": 1152.304128,
+        "model_ms": 1148.401664
+      },
+      {
+        "trial": 3,
+        "milliseconds": 1153.850368,
+        "model_ms": 1149.949952
+      }
+    ],
+    "mean_ms": 1152.180736
+  },
+  {
+    "profile": null,
+    "label": "rec_ws32_algo0",
+    "kind": "inference",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "rc": 0,
+    "wall_seconds": 3.028451919555664,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 0.401012003,
+        "model_ms": 0.401012003
+      },
+      {
+        "trial": -1,
+        "milliseconds": 0.401551992,
+        "model_ms": 0.401551992
+      },
+      {
+        "trial": 0,
+        "milliseconds": 0.401823997,
+        "model_ms": 0.401823997
+      },
+      {
+        "trial": 1,
+        "milliseconds": 0.401659995,
+        "model_ms": 0.401659995
+      },
+      {
+        "trial": 2,
+        "milliseconds": 0.401735991,
+        "model_ms": 0.401735991
+      },
+      {
+        "trial": 3,
+        "milliseconds": 0.401571989,
+        "model_ms": 0.401571989
+      }
+    ],
+    "mean_ms": 0.401697993
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "kind": "full",
+    "label": "cohort_smoke128",
+    "binary": "identity_warp_v11",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_COHORT_BUFFERS": 2,
+      "PUF_COHORT_STEPS": 128
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "cohort_smoke8",
+    "binary": "identity_warp_v11",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_COHORT_BUFFERS": 2,
+      "PUF_COHORT_STEPS": 8
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  }
+]

@@ -1,0 +1,280 @@
+{
+  "smoke": {
+    "label": "horizon_smoke",
+    "envs": 512,
+    "workers": 32,
+    "warm": 256,
+    "pinned": false,
+    "proof": false,
+    "endpoints_ok": true,
+    "wall_seconds": 1.5774965360760689,
+    "ready": {
+      "envs": "512",
+      "threads": "1",
+      "prepared": "0.320751",
+      "cut": "128",
+      "settle": "128"
+    },
+    "cases": [
+      {
+        "id": "0",
+        "focus": "0",
+        "steps": "256",
+        "resource": {
+          "env_bytes": "167968",
+          "rss_kib": "263140",
+          "minor_faults": "3487",
+          "major_faults": "0",
+          "voluntary_switches": "2831",
+          "involuntary_switches": "412",
+          "cpu_seconds": "4.531296000"
+        },
+        "result": {
+          "envs": "512",
+          "active": "512",
+          "burst": "1",
+          "workers": "32",
+          "warm": "256",
+          "steps": "256",
+          "init": "0.022714",
+          "warm_seconds": "0.517132",
+          "seconds": "0.144949",
+          "sps": "904261.96",
+          "obs": "167efab0075754ff",
+          "age": "3777.12",
+          "turns": "1085404"
+        },
+        "wall_seconds": 0.271997
+      },
+      {
+        "id": "1",
+        "focus": "20",
+        "steps": "256",
+        "resource": {
+          "env_bytes": "167968",
+          "rss_kib": "262308",
+          "minor_faults": "3571",
+          "major_faults": "0",
+          "voluntary_switches": "3931",
+          "involuntary_switches": "449",
+          "cpu_seconds": "5.216011000"
+        },
+        "result": {
+          "envs": "512",
+          "active": "512",
+          "burst": "1",
+          "workers": "32",
+          "warm": "256",
+          "steps": "256",
+          "init": "0.022714",
+          "warm_seconds": "0.865218",
+          "seconds": "0.168327",
+          "sps": "778676.27",
+          "obs": "167efab0075754ff",
+          "age": "3777.12",
+          "turns": "1085404"
+        },
+        "wall_seconds": 0.302467
+      },
+      {
+        "id": "2",
+        "focus": "21",
+        "steps": "256",
+        "resource": {
+          "env_bytes": "167968",
+          "rss_kib": "262684",
+          "minor_faults": "3554",
+          "major_faults": "0",
+          "voluntary_switches": "7930",
+          "involuntary_switches": "1173",
+          "cpu_seconds": "5.908787000"
+        },
+        "result": {
+          "envs": "512",
+          "active": "512",
+          "burst": "1",
+          "workers": "32",
+          "warm": "256",
+          "steps": "256",
+          "init": "0.022714",
+          "warm_seconds": "1.263519",
+          "seconds": "0.199552",
+          "sps": "656830.49",
+          "obs": "167efab0075754ff",
+          "age": "3777.12",
+          "turns": "1085404"
+        },
+        "wall_seconds": 0.344847
+      }
+    ]
+  },
+  "full": {
+    "label": "focus32_horizon_aligned",
+    "envs": 2048,
+    "workers": 32,
+    "warm": 8320,
+    "pinned": false,
+    "proof": false,
+    "endpoints_ok": true,
+    "wall_seconds": 128.43406517151743,
+    "ready": {
+      "envs": "2048",
+      "threads": "1",
+      "prepared": "36.696920",
+      "cut": "8192",
+      "settle": "128"
+    },
+    "cases": [
+      {
+        "id": "0",
+        "focus": "0",
+        "steps": "1920",
+        "resource": {
+          "env_bytes": "167968",
+          "rss_kib": "1259208",
+          "minor_faults": "88116",
+          "major_faults": "0",
+          "voluntary_switches": "3188",
+          "involuntary_switches": "76007",
+          "cpu_seconds": "538.692328000"
+        },
+        "result": {
+          "envs": "2048",
+          "active": "2048",
+          "burst": "1",
+          "workers": "32",
+          "warm": "8320",
+          "steps": "1920",
+          "init": "0.075604",
+          "warm_seconds": "38.460281",
+          "seconds": "16.968916",
+          "sps": "231727.23",
+          "obs": "b97835c62aaf388f",
+          "age": "29502.23",
+          "turns": "27098456"
+        },
+        "wall_seconds": 18.389841
+      },
+      {
+        "id": "1",
+        "focus": "1",
+        "steps": "1920",
+        "resource": {
+          "env_bytes": "167968",
+          "rss_kib": "1260968",
+          "minor_faults": "89307",
+          "major_faults": "0",
+          "voluntary_switches": "82056",
+          "involuntary_switches": "50672",
+          "cpu_seconds": "488.145656000"
+        },
+        "result": {
+          "envs": "2048",
+          "active": "2048",
+          "burst": "1",
+          "workers": "32",
+          "warm": "8320",
+          "steps": "1920",
+          "init": "0.075604",
+          "warm_seconds": "57.178236",
+          "seconds": "15.832165",
+          "sps": "248365.28",
+          "obs": "b97835c62aaf388f",
+          "age": "29502.23",
+          "turns": "27098456"
+        },
+        "wall_seconds": 17.257086
+      },
+      {
+        "id": "2",
+        "focus": "20",
+        "steps": "1920",
+        "resource": {
+          "env_bytes": "167968",
+          "rss_kib": "1257232",
+          "minor_faults": "87967",
+          "major_faults": "0",
+          "voluntary_switches": "4011",
+          "involuntary_switches": "73158",
+          "cpu_seconds": "538.764768000"
+        },
+        "result": {
+          "envs": "2048",
+          "active": "2048",
+          "burst": "1",
+          "workers": "32",
+          "warm": "8320",
+          "steps": "1920",
+          "init": "0.075604",
+          "warm_seconds": "74.748157",
+          "seconds": "16.967356",
+          "sps": "231748.55",
+          "obs": "b97835c62aaf388f",
+          "age": "29502.23",
+          "turns": "27098456"
+        },
+        "wall_seconds": 18.390772
+      },
+      {
+        "id": "3",
+        "focus": "21",
+        "steps": "1920",
+        "resource": {
+          "env_bytes": "167968",
+          "rss_kib": "1257464",
+          "minor_faults": "88786",
+          "major_faults": "0",
+          "voluntary_switches": "66031",
+          "involuntary_switches": "67450",
+          "cpu_seconds": "491.295974000"
+        },
+        "result": {
+          "envs": "2048",
+          "active": "2048",
+          "burst": "1",
+          "workers": "32",
+          "warm": "8320",
+          "steps": "1920",
+          "init": "0.075604",
+          "warm_seconds": "93.456610",
+          "seconds": "15.905625",
+          "sps": "247218.20",
+          "obs": "b97835c62aaf388f",
+          "age": "29502.23",
+          "turns": "27098456"
+        },
+        "wall_seconds": 17.323018
+      },
+      {
+        "id": "4",
+        "focus": "0",
+        "steps": "1920",
+        "resource": {
+          "env_bytes": "167968",
+          "rss_kib": "1256556",
+          "minor_faults": "87520",
+          "major_faults": "0",
+          "voluntary_switches": "2932",
+          "involuntary_switches": "61105",
+          "cpu_seconds": "538.829001000"
+        },
+        "result": {
+          "envs": "2048",
+          "active": "2048",
+          "burst": "1",
+          "workers": "32",
+          "warm": "8320",
+          "steps": "1920",
+          "init": "0.075604",
+          "warm_seconds": "111.110846",
+          "seconds": "16.940181",
+          "sps": "232120.30",
+          "obs": "b97835c62aaf388f",
+          "age": "29502.23",
+          "turns": "27098456"
+        },
+        "wall_seconds": 18.361496
+      }
+    ]
+  }
+}

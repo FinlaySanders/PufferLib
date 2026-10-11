@@ -1,0 +1,61 @@
+[
+  {
+    "kind": "full",
+    "label": "clean_live_base",
+    "binary": "baseline",
+    "env": {
+      "PUF_LIVE_AFTER_WARM": 1
+    },
+    "args": [
+      "--epochs=8",
+      "--start=1",
+      "--update"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "clean_live_block",
+    "binary": "clean_wait",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_LIVE_AFTER_WARM": 1
+    },
+    "args": [
+      "--epochs=8",
+      "--start=1",
+      "--update"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "clean_full_base_a",
+    "binary": "baseline",
+    "env": {},
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "clean_full_block",
+    "binary": "clean_wait",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "clean_full_base_b",
+    "binary": "baseline",
+    "env": {},
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

@@ -1,0 +1,5 @@
+#!/bin/bash
+cd /puffertank/experiments/nethack-engine-scaling-20261010/trainer_incpack/source && rm -f puffer_incpack && NVCC_EXTRA="$(cat /puffertank/experiments/nethack-24h-20261009/build_flags.txt) -DPUF_MUON_OUTPLACE -lcuda" ./build.sh nethack puffer_incpack > /puffertank/experiments/nethack-engine-scaling-20261010/trainer_incpack/build.log 2>&1 && cp puffer_incpack /puffertank/experiments/nethack-24h-20261009/binaries/incpack_v38 && echo BUILD_DONE || { echo BUILD_FAILED; grep -i -E "error|undefined" /puffertank/experiments/nethack-engine-scaling-20261010/trainer_incpack/build.log | head -5; exit 1; }
+ldd /puffertank/experiments/nethack-24h-20261009/binaries/incpack_v38 | grep -E "nethack|libcuda" 
+cd /puffertank/experiments/nethack-24h-20261009 && python3 campaign_ablate.py ablate_incpack.json; echo FULL_DONE
+cd /puffertank/experiments/nethack-engine-scaling-20261010 && ./native_screen2.sh /puffertank/experiments/nethack-compact-state-20261008/engines/incstack/build /puffertank/experiments/nethack-engine-scaling-20261010/harness_incpack/replay incstack; echo NATIVE3_DONE

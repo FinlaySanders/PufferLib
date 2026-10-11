@@ -1,0 +1,11 @@
+{
+  "before_sha256": "94afd409e11aa27f56fe1237c4f247fb55d2cefbe0d4105edeacd0823121f7a7",
+  "after_sha256": "2a9f95fbacdacdab9bf38c19267124c5b3a6bfea32c288814aa91992532583c2",
+  "hypothesis": "Overlap independent gate loads/activations inside each thread, retaining ordered state/gradient recurrences; avoid shared-tile barriers.",
+  "tiles": [
+    2,
+    4,
+    8
+  ],
+  "scope": "Isolated source, disabled by default. No precision or architecture change."
+}

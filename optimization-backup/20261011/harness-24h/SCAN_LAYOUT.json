@@ -1,0 +1,71 @@
+[
+  {
+    "label": "scan_layout_base_a",
+    "binary": "scan_tiles_v5",
+    "env": {},
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "scan_layout_tile4",
+    "binary": "scan_tiles_v5",
+    "env": {
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "scan_layout_tile8",
+    "binary": "scan_tiles_v5",
+    "env": {
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 8
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "scan_layout_tile16",
+    "binary": "scan_tiles_v5",
+    "env": {
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 16
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "scan_layout_block64",
+    "binary": "scan_tiles_v5",
+    "env": {
+      "PUF_SCAN_BLOCK": 64
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "scan_layout_block128",
+    "binary": "scan_tiles_v5",
+    "env": {
+      "PUF_SCAN_BLOCK": 128
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "scan_layout_base_b",
+    "binary": "scan_tiles_v5",
+    "env": {},
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

@@ -1,0 +1,73 @@
+  Work autonomously for 24 hours on improving end-to-end NetHack training throughput. Record the start time and deadline. Continue investigating throughout that period; a successful optimization or a null result is a milestone, not a reason to finish early.
+
+  Target: at least 1 billion environment steps/hour (~278k SPS) on the local RTX 4090 with our existing 15.55M-parameter score architecture. The current optimized mature-game benchmark is approximately 193k SPS. Maximize validated progress even if the target proves unreachable.
+
+  Start from the current best validated stack:
+  - Stream-owned cuBLAS workspaces.
+  - Retained engine optimizations and shared CPU worker pool.
+  - Existing GPU optimizations, gradient pipelining, four-stream Muon.
+  - CUDA_DEVICE_MAX_CONNECTIONS=32.
+
+  Recover the exact configuration and artifacts from:
+   /puffertank/experiments/nethack-muon-parallel-20261009/
+   /puffertank/experiments/nethack-overlap-20261009/
+   /puffertank/experiments/nethack-muon-followups-20261009/
+   /puffertank/experiments/nethack-comprehensive-20261008/
+
+  The latest batched-GEMM experiment is in:
+   /puffertank/experiments/nethack-muon-followups-20261009/relaxed_numerics/
+
+  Small-only batching was neutral overall; broad batching was about 1.2% slower despite faster isolated GPU training. Do not repeat those experiments without a specific new hypothesis.
+
+  INITIAL FOCUS
+
+  Refresh the mature-game profile on the current best stack. Investigate rollout inference, particularly the entity encoder: small matrix products, separate bias/ReLU kernels, pooling, and intermediate buffers.
+
+  Cheaper inference could improve rollout latency and reduce contention with training. Treat this as a hypothesis, not an established speedup. Distinguish execution time from scheduling delays, and identify concrete redundant work or memory traffic before implementing changes.
+
+  Then pursue the best measured opportunities across inference, training forward/backward, optimizer, transfers, scheduling and CPU simulation. Follow the evidence rather than staying attached to the initial idea.
+
+  KEEP THE LOOP TIGHT
+
+  For each candidate:
+  1. State the suspected cost, evidence, proposed change and expected benefit.
+  2. Implement it in an isolated experimental copy.
+  3. Run a basic correctness smoke check.
+  4. Use the established short benchmark to screen performance.
+  5. For promising candidates, measure the full mature rollout-and-training pipeline with fresh, interleaved controls.
+  6. Stop losing candidates immediately. Do not spend time on training checks for changes that fail the timing screen.
+  7. Run thorough correctness checks and update sanity tests only for candidates with a useful, repeatable throughput gain.
+  8. Retain validated winners, establish the new baseline, and continue.
+
+  Aim for minute-scale screens. Avoid long training runs, repeated broad test suites, unnecessary rebuilds and extensive profiling of clearly unpromising ideas. Profiling and compilation must not contaminate throughput measurements.
+
+  BENCHMARK RULES
+
+  Use the established frozen-policy mature-game workload, executing the complete training pipeline while optimizer writes go to scratch. Preserve recorded actions and observation checks so policy degradation cannot make a candidate appear faster.
+
+  Keep architecture, environment count, horizon, minibatch size, replay ratio and workload fixed for headline implementation comparisons. Report configuration experiments separately.
+
+  Measure end-to-end SPS, GPU training time, exposed rollout wait and memory use. Do not equate summed kernel durations with wall-clock shares, or assume rollout wait is exclusively CPU time.
+
+  Compare the combined retained changes directly against a fixed starting baseline. Do not multiply isolated speedups. Confirm substantial winners on an additional representative workload before recommending them as defaults.
+
+  CORRECTNESS AND SCOPE
+
+  Preserve NetHack dynamics, observations, rewards and action semantics. Use the fast-nle golden trajectories, saved-action replay and relevant fuzz checks for retained engine changes.
+
+  Floating-point rounding differences from mathematically equivalent GPU implementations are acceptable for exploration. Quantify them and check numerical stability. Do not silently change optimizer equations, precision, model size or learning hyperparameters to inflate SPS.
+
+  Keep prototypes isolated from production sources and unrelated work. Do not push, open PRs or change production defaults. Stop processes only by verified PID.
+
+  COMMUNICATION AND HANDOFF
+
+  Keep this chat updated roughly every minute during active work: what is being tested, what was learned and what happens next. Maintain a concise experiment ledger with commands, source/binary hashes, timings, correctness results, rejected ideas and retained wins.
+
+  At the deadline, stop launching experiments, safely finish or stop active tests, and provide:
+  - Net speedup over the fixed starting baseline.
+  - Contributions and implementation details of retained wins.
+  - Correctness evidence and remaining limitations.
+  - Current bottleneck and strongest next candidates.
+  - Exact artifact locations and reproduction commands.
+
+  Do not conclude early merely because several ideas fail. If genuinely blocked, explain the specific blocker rather than claiming the task is complete.

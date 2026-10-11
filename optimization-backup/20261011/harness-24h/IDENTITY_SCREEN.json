@@ -1,0 +1,60 @@
+[
+  {
+    "kind": "inference",
+    "label": "identity_infer_base_a",
+    "binary": "identity_warp_v11",
+    "env": {},
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "inference",
+    "label": "identity_infer_warp",
+    "binary": "identity_warp_v11",
+    "env": {
+      "NH_IDENTITY_WARP": 1
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "inference",
+    "label": "identity_infer_base_b",
+    "binary": "identity_warp_v11",
+    "env": {},
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "identity_train_base_a",
+    "binary": "identity_warp_v11",
+    "env": {},
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "identity_train_warp",
+    "binary": "identity_warp_v11",
+    "env": {
+      "NH_IDENTITY_WARP": 1
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "identity_train_base_b",
+    "binary": "identity_warp_v11",
+    "env": {},
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

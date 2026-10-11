@@ -1,0 +1,17 @@
+[
+  {
+    "kind": "full",
+    "label": "workers32_live_clean",
+    "binary": "clean_wait",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_LIVE_AFTER_WARM": 1,
+      "PUF_POOL_WORKERS": 32
+    },
+    "args": [
+      "--epochs=8",
+      "--start=1",
+      "--update"
+    ]
+  }
+]

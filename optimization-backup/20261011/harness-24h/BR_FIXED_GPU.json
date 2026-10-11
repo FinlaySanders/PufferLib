@@ -1,0 +1,38 @@
+[
+  {
+    "kind": "time",
+    "label": "br_fixed_gpu_base_a",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 0
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "br_fixed_gpu_train",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 2
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "br_fixed_gpu_base_b",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 0
+    },
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

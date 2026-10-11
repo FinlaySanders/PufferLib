@@ -1,0 +1,15 @@
+{
+  "command": [
+    "nvcc",
+    "-O3",
+    "-arch=sm_89",
+    "-std=c++17",
+    "projection_padding_screen.cu",
+    "-lcublas",
+    "-o",
+    "projection_padding_screen"
+  ],
+  "build_seconds": 1.0508842468261719,
+  "source_sha256": "4967beef6d26967bf34548ff555bd32686abb585207a6c5e0f2e747e53e8d395",
+  "binary_sha256": "e044e885846d21f7111987023d640f32171a72bb67d59f1143ead8663331ae09"
+}

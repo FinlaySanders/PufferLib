@@ -1,0 +1,77 @@
+[
+  {
+    "kind": "proof",
+    "label": "rank_component_rank1",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1
+    },
+    "args": [
+      "--trials=1"
+    ]
+  },
+  {
+    "kind": "proof",
+    "label": "rank_component_scan",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4
+    },
+    "args": [
+      "--trials=1"
+    ]
+  },
+  {
+    "kind": "proof",
+    "label": "rank_component_embed",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_EMBED_REDUCE": 7
+    },
+    "args": [
+      "--trials=1"
+    ]
+  },
+  {
+    "kind": "proof",
+    "label": "rank_component_fused",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 1
+    },
+    "args": [
+      "--trials=1"
+    ]
+  },
+  {
+    "kind": "proof",
+    "label": "rank_component_inventory",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1
+    },
+    "args": [
+      "--trials=1"
+    ]
+  },
+  {
+    "kind": "proof",
+    "label": "rank_component_identity",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_IDENTITY_WARP": 1
+    },
+    "args": [
+      "--trials=1"
+    ]
+  }
+]

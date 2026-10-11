@@ -1,0 +1,42 @@
+[
+  {
+    "kind": "full",
+    "label": "fused_small_full_base_a",
+    "binary": "muon_fused_v15",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "fused_small64_full",
+    "binary": "muon_fused_v15",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_MUON_FUSED_SMALL": 64
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "fused_small_full_base_b",
+    "binary": "muon_fused_v15",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

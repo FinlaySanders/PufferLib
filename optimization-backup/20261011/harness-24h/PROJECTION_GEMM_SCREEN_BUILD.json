@@ -1,0 +1,17 @@
+{
+  "command": [
+    "nvcc",
+    "-O3",
+    "-arch=sm_89",
+    "-std=c++17",
+    "projection_gemm_screen.cu",
+    "-lcublas",
+    "-lcublasLt",
+    "-o",
+    "projection_gemm_screen"
+  ],
+  "build_seconds": 1.1073575019836426,
+  "binary_sha256": "3369ebc9eb5f0f9220d1734de26c02081cafa20f98772f2b00edf5687c91a53b",
+  "source_sha256": "66b9262f9c9106b9c20bdb2c486103f54f045bc17637a157cb9725b9e579d7b5",
+  "shape_evidence": "/puffertank/experiments/nethack-muon-followups-20261009/matrix_costs.json id18 1024x1698"
+}

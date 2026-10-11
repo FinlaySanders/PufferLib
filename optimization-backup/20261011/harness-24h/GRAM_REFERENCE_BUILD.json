@@ -1,0 +1,17 @@
+{
+  "command": [
+    "nvcc",
+    "-O3",
+    "-arch=sm_89",
+    "-std=c++17",
+    "-shared",
+    "-Xcompiler",
+    "-fPIC",
+    "gram_reference.cu",
+    "-lcublas",
+    "-o",
+    "gram_reference.so"
+  ],
+  "seconds": 0.9970035552978516,
+  "sha256": "6b73f78db3324add22dc68e381b45209da24a81ea559616d475ec324714ea4c3"
+}

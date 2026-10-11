@@ -1,0 +1,117 @@
+{
+  "cases": 12,
+  "elements": 12781173,
+  "maximum_relative_l2": 0.0026594291175487668,
+  "rows": [
+    {
+      "m": 1,
+      "h": 7,
+      "mode": "dense",
+      "relative_l2": 0.0022824716030176717,
+      "max_abs": 0.0001220703125,
+      "different": 1,
+      "elements": 7
+    },
+    {
+      "m": 1,
+      "h": 7,
+      "mode": "sparse",
+      "relative_l2": 0.0,
+      "max_abs": 0.0,
+      "different": 0,
+      "elements": 7
+    },
+    {
+      "m": 1,
+      "h": 7,
+      "mode": "zero",
+      "relative_l2": 0.0,
+      "max_abs": 0.0,
+      "different": 0,
+      "elements": 7
+    },
+    {
+      "m": 17,
+      "h": 32,
+      "mode": "dense",
+      "relative_l2": 0.0024001971369879854,
+      "max_abs": 0.000244140625,
+      "different": 148,
+      "elements": 544
+    },
+    {
+      "m": 17,
+      "h": 32,
+      "mode": "sparse",
+      "relative_l2": 0.0017121631341151127,
+      "max_abs": 0.0001220703125,
+      "different": 91,
+      "elements": 544
+    },
+    {
+      "m": 17,
+      "h": 32,
+      "mode": "zero",
+      "relative_l2": 0.0,
+      "max_abs": 0.0,
+      "different": 0,
+      "elements": 544
+    },
+    {
+      "m": 128,
+      "h": 512,
+      "mode": "dense",
+      "relative_l2": 0.0026040975980653734,
+      "max_abs": 0.00048828125,
+      "different": 18452,
+      "elements": 65536
+    },
+    {
+      "m": 128,
+      "h": 512,
+      "mode": "sparse",
+      "relative_l2": 0.0017548916570468576,
+      "max_abs": 0.000244140625,
+      "different": 12717,
+      "elements": 65536
+    },
+    {
+      "m": 128,
+      "h": 512,
+      "mode": "zero",
+      "relative_l2": 0.0,
+      "max_abs": 0.0,
+      "different": 0,
+      "elements": 65536
+    },
+    {
+      "m": 4096,
+      "h": 1024,
+      "mode": "dense",
+      "relative_l2": 0.0026594291175487668,
+      "max_abs": 0.00048828125,
+      "different": 1282534,
+      "elements": 4194304
+    },
+    {
+      "m": 4096,
+      "h": 1024,
+      "mode": "sparse",
+      "relative_l2": 0.0018082277492626779,
+      "max_abs": 0.000244140625,
+      "different": 869336,
+      "elements": 4194304
+    },
+    {
+      "m": 4096,
+      "h": 1024,
+      "mode": "zero",
+      "relative_l2": 0.0,
+      "max_abs": 0.0,
+      "different": 0,
+      "elements": 4194304
+    }
+  ],
+  "reference_sha256": "4dc08ba4367d425df9ddc1a9f2412246d54f06146a6d1f375032c61f368f316c",
+  "scope": "Basic GEMM residual scale/layout smoke. BF16 intermediate rounding differs. Not an actual optimizer-state or long-term stability check. Copy before beta1 only initializes synthetic residual; no timing claim."
+}

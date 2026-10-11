@@ -1,0 +1,44 @@
+{
+  "control_sps": 205298.05400002532,
+  "control_drift_percent": -6.398599624280521,
+  "rows": [
+    {
+      "label": "liquid_full_base_a_v1",
+      "sps": 212083.23245762306,
+      "gain_percent": 3.3050378829196703,
+      "tail_ms": 152.12858506666666,
+      "memory_mib": 8290.1,
+      "early_sps": 241258.71157411026
+    },
+    {
+      "label": "liquid_full_candidate_a_v1",
+      "sps": 212087.0670107158,
+      "gain_percent": 3.306905680990835,
+      "tail_ms": 150.25547346666664,
+      "memory_mib": 8290.1,
+      "early_sps": 240296.77768535365
+    },
+    {
+      "label": "liquid_full_candidate_b_v1",
+      "sps": 210796.74109499113,
+      "gain_percent": 2.678392214553149,
+      "tail_ms": 156.53689693333334,
+      "memory_mib": 8290.1,
+      "early_sps": 239690.08429792084
+    },
+    {
+      "label": "liquid_full_base_b_v1",
+      "sps": 198512.87554242762,
+      "gain_percent": -3.3050378829196703,
+      "tail_ms": 238.17599606666667,
+      "memory_mib": 8290.1,
+      "early_sps": 239406.00238686442
+    }
+  ],
+  "observation_proofs_exact": true,
+  "frozen_actor_unchanged": true,
+  "scope": "Frozen-actor replay throughput; not by itself an update-equivalence or learning-stability proof",
+  "timing_valid": false,
+  "decision": "Inconclusive: control drift -6.399%, no net speedup claim; repeat required.",
+  "possible_confound": "New VS Code extensionHost/fileWatcher processes observed around final measurement window; temporal association only, no causal attribution."
+}

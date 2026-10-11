@@ -1,0 +1,182 @@
+[
+  {
+    "profile": null,
+    "label": "weight_cast_gpu_base_a",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 9.036208868026733,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 967.049216,
+        "model_ms": 963.15904
+      },
+      {
+        "trial": -1,
+        "milliseconds": 965.963776,
+        "model_ms": 962.064384
+      },
+      {
+        "trial": 0,
+        "milliseconds": 967.501824,
+        "model_ms": 963.598336
+      },
+      {
+        "trial": 1,
+        "milliseconds": 967.554048,
+        "model_ms": 963.65056
+      },
+      {
+        "trial": 2,
+        "milliseconds": 967.380992,
+        "model_ms": 963.47648
+      },
+      {
+        "trial": 3,
+        "milliseconds": 967.50592,
+        "model_ms": 963.603456
+      }
+    ],
+    "mean_ms": 967.485696
+  },
+  {
+    "profile": null,
+    "label": "weight_cast_gpu_global",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 9.028375387191772,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 977.412096,
+        "model_ms": 973.50656
+      },
+      {
+        "trial": -1,
+        "milliseconds": 963.608576,
+        "model_ms": 959.699968
+      },
+      {
+        "trial": 0,
+        "milliseconds": 963.674112,
+        "model_ms": 959.765504
+      },
+      {
+        "trial": 1,
+        "milliseconds": 963.908608,
+        "model_ms": 960.006144
+      },
+      {
+        "trial": 2,
+        "milliseconds": 963.77856,
+        "model_ms": 959.881216
+      },
+      {
+        "trial": 3,
+        "milliseconds": 963.65568,
+        "model_ms": 959.75424
+      }
+    ],
+    "mean_ms": 963.75424
+  },
+  {
+    "profile": null,
+    "label": "weight_cast_gpu_matrix",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 9.032074928283691,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 967.968768,
+        "model_ms": 964.078592
+      },
+      {
+        "trial": -1,
+        "milliseconds": 967.159808,
+        "model_ms": 963.250176
+      },
+      {
+        "trial": 0,
+        "milliseconds": 967.471104,
+        "model_ms": 963.561472
+      },
+      {
+        "trial": 1,
+        "milliseconds": 967.404544,
+        "model_ms": 963.500032
+      },
+      {
+        "trial": 2,
+        "milliseconds": 967.303168,
+        "model_ms": 963.402752
+      },
+      {
+        "trial": 3,
+        "milliseconds": 967.368704,
+        "model_ms": 963.465216
+      }
+    ],
+    "mean_ms": 967.38688
+  },
+  {
+    "profile": null,
+    "label": "weight_cast_gpu_base_b",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 9.029164552688599,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 982.36416,
+        "model_ms": 978.476032
+      },
+      {
+        "trial": -1,
+        "milliseconds": 968.639488,
+        "model_ms": 964.742144
+      },
+      {
+        "trial": 0,
+        "milliseconds": 968.521728,
+        "model_ms": 964.612096
+      },
+      {
+        "trial": 1,
+        "milliseconds": 968.89344,
+        "model_ms": 964.994048
+      },
+      {
+        "trial": 2,
+        "milliseconds": 968.915968,
+        "model_ms": 965.015552
+      },
+      {
+        "trial": 3,
+        "milliseconds": 968.541184,
+        "model_ms": 964.639744
+      }
+    ],
+    "mean_ms": 968.7180800000001
+  }
+]

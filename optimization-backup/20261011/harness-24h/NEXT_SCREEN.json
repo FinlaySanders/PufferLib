@@ -1,0 +1,98 @@
+[
+  {
+    "kind": "proof",
+    "label": "clean_wait_proof",
+    "binary": "clean_wait",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    }
+  },
+  {
+    "kind": "proof",
+    "label": "embedding_all_smoke",
+    "binary": "pool_embed_v10",
+    "env": {
+      "NH_EMBED_REDUCE": 7
+    }
+  },
+  {
+    "kind": "full",
+    "label": "pool_sleep_claim_smoke",
+    "binary": "pool_embed_v10",
+    "env": {
+      "PUF_POOL_SLEEP": 1,
+      "PUF_POOL_CHECK_CLAIM": 1,
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "embed_gpu_base_a",
+    "binary": "pool_embed_v10",
+    "env": {
+      "NH_EMBED_REDUCE": 0
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "embed_gpu_identity",
+    "binary": "pool_embed_v10",
+    "env": {
+      "NH_EMBED_REDUCE": 1
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "embed_gpu_kind",
+    "binary": "pool_embed_v10",
+    "env": {
+      "NH_EMBED_REDUCE": 2
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "embed_gpu_local",
+    "binary": "pool_embed_v10",
+    "env": {
+      "NH_EMBED_REDUCE": 4
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "embed_gpu_all",
+    "binary": "pool_embed_v10",
+    "env": {
+      "NH_EMBED_REDUCE": 7
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "embed_gpu_base_b",
+    "binary": "pool_embed_v10",
+    "env": {
+      "NH_EMBED_REDUCE": 0
+    },
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

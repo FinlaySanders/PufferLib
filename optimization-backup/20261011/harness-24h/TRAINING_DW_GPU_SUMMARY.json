@@ -1,0 +1,23 @@
+{
+  "control_ms": 969.551232,
+  "candidate_ms": 965.27872,
+  "gain_percent": 0.44261951615385264,
+  "control_drift_percent": 0.18216832903303892,
+  "rows": [
+    {
+      "label": "training_dw_gpu_base_a",
+      "mean_ms": 968.668928
+    },
+    {
+      "label": "training_dw_gpu_lt",
+      "mean_ms": 965.27872
+    },
+    {
+      "label": "training_dw_gpu_base_b",
+      "mean_ms": 970.433536
+    }
+  ],
+  "decision": "Parked: full GPU pass gain below1%, no additional update validation/fullpipeline spend.",
+  "smoke": "TRAINING_DW_SMOKE.json",
+  "binary_sha256": "07bdccb7638a11624dee5ed37f893fe4a2b68cf5b5e11d1412131f8e433bc463"
+}

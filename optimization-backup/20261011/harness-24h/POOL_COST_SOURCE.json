@@ -1,0 +1,10 @@
+{
+  "hypothesis": "Unprofiled pool tail is 286.22ms/128 calls (2.24ms), ~30% of pool latency. Start historically expensive environments first to reduce final stragglers.",
+  "method": "Per-task monotonic wall timing with 7/8 EMA, sorted descending before region publication; retain existing striped queues/work stealing. Mode1 times only; mode2 sorts. No engine changes or environment memory movement. Schedules are nondeterministic; observation equivalence must hold.",
+  "caveats": [
+    "Elapsed task time includes preemption; history is a noisy cost predictor.",
+    "Sorting disrupts worker affinity/cache locality; full pipeline must improve.",
+    "Pool tail is concurrent and not an additive estimate of total speed headroom."
+  ],
+  "sha256": "d3ddc67ff6eef39fd5a9c21de4259f0c41c81220eb1b2a664d2bc05cdb8b314c"
+}

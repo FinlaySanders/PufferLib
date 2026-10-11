@@ -1,0 +1,128 @@
+{
+  "control_us": 7.812299998477101,
+  "control_drift_percent": 0.2152750338542564,
+  "rows": [
+    {
+      "index": 0,
+      "config": null,
+      "microseconds": 7.803900074213743,
+      "trials": [
+        7.840000092983246,
+        7.8039998188614845,
+        7.792000193148851,
+        7.791500072926283,
+        7.792000193148851
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 2.491287887096405e-05,
+      "gain_percent": 0.1076375169271282
+    },
+    {
+      "index": 1,
+      "config": [
+        4,
+        1
+      ],
+      "microseconds": 3.0830000527203083,
+      "trials": [
+        3.102000104263425,
+        3.080999944359064,
+        3.0720001086592674,
+        3.0879999976605177,
+        3.0720001086592674
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 0.2762265373021364,
+      "gain_percent": 153.39928202673428
+    },
+    {
+      "index": 2,
+      "config": [
+        4,
+        2
+      ],
+      "microseconds": 3.0898999888449907,
+      "trials": [
+        3.103999886661768,
+        3.0879999976605177,
+        3.0865001026540995,
+        3.0849999748170376,
+        3.085999982431531
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 0.07826623227447271,
+      "gain_percent": 152.83342589341706
+    },
+    {
+      "index": 3,
+      "config": [
+        8,
+        1
+      ],
+      "microseconds": 3.2351999543607235,
+      "trials": [
+        3.2480000518262386,
+        3.2319999299943447,
+        3.2319999299943447,
+        3.2319999299943447,
+        3.2319999299943447
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 0.07092073187232018,
+      "gain_percent": 141.47811908648515
+    },
+    {
+      "index": 4,
+      "config": null,
+      "microseconds": 7.820699922740459,
+      "trials": [
+        7.840000092983246,
+        7.823999971151352,
+        7.823499850928783,
+        7.807999849319458,
+        7.807999849319458
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true
+      },
+      "prep_seconds": 6.075296550989151e-05,
+      "gain_percent": -0.10740629798278167
+    }
+  ],
+  "source_sha256": "1e9ac9ef8b7372c16844d7024db6b16330036e0004b13704403da19b7f8b60f8",
+  "reference_sha256": "2c8f936a86c6b7709ee53348ca63e8f50c51d305a9eb651df36c382f200edb49",
+  "scope": "Entity16->64->64 bias/ReLU plus masked sum/max;512games. Current fused-cuBLASLt baseline. Synthetic inputs. No training claim.",
+  "entity": "item",
+  "entities_per_game": 16,
+  "concat_offset": 1538,
+  "pad": -1,
+  "eps": 0.25
+}

@@ -1,0 +1,27 @@
+{
+  "control_ms": 970.1327871999999,
+  "control_drift_percent": 0.14156166963759098,
+  "rows": [
+    {
+      "label": "pool_bwd_time_base_a",
+      "milliseconds": 969.4466048,
+      "gain_percent": 0.07078083481879549
+    },
+    {
+      "label": "pool_bwd_time_specialized",
+      "milliseconds": 968.7863296,
+      "gain_percent": 0.13898395950280307
+    },
+    {
+      "label": "pool_bwd_time_fused",
+      "milliseconds": 963.5387392,
+      "gain_percent": 0.6843573311307471
+    },
+    {
+      "label": "pool_bwd_time_base_b",
+      "milliseconds": 970.8189696,
+      "gain_percent": -0.07068077792945493
+    }
+  ],
+  "decision": "Park: fused GPU training +0.684%, specialization +0.139%; no full timing or extended update proof."
+}

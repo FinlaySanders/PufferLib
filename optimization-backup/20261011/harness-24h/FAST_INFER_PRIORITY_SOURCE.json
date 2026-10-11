@@ -1,0 +1,6 @@
+{
+  "source_sha256": "837d9d320cf4413213eefa410b0c2d1fa635397ab0da26f9fedfd2ea300ba8b8",
+  "hypothesis": "Corrected fast GPU variant exposes ~190ms rollout tail. Fresh node trace: inference span1.69ms withPPO vs0.39ms after, observational andperturbed. Prior inferencepriority +0.61% onolder24worker/slowerGPU stack. Newboundedtest on32workers/fastGPU;also2vs4Muonstreams totrade optimizer overlap for actor latency.",
+  "documentation": "/usr/local/cuda/include/cuda_runtime_api.h:11560 states graph useslaunchstreampriority unlessUseNodePriorityenabled; currentgraphinstantiateflags0. Streampriorityreadbackchecked.",
+  "scope": "Noengine/arithmetic/model/batch change. Defaultoff."
+}

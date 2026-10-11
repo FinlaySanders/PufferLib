@@ -1,0 +1,51 @@
+[
+  {
+    "kind": "full",
+    "label": "pool_timing_smoke_base",
+    "binary": "pool_timing_v23",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_ROLLOUT_DETAIL": "1",
+      "PUF_INFER_PRIORITY": 1
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "pool_timing_smoke_on",
+    "binary": "pool_timing_v23",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_ROLLOUT_DETAIL": "1",
+      "PUF_INFER_PRIORITY": 1,
+      "PUF_POOL_TIMING": 1
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  }
+]

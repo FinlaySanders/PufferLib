@@ -1,0 +1,11 @@
+{
+  "hypothesis": "Four per-step H2D calls and one D2H call remain outside inference graphs. Capture fixed-address uploads as one reusable graph; optionally include action D2H in inference graph to reduce host submissions.",
+  "method": "Mode1 captures four uploads at original position; mode2 additionally moves action download inside inference graph before archive kernel. Sync remains after both. Initial env_restart upload and final-horizon uploads remain unchanged. No math or buffer layout changes.",
+  "evidence": "Current full per-buffer completion~1230ms vs env~948,model~109,copy~69 leaves~104ms not covered by those stage timers. Includes host submission/wakeup/bookkeeping, so only a ceiling, not attribution. Node trace shows substantial CPU API submission but is perturbed; timing-stride reduction was previously null.",
+  "caveats": [
+    "Mode2 model timing includes action D2H; model/copy phase labels cannot be compared directly to control.",
+    "Archive and D2H order reverses, but sources independent and same final stream synchronization protects both before CPU action consumption.",
+    "Full sampling/live-update proof required if retained."
+  ],
+  "sha256": "8f39ddd2ad42258065af141548e60e7cd525bc20da075ff5ce51c67723fee3fb"
+}

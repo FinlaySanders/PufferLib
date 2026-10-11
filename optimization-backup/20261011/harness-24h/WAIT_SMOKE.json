@@ -1,0 +1,26 @@
+[
+  {
+    "kind": "full",
+    "label": "wait_block_smoke",
+    "binary": "wait_rec_v8",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "wait_yield_smoke",
+    "binary": "wait_rec_v8",
+    "env": {
+      "PUF_CUDA_WAIT": "yield"
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  }
+]

@@ -1,0 +1,78 @@
+[
+  {
+    "kind": "full",
+    "label": "wait_base_a",
+    "binary": "wait_rec_v8",
+    "env": {
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "wait_blocking",
+    "binary": "wait_rec_v8",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "wait_yielding",
+    "binary": "wait_rec_v8",
+    "env": {
+      "PUF_CUDA_WAIT": "yield",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "wait_outplace_b",
+    "binary": "wait_rec_v8",
+    "env": {
+      "PUF_OUTPLACE": 1,
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "wait_focus_detail",
+    "binary": "wait_rec_v8",
+    "env": {
+      "PUF_BUFFER_FOCUS": 1,
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "wait_base_b",
+    "binary": "baseline",
+    "env": {
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

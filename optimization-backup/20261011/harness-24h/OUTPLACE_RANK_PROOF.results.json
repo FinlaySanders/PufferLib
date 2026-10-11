@@ -1,0 +1,56 @@
+[
+  {
+    "profile": null,
+    "label": "rank_update_base",
+    "kind": "proof",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 5.108325958251953,
+    "trials": [
+      {
+        "trial": 0,
+        "milliseconds": 1156.924416,
+        "model_ms": 1153.031168
+      }
+    ],
+    "mean_ms": 1156.924416,
+    "state_hashes": {
+      "momentum.bin": "0d1f05a94a69cf2ea733d74ef7eb655bd28286ed7663563582c36a7228fa32c7",
+      "updates.bin": "a38a820b490bbd97363483457023b3188fdfa3ab2ae61d315febfce6c856ae7c",
+      "master.bin": "06f72c05b9f0bbfc7c72104d66326e3e3eb332c437032dc258d1f8e5d6f9395f",
+      "params.bin": "2a636a3b8d9af8b9f1ba1d795954b0fcabb0a7ad6d3592109ac226cbe9c0682e",
+      "raw_gradients.bin": "f10aac284e50b7db068ba06e0142c20b7d719ba5a91a0b1147b1f51da1fe527d"
+    }
+  },
+  {
+    "profile": null,
+    "label": "rank_update_combo",
+    "kind": "proof",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 4.028345108032227,
+    "trials": [
+      {
+        "trial": 0,
+        "milliseconds": 968.20736,
+        "model_ms": 964.261888
+      }
+    ],
+    "mean_ms": 968.20736,
+    "state_hashes": {
+      "momentum.bin": "982344e10b2d9c036fcc9bf77aaea955abd748fbc4e74de9e86d140dfb190118",
+      "updates.bin": "d00f62f916d64ef0cf074b7218105f3172faae30efe55654f5b3d69691156161",
+      "master.bin": "962ac0d052331032f91baad5a826e68c0560846881a223d4d98e7f466bda56d6",
+      "params.bin": "441e38e26cacfdfef145d636c9ecd2d8951e3f7d10ce173cf442899f2db7f06e",
+      "raw_gradients.bin": "a06384016602ac892f28286238e56793a2b5a38b002fab31adc40d7dd5d9ce90"
+    }
+  }
+]

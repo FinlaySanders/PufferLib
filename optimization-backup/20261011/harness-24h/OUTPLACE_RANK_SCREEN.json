@@ -1,0 +1,76 @@
+[
+  {
+    "kind": "time",
+    "label": "outplace_rank_base_a",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "outplace_rank_rank0",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 0
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "outplace_rank_rank1",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "outplace_rank_rank2",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 2
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "outplace_rank_rank3",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 3
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "outplace_rank_base_b",
+    "binary": "outplace_rank_v18",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

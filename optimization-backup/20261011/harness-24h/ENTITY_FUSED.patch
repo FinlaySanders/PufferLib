@@ -1,0 +1,104 @@
+--- src/algo.cu
++++ src/algo.cu
+@@ -1,6 +1,7 @@
+ #include <cublasLt.h>
+ #include "rec_fused.cuh"
+ #include "inventory_fused.cuh"
++#include "entity_fused.cuh"
+ thread_local cublasLtHandle_t g_nh_epilogue_handle = NULL;
+ thread_local cublasLtHandle_t g_rec_lt = NULL;
+ static size_t nh_rec_workspace_bytes() {
+@@ -131,6 +132,7 @@
+ void cublas_init_handle() {
+     rec_fused_init();
+     inventory_fused_init();
++    entity_fused_init();
+     if((getenv("NH_REC_LT") || getenv("NH_TRAIN_DW_LT")) && !g_rec_lt)
+         assert(cublasLtCreate(&g_rec_lt)==CUBLAS_STATUS_SUCCESS);
+     if (getenv("NH_FUSED_BR") && atoi(getenv("NH_FUSED_BR")) && !g_nh_epilogue_handle)
+--- ocean/nethack/nethack.cu
++++ ocean/nethack/nethack.cu
+@@ -2173,7 +2173,10 @@
+ #ifndef NH_ENT_LINPOOL
+     if (!a->training && NH_CONCAT == 1698 && NH_MINV_OFF == 1010
+             && NH_INV == 55 && NH_INV_HID == 16 && NH_MV == 64)
+-        inventory_fused = inventory_fused_try(a->inv_out.data,
++        inventory_fused = entity_fused_try(0, a->inv_out.data,
++            ew->mv1_w.data, ew->mv1_b.data, ew->mv2_w.data, ew->mv2_b.data,
++            a->inv_idx.data, a->concat.data, a->mvmax.data, B, stream)
++            || inventory_fused_try(a->inv_out.data,
+             ew->mv1_w.data, ew->mv1_b.data, ew->mv2_w.data, ew->mv2_b.data,
+             a->inv_idx.data, a->concat.data, a->mvmax.data, a->mh1.data, a->mvv.data, B, stream);
+ #endif
+@@ -2222,6 +2225,15 @@
+     { Prec tokf = {.data = a->lm_tok.data, .shape = {B * NH_LABK, NH_LAB_IN}};
+       Prec rpf = {.data = a->mrp.data, .shape = {B * NH_LABK, NH_INV_HID}};
+       NH_MM_BR(&tokf, &ew->mr_w, &rpf, ew->mr_b); }
++    bool monster_fused = false;
++#ifndef NH_ENT_LINPOOL
++    if (!a->training && NH_CONCAT == 1698 && NH_MLM_OFF == 1394
++            && NH_LABK == 16 && NH_INV_HID == 16 && NH_MV == 64)
++        monster_fused = entity_fused_try(1, a->mrp.data,
++            ew->mm1_w.data, ew->mm1_b.data, ew->mm2_w.data, ew->mm2_b.data,
++            a->lm_gid.data, a->concat.data, a->mvmaxm.data, B, stream);
++#endif
++    if (!monster_fused) {
+     { Prec rpf = {.data = a->mrp.data, .shape = {B * NH_LABK, NH_INV_HID}};
+       Prec h1f = {.data = a->mh1m.data, .shape = {B * NH_LABK, NH_MV}};
+       NH_MM_BR(&rpf, &ew->mm1_w, &h1f, ew->mm1_b); }
+@@ -2231,6 +2243,7 @@
+     nh_min_summax_kernel<<<grid_size(B * NH_MV), BLOCK_SIZE, 0, stream>>>(
+         a->concat.data, a->mvmaxm.data, a->mvm.data, a->lm_gid.data,
+         0.25f, NH_LABK, -1, NH_MLM_OFF, B);
++    }
+     nh_min_sgate_kernel<<<grid_size(B * NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
+         a->concat.data, a->mrp.data, a->lm_tok.data, a->lm_gid.data,
+         0, NH_MLM_OFF + 2 * NH_MV, B);
+@@ -2239,6 +2252,15 @@
+     { Prec tokf = {.data = a->li_tok.data, .shape = {B * NH_LABK, NH_LAB_IN}};
+       Prec rpf = {.data = a->irp.data, .shape = {B * NH_LABK, NH_INV_HID}};
+       NH_MM_BR(&tokf, &ew->ir_w, &rpf, ew->ir_b); }
++    bool item_fused = false;
++#ifndef NH_ENT_LINPOOL
++    if (!a->training && NH_CONCAT == 1698 && NH_MLI_OFF == 1538
++            && NH_LABK == 16 && NH_INV_HID == 16 && NH_MV == 64)
++        item_fused = entity_fused_try(2, a->irp.data,
++            ew->im1_w.data, ew->im1_b.data, ew->im2_w.data, ew->im2_b.data,
++            a->li_gid.data, a->concat.data, a->mvmaxi.data, B, stream);
++#endif
++    if (!item_fused) {
+     { Prec rpf = {.data = a->irp.data, .shape = {B * NH_LABK, NH_INV_HID}};
+       Prec h1f = {.data = a->mh1i.data, .shape = {B * NH_LABK, NH_MV}};
+       NH_MM_BR(&rpf, &ew->im1_w, &h1f, ew->im1_b); }
+@@ -2248,6 +2270,7 @@
+     nh_min_summax_kernel<<<grid_size(B * NH_MV), BLOCK_SIZE, 0, stream>>>(
+         a->concat.data, a->mvmaxi.data, a->mvi.data, a->li_gid.data,
+         0.25f, NH_LABK, -1, NH_MLI_OFF, B);
++    }
+     nh_min_sgate_kernel<<<grid_size(B * NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
+         a->concat.data, a->irp.data, a->li_tok.data, a->li_gid.data,
+         1, NH_MLI_OFF + 2 * NH_MV, B);
+@@ -2255,6 +2278,15 @@
+     nh_spkey_kernel<<<grid_size(B * NH_SPELL_SLOTS * NH_SPKEY), BLOCK_SIZE, 0, stream>>>(
+         a->spk_keys.data, a->spk_in.data, a->spell_idx.data,
+         ew->spk_w.data, a->e_eff.data, (const nh_obs_t*)input.data, B);
++    bool spell_fused = false;
++#ifndef NH_ENT_LINPOOL
++    if (!a->training && NH_CONCAT == 1698 && NH_SPELL_CONCAT_OFF == 838
++            && NH_SPELL_SLOTS == 8 && NH_SPM == 64 && NH_INV_HID == 16 && NH_MV == 64)
++        spell_fused = entity_fused_try(3, a->spk_keys.data,
++            ew->spm1_w.data, ew->spm1_b.data, ew->spm2_w.data, ew->spm2_b.data,
++            a->spell_idx.data, a->concat.data, a->spvmax.data, B, stream);
++#endif
++    if (!spell_fused) {
+     { Prec kf = {.data = a->spk_keys.data, .shape = {B * NH_SPELL_SLOTS, NH_SPKEY}};
+       Prec hf = {.data = a->sph1.data, .shape = {B * NH_SPELL_SLOTS, NH_SPM}};
+       NH_MM_BR(&kf, &ew->spm1_w, &hf, ew->spm1_b); }
+@@ -2264,6 +2296,7 @@
+     nh_min_summax_kernel<<<grid_size(B * NH_SPM), BLOCK_SIZE, 0, stream>>>(
+         a->concat.data, a->spvmax.data, a->spv.data, a->spell_idx.data,
+         0.25f, NH_SPELL_SLOTS, -1, NH_SPELL_CONCAT_OFF, B);
++    }
+     nh_sp_doorstep_kernel<<<grid_size(B * 4), BLOCK_SIZE, 0, stream>>>(
+         a->concat.data, (const nh_obs_t*)input.data, B);
+     if (getenv("NH_IDENTITY_WARP")) {

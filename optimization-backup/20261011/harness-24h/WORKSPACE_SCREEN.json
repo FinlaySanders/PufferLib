@@ -1,0 +1,68 @@
+[
+  {
+    "kind": "time",
+    "label": "ws_base_a",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUBLAS_WS_MIB": 4
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "ws8",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUBLAS_WS_MIB": 8
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "ws16",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUBLAS_WS_MIB": 16
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "ws32",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUBLAS_WS_MIB": 32
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "ws64",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUBLAS_WS_MIB": 64
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "ws_base_b",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUBLAS_WS_MIB": 4
+    },
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

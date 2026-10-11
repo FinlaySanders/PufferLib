@@ -1,0 +1,27 @@
+--- src/algo.cu
++++ src/algo.cu
+@@ -1079,11 +1079,19 @@
+         // dW on side stream (per-layer scratch); dX on main continues the bwd chain.
+         puf_mm_tn_async_after(&scan.grad_combined, &a->saved_inputs[i],
+             &a->wgrad_scratch[i], stream);
+-        puf_mm_nn(&scan.grad_combined, &m->weights[i], &a->grad_input_buf, stream);
+-        int n = numel(scan.grad_input.shape);
+-        add_kernel<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
+-            a->grad_input_buf.data, scan.grad_input.data, n);
+-        grad = a->grad_input_buf;
++        if (getenv("PUF_RESIDUAL_GEMM") && atoi(getenv("PUF_RESIDUAL_GEMM"))) {
++            // The scan has already written this layer's residual gradient.
++            puf_mm_nn(&scan.grad_combined, &m->weights[i], &scan.grad_input,
++                stream, 1.0f, 1.0f);
++            grad = a->grad_input_buf;
++            grad.data = scan.grad_input.data;
++        } else {
++            puf_mm_nn(&scan.grad_combined, &m->weights[i], &a->grad_input_buf, stream);
++            int n = numel(scan.grad_input.shape);
++            add_kernel<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
++                a->grad_input_buf.data, scan.grad_input.data, n);
++            grad = a->grad_input_buf;
++        }
+     }
+     return grad;
+ }

@@ -1,0 +1,15 @@
+{
+  "command": [
+    "nvcc",
+    "-O3",
+    "-arch=sm_89",
+    "-std=c++17",
+    "training_gemm_repeat.cu",
+    "-lcublas",
+    "-lcublasLt",
+    "-o",
+    "training_gemm_repeat"
+  ],
+  "binary_sha256": "f42199aec1ff18cf73da933e10696a3943d0bad4b31f797c5cdaf12ef9e4edd9",
+  "source_sha256": "edecf1641ee9398c62b4004ef3180d7e56a0c5303bdea4620e4e8d07f35c66dd"
+}

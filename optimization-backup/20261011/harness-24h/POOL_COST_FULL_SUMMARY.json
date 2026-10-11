@@ -1,0 +1,41 @@
+{
+  "control_sps": 209900.67283621593,
+  "control_drift_percent": 0.13039439321300694,
+  "rows": [
+    {
+      "label": "pool_cost_base_a",
+      "sps": 209763.91264567882,
+      "gain_percent": -0.06515471755720315,
+      "tail_ms": 162.60107353333333,
+      "memory_mib": 8290.1,
+      "early_sps": 240211.84466434494
+    },
+    {
+      "label": "pool_cost_measure",
+      "sps": 209906.45693102328,
+      "gain_percent": 0.0027556342384160715,
+      "tail_ms": 160.54700219999998,
+      "memory_mib": 8290.1,
+      "early_sps": 239276.49121471622
+    },
+    {
+      "label": "pool_cost_sort",
+      "sps": 207270.07402338184,
+      "gain_percent": -1.2532588758716101,
+      "tail_ms": 178.22125746666669,
+      "memory_mib": 8290.1,
+      "early_sps": 238557.10122741794
+    },
+    {
+      "label": "pool_cost_base_b",
+      "sps": 210037.43302675302,
+      "gain_percent": 0.06515471755719204,
+      "tail_ms": 157.3245526,
+      "memory_mib": 8290.1,
+      "early_sps": 238840.71871625198
+    }
+  ],
+  "observation_proofs_exact": true,
+  "frozen_actor_unchanged": true,
+  "scope": "Frozen-actor replay throughput; not by itself an update-equivalence or learning-stability proof"
+}

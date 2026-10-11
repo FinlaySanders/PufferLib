@@ -1,0 +1,16 @@
+{
+  "reference": "priority_live_base",
+  "candidate": "priority_live_priority",
+  "steps": 2097152,
+  "updates": 904,
+  "checks": {
+    "initial_sha": true,
+    "final_sha": true,
+    "rollout_hashes": true,
+    "state_hashes": true
+  },
+  "finite": true,
+  "exact": true,
+  "scope": "Priority scheduler on the corrected experimental GPU stack; not proof of equivalence between that stack and the original baseline.",
+  "coverage": "Matching initialcheckpoint and finalcheckpoint, fullfinaltwo-slotrollouttensors, finalrecurrentandoptimizerstate after904updates. Intermediateevery-step hashesnotrecorded."
+}

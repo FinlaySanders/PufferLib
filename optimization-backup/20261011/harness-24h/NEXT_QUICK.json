@@ -1,0 +1,54 @@
+[
+  {
+    "kind": "proof",
+    "label": "wait_proof_base",
+    "binary": "baseline"
+  },
+  {
+    "kind": "proof",
+    "label": "wait_proof_block",
+    "binary": "wait_rec_v8",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    }
+  },
+  {
+    "kind": "time",
+    "label": "sym_gpu_base_a",
+    "binary": "fair_sym_ws_v9",
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "sym_gpu_test",
+    "binary": "fair_sym_ws_v9",
+    "env": {
+      "PUF_MUON_SYMMETRY": 1
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "sym_gpu_base_b",
+    "binary": "fair_sym_ws_v9",
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "inference",
+    "label": "rec_ws32_algo0",
+    "binary": "fair_sym_ws_v9",
+    "env": {
+      "NH_REC_LT": 0,
+      "NH_REC_WS_MIB": 32
+    },
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

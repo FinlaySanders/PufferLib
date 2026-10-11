@@ -1,0 +1,18 @@
+{
+  "command": [
+    "./build.sh",
+    "nethack",
+    "puffer_wait_rec_v8"
+  ],
+  "flags": "-DPUF_PERF_LOAD -DPUF_ENV_POOL -DPUF_HEAD_SAMPLER -DPUF_MUON_BATCH_NORM -DPUF_MINGRU_NOCOPY -DPUF_SKIP_UNUSED_LOGPS -DPUF_PPO_ZERO -DPUF_BYTE_OBS -DPUF_REUSE_ROLLOUT -DPUF_MUON_PARALLEL -lcublasLt -DPUF_MUON_OUTPLACE",
+  "rc": 0,
+  "seconds": 6.517860412597656,
+  "source_hashes": {
+    "src/pufferl.cu": "aa31060eba1a1c267406edc7c386d0bd419bda07720c26e7cf856bcce1dd0845",
+    "src/algo.cu": "143250a186f1a9d8238a7199bd3cb0f85fe39d3a9b0624eb10d38784059b4af9",
+    "src/pipeline_bench.cuh": "b7f0b7ccb57cfe7667c2cad7f816ddec4eb8a2cc96eabdc2e18992cd57919093",
+    "src/env_pool.h": "f5d49b3f370b36f4542dbccaa5b97c92138a214a7c6cc9bd3f89371de8eeedf8",
+    "ocean/nethack/nethack.cu": "7019e43dd3b35776bd51b229b2954e00b8137862c0100587b0e6b32be94759a0"
+  },
+  "binary_sha256": "a05663c3b0691f0e7cdfccddce04f6f8191eb6af257562a4380a942dc603d088"
+}

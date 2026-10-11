@@ -1,0 +1,47 @@
+{
+  "status": "Replicated configuration throughput; not promoted to defaults",
+  "fixed_headline_configuration_unchanged": true,
+  "baseline": "4 buffers x512 environments; blocking CUDA waits",
+  "candidates": [
+    {
+      "name": "8 buffers x256 environments",
+      "gain_percent": [
+        1.4775047897444216,
+        1.2100982674898786
+      ],
+      "sps": [
+        202310.0157510037,
+        201878.121944847
+      ],
+      "validation": "Each run: 80 observation boundary proofs match, actor frozen, same batch/horizon/update count. Live numerical comparison pending."
+    },
+    {
+      "name": "8 buffers with combined GPU changes",
+      "gain_percent": [
+        2.063036041236188,
+        2.0466550026180474
+      ],
+      "sps": [
+        203477.35660115018,
+        203546.7548725776
+      ],
+      "validation": "Same replay checks; GPU FP32 reduction order differs. Joint update/live validation pending.",
+      "fusion_dispatch_caveat": "Measurements used oldmode1: fusioninbothinferenceandPPO, notintendedinferenceonly. Correctedflagfromv20. SeeFUSION_DISPATCH_AUDIT.md;oldmeasurementsremainrealbutnotthenewcombination."
+    }
+  ],
+  "limitations": [
+    "Inference repartition may change floating-point policy outputs and sampled actions.",
+    "2048 games replay 512 distinct trajectories four times.",
+    "Do not add these percentages to retained implementation gains.",
+    "GPU combination adds only about0.6-0.8% beyond eight buffers; preserve it as a candidate for a faster CPU pipeline rather than assuming it warrants default complexity."
+  ],
+  "worker_configuration": {
+    "screen": "WORKER_FULL_SUMMARY.json",
+    "combination": "WORKER_COMBO_SUMMARY.json",
+    "workers28_gain_percent": 2.2553712529186587,
+    "workers32_gain_percent": 2.581456453490505,
+    "live_validation": "WORKER_LIVE_PROOF.json:32workers vs24 exact2,097,152steps/904updates,allrollout/RNN/optimizer/weights",
+    "status": "Positive throughput screen; default unchanged",
+    "combination_caveat": "WORKER_COMBO uses oldmode1both-pathfusion;notcorrectednewcombination."
+  }
+}

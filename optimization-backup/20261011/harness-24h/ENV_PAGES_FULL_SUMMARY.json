@@ -1,0 +1,41 @@
+{
+  "control_sps": 210353.73219364032,
+  "control_drift_percent": -0.34581515030809307,
+  "rows": [
+    {
+      "label": "env_pages_full_base_a",
+      "sps": 210718.07971568787,
+      "gain_percent": 0.17320706328716184,
+      "tail_ms": 160.97509060000002,
+      "memory_mib": 8290.1,
+      "early_sps": 240856.45583947704
+    },
+    {
+      "label": "env_pages_full_aligned",
+      "sps": 209931.19289629633,
+      "gain_percent": -0.20087083454027876,
+      "tail_ms": 163.1626924,
+      "memory_mib": 8290.1,
+      "early_sps": 239817.31935092848
+    },
+    {
+      "label": "env_pages_full_huge",
+      "sps": 210583.28247582188,
+      "gain_percent": 0.10912584235502898,
+      "tail_ms": 157.96961779999998,
+      "memory_mib": 8290.1,
+      "early_sps": 239506.02547378125
+    },
+    {
+      "label": "env_pages_full_base_b",
+      "sps": 209989.38467159274,
+      "gain_percent": -0.17320706328718405,
+      "tail_ms": 160.78079540000002,
+      "memory_mib": 8290.1,
+      "early_sps": 239311.0803791127
+    }
+  ],
+  "observation_proofs_exact": true,
+  "frozen_actor_unchanged": true,
+  "scope": "Frozen-actor replay throughput; not by itself an update-equivalence or learning-stability proof"
+}

@@ -1,0 +1,48 @@
+{
+  "reason": "User correction: prioritize the original configuration; 2048 environments is a secondary scaling test.",
+  "primary": {
+    "total_agents": 512,
+    "horizon": 512,
+    "num_buffers": 4,
+    "workers": 32,
+    "batch": 262144,
+    "minibatch": 4096,
+    "replay_ratio": 1.78021395,
+    "model_params": 15552136,
+    "width": 1024,
+    "layers": 4
+  },
+  "secondary": {
+    "scaling_agents": 2048,
+    "scaling_horizon": 128,
+    "small_model_width": 512
+  },
+  "runner": "run_primary.py",
+  "campaign": "ORIGINAL512.json",
+  "warm_epochs": 24,
+  "total_epochs": 64,
+  "measured_epochs": "24 through 62",
+  "fixed_recorded_actions": "/puffertank/experiments/nethack-comprehensive-20261008/actions",
+  "updated_at": "2026-10-10T09:03:59.245530+00:00",
+  "binary": "/puffertank/experiments/nethack-24h-20261009/binaries/attribution_v37",
+  "environment_overrides": {
+    "PUF_CUDA_WAIT": "block",
+    "PUF_OUTPLACE": 1,
+    "PUF_OUTPLACE_RANK": 1,
+    "PUF_SCAN_ROW": 3,
+    "PUF_SCAN_TILE": 4,
+    "NH_EMBED_REDUCE": 7,
+    "NH_IDENTITY_WARP": 1,
+    "NH_FUSED_BR": 1,
+    "NH_PASS_FAST": 3,
+    "NH_SFEAT_FAST": 1,
+    "PUF_POOL_WORKERS": 32,
+    "PUF_INFER_PRIORITY": 1,
+    "PUF_ROLLOUT_DETAIL": 1,
+    "PUF_POOL_TIMING": 1,
+    "PUF_FINISH_SLEEP": 1
+  },
+  "primary_mature_batch": "/puffertank/experiments/nethack-24h-20261009/original_config_20261010/mature_1024.bin",
+  "reference_report": "/puffertank/experiments/nethack-24h-20261009/original_config_20261010/REPORT.md",
+  "reference_sps": 221431.1749547114
+}

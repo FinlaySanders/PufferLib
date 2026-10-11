@@ -1,0 +1,45 @@
+--- before/snapshot_test.py
++++ after/snapshot_test.py
+@@ -3,7 +3,7 @@
+ import numpy as np
+ d=Path(__file__).resolve().parent;r=Path('/puffertank/experiments/nethack-compact-state-20261008')
+ 
+-def run(label,n,cases,proof=False,warm_burst=128,engine=None,workers=24,pin=True):
++def run(label,n,cases,proof=False,warm_burst=128,engine=None,workers=24,pin=True,warm=8192):
+  assert 1<=workers<=64
+  assert not pin or workers<=24, 'Existing native pin mapping covers 24 physical cores.'
+  out=d/'runs'/label;out.mkdir(parents=True,exist_ok=False)
+@@ -16,7 +16,7 @@
+  env['CPU_SNAPSHOT_PROFILE']=str(out/'cpu.prof')
+  if proof:env['CPU_HASHES']=str(out/'hashes')
+  binary=d/('snapshot_proof' if proof else 'snapshot')
+- cmd=[str(binary),str(n),str(workers),'8192','2048','/puffertank/experiments/nethack-comprehensive-20261008/actions']
++ cmd=[str(binary),str(n),str(workers),str(warm),'2048','/puffertank/experiments/nethack-comprehensive-20261008/actions']
+  (out/'command.json').write_text(json.dumps({'command':cmd,'environment':{k:v for k,v in env.items() if k.startswith(('CPU_','NH_','NETHACK','LD_'))},'library':str(library),'library_sha256':hashlib.sha256(library.read_bytes()).hexdigest(),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest()},indent=2))
+  print('START',label,flush=True);t=time.monotonic()
+  with (out/'run.log').open('w') as f:
+@@ -38,19 +38,20 @@
+   original=np.arange(n)//(n//4)*128+np.arange(n)%(n//4)%128
+   for row in rows:
+    k=int(row['steps']);found=np.fromfile(out/('hashes.case%02d.bin'%int(row['id'])),dtype=np.uint64).reshape(n,k)
+-   expect=ref[original,8192:8192+k]
++   expect=ref[original,warm:warm+k]
+    row['hashes_checked']=int(found.size);row['mismatches']=int(np.count_nonzero(found!=expect));assert row['mismatches']==0,row
+  endpoints_ok=True
+  for k in {int(row['steps']) for row in rows}:
+   group=[row['result'] for row in rows if int(row['steps'])==k]
+   endpoints_ok &= len({(g['obs'],g['turns'],g['age']) for g in group})==1
+-  if k==2048:
++  if k==2048 and warm==8192:
+    endpoints_ok &= all(g['obs']=='b97835c62aaf388f' and int(g['turns'])==7230092*(n//512) for g in group)
+- data={'label':label,'envs':n,'workers':workers,'pinned':pin,'proof':proof,'endpoints_ok':bool(endpoints_ok),'wall_seconds':time.monotonic()-t,'ready':ready,'cases':rows}
++ data={'label':label,'envs':n,'workers':workers,'warm':warm,'pinned':pin,'proof':proof,'endpoints_ok':bool(endpoints_ok),'wall_seconds':time.monotonic()-t,'ready':ready,'cases':rows}
+  (out/'result.json').write_text(json.dumps(data,indent=2));(d/'STATUS.json').write_text(json.dumps({'status':'idle','last':label}))
+  print('DONE',json.dumps(data),flush=True);assert endpoints_ok,data;return data
+ 
+ if __name__=='__main__':
+  engine=sys.argv[sys.argv.index('--engine')+1] if '--engine' in sys.argv else None
+  workers=int(sys.argv[sys.argv.index('--workers')+1]) if '--workers' in sys.argv else 24
+- run(sys.argv[1],int(sys.argv[2]),sys.argv[3],proof='--proof' in sys.argv,engine=engine,workers=workers,pin='--unpin' not in sys.argv)
++ warm=int(sys.argv[sys.argv.index('--warm')+1]) if '--warm' in sys.argv else 8192
++ run(sys.argv[1],int(sys.argv[2]),sys.argv[3],proof='--proof' in sys.argv,engine=engine,workers=workers,pin='--unpin' not in sys.argv,warm=warm)

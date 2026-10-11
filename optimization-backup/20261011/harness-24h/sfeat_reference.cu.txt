@@ -1,0 +1,33 @@
+__global__ void nh_inv_sfeat_kernel(precision_t* __restrict__ out,
+    const nh_obs_t* __restrict__ obs, int B) {
+    int t = blockIdx.x * blockDim.x + threadIdx.x;
+    if (t >= B * NH_INV) return;
+    int b = t / NH_INV, s = t % NH_INV;
+    const nh_obs_t* src = obs + (int64_t)b * NH_OBS_SIZE + NH_INVST_OFF + s * NH_ST_RAW;
+    int st[NH_ST_RAW];
+    for (int j = 0; j < NH_ST_RAW; j++) {
+        int v = (int)nh_obs_float(src[j]);
+        st[j] = v >= 128 ? v - 256 : v; // bytes -> int8
+    }
+    precision_t* f = out + (int64_t)t * NH_SFEAT;
+    for (int c = 0; c < 4; c++) f[c] = from_float(st[0] == c ? 1.0f : 0.0f);
+    int spe_known = st[1] != -128;
+    f[4] = from_float((float)spe_known);
+    // strict [-1,1]: spe clamp/7; quantity LINEAR capped (log-squash
+    // regressed ammo-count .88->.76 across two seeds — counts want scale)
+    f[5] = from_float(spe_known ? fmaxf(fminf((float)st[1], 7.0f), -7.0f) * (1.0f / 7.0f) : 0.0f);
+    f[6] = from_float(fminf(fmaxf((float)st[2], 0.0f), 30.0f) * (1.0f / 30.0f));
+    f[7] = from_float((float)st[3] * (1.0f / 3.0f));
+    f[8] = from_float((float)st[4] * (1.0f / 3.0f));
+    for (int c = 0; c < 7; c++)
+        f[9 + c] = from_float((float)((st[5] >> c) & 1));
+    f[16] = from_float((float)st[6]);
+    // armor slot category one-hot (suit/shield/helm/gloves/boots/cloak/shirt)
+    // from the slot glyph via the engine's baked otyp->ARM_* table
+    const nh_obs_t* gsrc = obs + (int64_t)b * NH_OBS_SIZE + NH_INV_OFF + 2 * s;
+    int g = (int)nh_obs_float(gsrc[0]) + ((int)nh_obs_float(gsrc[1]) << 8);
+    int ot = g - NH_GLYPH_OBJ_OFF;
+    int cat = (ot >= 0 && ot < NH_NUM_OBJECTS) ? nh_obj_armcat_dev[ot] : -1;
+    for (int c = 0; c < 7; c++)
+        f[17 + c] = from_float(cat == c ? 1.0f : 0.0f);
+}

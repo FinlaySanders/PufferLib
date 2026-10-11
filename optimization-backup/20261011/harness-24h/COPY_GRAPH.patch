@@ -1,0 +1,87 @@
+--- before/src/pufferl.cu
++++ after/src/pufferl.cu
+@@ -1004,8 +1004,14 @@
+ 
+ void pufferl_forward(PuffeRL* pufferl, int buf, int t, cudaStream_t stream) {
+     Hypers* hypers = &pufferl->hypers;
++    static thread_local int copy_graph = -1;
++    if (copy_graph < 0)
++        copy_graph = getenv("PUF_COPY_GRAPH") ? atoi(getenv("PUF_COPY_GRAPH")) : 0;
++    assert(copy_graph >= 0 && copy_graph <= 2);
++    bool graph_download = copy_graph == 2 && PUF_BACKEND == PUF_CPU;
+     // GPU rollout graphs the whole horizon; CPU still graphs one net step.
+     bool step_graph = hypers->cudagraphs && pufferl->rollout_graphs != NULL;
++    assert(!graph_download || step_graph);
+     int graph_slot = hypers->async ? pufferl->write_slot : 0;
+ #ifdef PUF_REUSE_ROLLOUT
+     int graph=(t==0?0:1)*hypers->num_buffers+buf;
+@@ -1032,6 +1038,14 @@
+             && "cudaStreamBeginCapture failed");
+     }
+     pufferl_forward_step(pufferl, buf, t, stream);
++    if (graph_download) {
++        int n = pufferl->vec->agents_per_buf;
++        int start = buf * n;
++        assert(cudaMemcpyAsync(pufferl->vec->actions + (size_t)start * NUM_ATNS,
++            pufferl->env.actions.data + (size_t)start * NUM_ATNS,
++            (size_t)n * NUM_ATNS * sizeof(float), cudaMemcpyDeviceToHost, stream)
++            == cudaSuccess);
++    }
+     if (step_graph) {
+         cudaGraph_t _graph;
+         assert(cudaStreamEndCapture(stream, &_graph) == cudaSuccess
+@@ -1308,6 +1322,9 @@
+         assert(perf_replay!=MAP_FAILED);close(fd);
+     }
+ 
++    int copy_graph = getenv("PUF_COPY_GRAPH") ? atoi(getenv("PUF_COPY_GRAPH")) : 0;
++    assert(copy_graph >= 0 && copy_graph <= 2);
++    cudaGraphExec_t upload_graph = NULL;
+     int timing_round=0;
+     __atomic_store_n(state, BUF_WAITING, __ATOMIC_SEQ_CST);
+     struct timespec t0, t1;
+@@ -1325,11 +1342,13 @@
+                 for (int i = 0; i < NUM_EV; i++) {
+                     cudaEventDestroy(ev[i]);
+                 }
++                if (upload_graph) cudaGraphExecDestroy(upload_graph);
+                 if(perf_record) fclose(perf_record);
+                 return NULL;
+             }
+         }
+         if (__atomic_load_n(&vec->shutdown, __ATOMIC_SEQ_CST)) {
++            if (upload_graph) cudaGraphExecDestroy(upload_graph);
+             for (int i = 0; i < NUM_EV; i++) {
+                 cudaEventDestroy(ev[i]);
+             }
+@@ -1354,7 +1373,7 @@
+             if(timing_sample) cudaEventRecord(ev[MODEL_START], stream);
+             pufferl_forward(pufferl, buf, t, stream);
+             if(timing_sample) cudaEventRecord(ev[MODEL_END], stream);
+-            cudaMemcpyAsync(
++            if (copy_graph != 2) cudaMemcpyAsync(
+                 &vec->actions[agent_start * NUM_ATNS],
+                 &pufferl->env.actions.data[agent_start * NUM_ATNS],
+                 apb * NUM_ATNS * sizeof(float),
+@@ -1423,7 +1442,20 @@
+                 + (t1.tv_nsec - t0.tv_nsec) / 1e6f;
+             nvtxRangePushA("rollout.upload");
+             if(timing_sample) cudaEventRecord(ev[H2D_START], stream);
+-            cpu_upload(pufferl, agent_start, apb, stream);
++            if (copy_graph) {
++                if (!upload_graph) {
++                    assert(cudaStreamBeginCapture(stream, cudaStreamCaptureModeThreadLocal)
++                        == cudaSuccess);
++                    cpu_upload(pufferl, agent_start, apb, stream);
++                    cudaGraph_t graph;
++                    assert(cudaStreamEndCapture(stream, &graph) == cudaSuccess);
++                    assert(cudaGraphInstantiate(&upload_graph, graph, 0) == cudaSuccess);
++                    assert(cudaGraphDestroy(graph) == cudaSuccess);
++                }
++                assert(cudaGraphLaunch(upload_graph, stream) == cudaSuccess);
++            } else {
++                cpu_upload(pufferl, agent_start, apb, stream);
++            }
+             if(timing_sample) cudaEventRecord(ev[H2D_END], stream);
+             nvtxRangePop();
+             h2d_pending = timing_sample;

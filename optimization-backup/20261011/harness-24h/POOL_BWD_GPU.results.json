@@ -1,0 +1,202 @@
+[
+  {
+    "profile": null,
+    "label": "pool_bwd_time_base_a",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 10.031532764434814,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 970.212352,
+        "model_ms": 966.321152
+      },
+      {
+        "trial": -1,
+        "milliseconds": 968.680448,
+        "model_ms": 964.773888
+      },
+      {
+        "trial": 0,
+        "milliseconds": 968.879104,
+        "model_ms": 964.973568
+      },
+      {
+        "trial": 1,
+        "milliseconds": 968.666112,
+        "model_ms": 964.753408
+      },
+      {
+        "trial": 2,
+        "milliseconds": 969.366528,
+        "model_ms": 965.460992
+      },
+      {
+        "trial": 3,
+        "milliseconds": 969.916416,
+        "model_ms": 966.008832
+      },
+      {
+        "trial": 4,
+        "milliseconds": 970.404864,
+        "model_ms": 966.499328
+      }
+    ],
+    "mean_ms": 969.4466048
+  },
+  {
+    "profile": null,
+    "label": "pool_bwd_time_specialized",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 10.030964136123657,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 969.33376,
+        "model_ms": 965.43744
+      },
+      {
+        "trial": -1,
+        "milliseconds": 967.433216,
+        "model_ms": 963.536896
+      },
+      {
+        "trial": 0,
+        "milliseconds": 968.58624,
+        "model_ms": 964.682752
+      },
+      {
+        "trial": 1,
+        "milliseconds": 968.66816,
+        "model_ms": 964.765696
+      },
+      {
+        "trial": 2,
+        "milliseconds": 968.790016,
+        "model_ms": 964.890624
+      },
+      {
+        "trial": 3,
+        "milliseconds": 969.203712,
+        "model_ms": 965.295104
+      },
+      {
+        "trial": 4,
+        "milliseconds": 968.68352,
+        "model_ms": 964.78208
+      }
+    ],
+    "mean_ms": 968.7863296
+  },
+  {
+    "profile": null,
+    "label": "pool_bwd_time_fused",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 10.031821489334106,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 975.2832,
+        "model_ms": 971.38176
+      },
+      {
+        "trial": -1,
+        "milliseconds": 963.569664,
+        "model_ms": 959.665152
+      },
+      {
+        "trial": 0,
+        "milliseconds": 963.547136,
+        "model_ms": 959.6416
+      },
+      {
+        "trial": 1,
+        "milliseconds": 963.397632,
+        "model_ms": 959.491072
+      },
+      {
+        "trial": 2,
+        "milliseconds": 963.431424,
+        "model_ms": 959.525888
+      },
+      {
+        "trial": 3,
+        "milliseconds": 963.769344,
+        "model_ms": 959.85664
+      },
+      {
+        "trial": 4,
+        "milliseconds": 963.54816,
+        "model_ms": 959.640576
+      }
+    ],
+    "mean_ms": 963.5387392
+  },
+  {
+    "profile": null,
+    "label": "pool_bwd_time_base_b",
+    "kind": "time",
+    "workload": "score",
+    "lanes": 4,
+    "variant": "baseline",
+    "buffers": 4,
+    "configuration_experiment": false,
+    "rc": 0,
+    "wall_seconds": 10.028342962265015,
+    "trials": [
+      {
+        "trial": -2,
+        "milliseconds": 972.321792,
+        "model_ms": 968.431616
+      },
+      {
+        "trial": -1,
+        "milliseconds": 970.826752,
+        "model_ms": 966.929408
+      },
+      {
+        "trial": 0,
+        "milliseconds": 970.928128,
+        "model_ms": 967.030784
+      },
+      {
+        "trial": 1,
+        "milliseconds": 970.416128,
+        "model_ms": 966.516736
+      },
+      {
+        "trial": 2,
+        "milliseconds": 970.968064,
+        "model_ms": 967.07072
+      },
+      {
+        "trial": 3,
+        "milliseconds": 970.722304,
+        "model_ms": 966.813696
+      },
+      {
+        "trial": 4,
+        "milliseconds": 971.060224,
+        "model_ms": 967.16288
+      }
+    ],
+    "mean_ms": 970.8189696
+  }
+]

@@ -1,0 +1,45 @@
+--- a/src/pufferl.cu
++++ b/src/pufferl.cu
+@@ -442,6 +442,7 @@
+     // CPU pins / workers (unused on GPU)
+     double* perf_completed;
+     int cohort_size, cohort_steps, cohort_ticket, cohort_arrived;
++    int cohort_ini_buffers, cohort_ini_steps;
+     bool collector_sleep;
+     bool finish_sleep;
+     pthread_mutex_t cohort_mutex;
+@@ -1143,6 +1144,8 @@
+     int num_buffers = vec->buffers;
+     int apb = vec->agents_per_buf;
+     vec->num_workers = dict_get(vk, "num_threads") / num_buffers;
++    vec->cohort_ini_buffers = dict_get(vk, "cohort_buffers");
++    vec->cohort_ini_steps = dict_get(vk, "cohort_steps");
+     if (vec->num_workers < 1) {
+         vec->num_workers = 1;
+     }
+@@ -1517,8 +1520,9 @@
+         return;
+     }
+     vec->perf_completed = (double*)calloc(vec->buffers, sizeof(double));
+-    vec->cohort_size = getenv("PUF_COHORT_BUFFERS") ? atoi(getenv("PUF_COHORT_BUFFERS")) : 0;
+-    vec->cohort_steps = getenv("PUF_COHORT_STEPS") ? atoi(getenv("PUF_COHORT_STEPS")) : p->hypers.horizon;
++    vec->cohort_size = getenv("PUF_COHORT_BUFFERS") ? atoi(getenv("PUF_COHORT_BUFFERS")) : vec->cohort_ini_buffers;
++    vec->cohort_steps = getenv("PUF_COHORT_STEPS") ? atoi(getenv("PUF_COHORT_STEPS")) : vec->cohort_ini_steps;
++    if (vec->cohort_steps <= 0) vec->cohort_steps = p->hypers.horizon;
+     vec->collector_sleep = vec->cohort_size || getenv("PUF_COLLECTOR_SLEEP");
+     vec->finish_sleep = getenv("PUF_FINISH_SLEEP") != NULL;
+     assert(!vec->cohort_size || (vec->cohort_size > 0 &&
+--- a/config/default.ini
++++ b/config/default.ini
+@@ -31,6 +31,11 @@
+ total_agents = 4096
+ num_buffers = 2
+ num_threads = 8
++# Cohort rollout (CPU env pool): only cohort_buffers buffers advance at a time, for
++# cohort_steps steps, so each worker's games stay cache-resident. 0 = all buffers
++# free-run (default). Needs num_buffers % cohort_buffers == 0 and horizon % cohort_steps == 0.
++cohort_buffers = 0
++cohort_steps = 0
+ # Total policies including trainable policies[0]. 1 = train only.
+ num_policies = 1
+ # Required > 0 when num_policies > 1 (historical opponent arch).

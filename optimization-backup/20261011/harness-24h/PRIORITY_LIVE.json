@@ -1,0 +1,53 @@
+[
+  {
+    "kind": "full",
+    "label": "priority_live_base",
+    "binary": "inference_priority_v22",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_ROLLOUT_DETAIL": "1",
+      "PUF_LIVE_AFTER_WARM": 1
+    },
+    "args": [
+      "--epochs=8",
+      "--start=1",
+      "--update"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "priority_live_priority",
+    "binary": "inference_priority_v22",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_OUTPLACE": 1,
+      "PUF_OUTPLACE_RANK": 1,
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4,
+      "NH_EMBED_REDUCE": 7,
+      "NH_IDENTITY_WARP": 1,
+      "NH_FUSED_BR": 1,
+      "NH_PASS_FAST": 3,
+      "NH_SFEAT_FAST": 1,
+      "PUF_POOL_WORKERS": 32,
+      "PUF_ROLLOUT_DETAIL": "1",
+      "PUF_LIVE_AFTER_WARM": 1,
+      "PUF_INFER_PRIORITY": 1
+    },
+    "args": [
+      "--epochs=8",
+      "--start=1",
+      "--update"
+    ]
+  }
+]

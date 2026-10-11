@@ -1,0 +1,15 @@
+{
+  "command": [
+    "nvcc",
+    "-O3",
+    "-arch=sm_89",
+    "-std=c++17",
+    "training_gemm_screen.cu",
+    "-lcublas",
+    "-lcublasLt",
+    "-o",
+    "training_gemm_screen"
+  ],
+  "build_seconds": 1.1089284420013428,
+  "binary_sha256": "288cb8ba93cc88e5fba69e769122b3e39fe0fbed38b37349d53eae464437cde7"
+}

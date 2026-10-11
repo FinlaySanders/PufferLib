@@ -1,0 +1,49 @@
+--- before/pufferl.cu
++++ after/pufferl.cu
+@@ -440,6 +440,7 @@
+     double* perf_completed;
+     int cohort_size, cohort_steps, cohort_ticket, cohort_arrived;
+     bool collector_sleep;
++    bool finish_sleep;
+     pthread_mutex_t cohort_mutex;
+     pthread_cond_t cohort_cond;
+     int* env_starts;
+@@ -1443,7 +1444,12 @@
+             my_accum[PROF_COPY] += ms*timing_scale;
+         }
+         vec->perf_completed[buf]=wall_clock();
++        if (vec->finish_sleep) pthread_mutex_lock(&vec->cohort_mutex);
+         __atomic_store_n(state, BUF_WAITING, __ATOMIC_SEQ_CST);
++        if (vec->finish_sleep) {
++            pthread_cond_broadcast(&vec->cohort_cond);
++            pthread_mutex_unlock(&vec->cohort_mutex);
++        }
+     }
+ }
+ 
+@@ -1478,6 +1484,7 @@
+     vec->cohort_size = getenv("PUF_COHORT_BUFFERS") ? atoi(getenv("PUF_COHORT_BUFFERS")) : 0;
+     vec->cohort_steps = getenv("PUF_COHORT_STEPS") ? atoi(getenv("PUF_COHORT_STEPS")) : p->hypers.horizon;
+     vec->collector_sleep = vec->cohort_size || getenv("PUF_COLLECTOR_SLEEP");
++    vec->finish_sleep = getenv("PUF_FINISH_SLEEP") != NULL;
+     assert(!vec->cohort_size || (vec->cohort_size > 0 &&
+         vec->buffers % vec->cohort_size == 0 && vec->cohort_steps > 0 &&
+         p->hypers.horizon % vec->cohort_steps == 0));
+@@ -1592,10 +1599,15 @@
+         p->profile.accum[PROF_ROLLOUT] += model_ms + env_ms;
+         return;
+     }
++    if (p->vec->finish_sleep) pthread_mutex_lock(&p->vec->cohort_mutex);
+     for (int buf = 0; buf < p->vec->buffers; buf++) {
+         int* state = &p->vec->worker_state[buf];
+-        while (__atomic_load_n(state, __ATOMIC_SEQ_CST) != BUF_WAITING) {}
+-    }
++        while (__atomic_load_n(state, __ATOMIC_SEQ_CST) != BUF_WAITING) {
++            if (p->vec->finish_sleep)
++                pthread_cond_wait(&p->vec->cohort_cond, &p->vec->cohort_mutex);
++        }
++    }
++    if (p->vec->finish_sleep) pthread_mutex_unlock(&p->vec->cohort_mutex);
+     float sec = (float)(wall_clock() - t0);
+     p->profile.accum[PROF_ROLLOUT] += sec * 1000.0f;
+     float eval_prof[NUM_PROF] = {0};

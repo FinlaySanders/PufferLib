@@ -1,0 +1,48 @@
+[
+  {
+    "kind": "time",
+    "label": "fused_small_base_a",
+    "binary": "muon_fused_v15",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "fused_small32_gpu",
+    "binary": "muon_fused_v15",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_MUON_FUSED_SMALL": 32
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "fused_small64_gpu",
+    "binary": "muon_fused_v15",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_MUON_FUSED_SMALL": 64
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "time",
+    "label": "fused_small_base_b",
+    "binary": "muon_fused_v15",
+    "env": {
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

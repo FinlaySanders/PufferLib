@@ -1,0 +1,46 @@
+--- snapshot.c
++++ snapshot_horizon.c
+@@ -62,8 +62,22 @@
+ static void step_one(void* unused,int i) {long tick=ticks[i/apb];int n=measured?burst:warm_burst;for(int j=0;j<n;j++)step_at(i,tick+j);}
+ static void rounds(EnvPool* pool,long begin,long count) {
+  int increment=measured?burst:warm_burst;assert(count%increment==0);int width=measured?active_apb:apb;
++ int period=measured && getenv("CPU_HORIZON_BARRIER")?atoi(getenv("CPU_HORIZON_BARRIER")):0;
++ assert(period>=0 && (!period || period%increment==0));
+ #pragma omp parallel num_threads(buffers)
+- {int b=omp_get_thread_num();if(getenv("CPU_PIN")){cpu_set_t set;CPU_ZERO(&set);CPU_SET(1+2*b,&set);assert(pthread_setaffinity_np(pthread_self(),sizeof(set),&set)==0);}for(long t=begin;t<begin+count;t+=increment) {ticks[b]=t;if(pool)ep_run(pool,b,b*apb,width);else for(int i=b*apb;i<b*apb+width;i++)step_one(NULL,i);}}
++ {
++  int b=omp_get_thread_num();
++  if(getenv("CPU_PIN")){cpu_set_t set;CPU_ZERO(&set);CPU_SET(1+2*b,&set);assert(pthread_setaffinity_np(pthread_self(),sizeof(set),&set)==0);}
++  if(period) {
++   for(long block=begin;block<begin+count;block+=period) {
++    long stop=block+period;if(stop>begin+count)stop=begin+count;
++    for(long t=block;t<stop;t+=increment) {ticks[b]=t;if(pool)ep_run(pool,b,b*apb,width);else for(int i=b*apb;i<b*apb+width;i++)step_one(NULL,i);}
++#pragma omp barrier
++   }
++  } else {
++   for(long t=begin;t<begin+count;t+=increment) {ticks[b]=t;if(pool)ep_run(pool,b,b*apb,width);else for(int i=b*apb;i<b*apb+width;i++)step_one(NULL,i);}
++  }
++ }
+ }
+ int main(int argc,char**argv) {
+  if(argc<6){fprintf(stderr,"replay envs workers warm steps action_dir [single_env]\n");return 2;}
+@@ -118,7 +132,7 @@
+   for(char* token=strtok_r(spec,",",&save);token;token=strtok_r(NULL,",",&save),case_id++) {
+    int focus=-1;long case_steps=0;
+    assert(sscanf(token,"%d:%ld",&focus,&case_steps)==2);
+-   assert((focus>=0 && focus<=5) && case_steps>0 && case_steps<=steps);
++   assert(((focus>=0 && focus<=5) || focus==20 || focus==21) && case_steps>0 && case_steps<=steps);
+    double restore_start=now();
+    snapshot_files("restore",root,archive);
+    for(int i=0;i<fd_count;i++) assert(lseek(saved_fds[i],saved_offsets[i],SEEK_SET)==saved_offsets[i]);
+@@ -126,7 +140,9 @@
+    printf("SNAPSHOT_CASE id=%d focus=%d steps=%ld\n",case_id,focus,case_steps);fflush(NULL);
+    double fork_start=now();pid_t child=fork();assert(child>=0);
+    if(child==0) {
+-    is_child=1;selected_focus=(focus==1);steps=case_steps;
++    is_child=1;selected_focus=(focus==1 || focus==21);steps=case_steps;
++    unsetenv("CPU_HORIZON_BARRIER");
++    if(focus==20 || focus==21)assert(setenv("CPU_HORIZON_BARRIER","128",1)==0);
+     unsetenv("PUF_POOL_SLEEP"); unsetenv("PUF_POOL_CHECK_CLAIM");
+     if(focus==3 || focus==5) assert(setenv("PUF_POOL_SLEEP","1",1)==0);
+     if(focus==4 || focus==5) assert(setenv("PUF_POOL_CHECK_CLAIM","1",1)==0);

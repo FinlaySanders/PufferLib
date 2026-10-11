@@ -1,0 +1,46 @@
+[
+  {
+    "kind": "full",
+    "label": "overlap2_base_a",
+    "binary": "baseline",
+    "env": {},
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "overlap2_outplace",
+    "binary": "pool_v7",
+    "env": {
+      "PUF_OUTPLACE": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "overlap2_focus",
+    "binary": "pool_v7",
+    "env": {
+      "PUF_BUFFER_FOCUS": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "overlap2_base_b",
+    "binary": "baseline",
+    "env": {},
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

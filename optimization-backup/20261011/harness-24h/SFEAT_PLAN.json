@@ -1,0 +1,11 @@
+{
+  "evidence": "nh_inv_sfeat ~21us/512 inference and104us/4096 training; original 24 scalar stores per item",
+  "hypothesis": "Improve feature-store coalescing without changing data format or arithmetic",
+  "arms": [
+    "one item/thread with packed128bit stores",
+    "one scalar output/thread, contiguous stores"
+  ],
+  "smoke": "sfeat_fast_smoke.py, original extracted kernel reference, signedbyte/sentinel/armorcategory/guard checks; BF16 andFP32",
+  "ready": true,
+  "compiled": false
+}

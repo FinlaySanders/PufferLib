@@ -1,0 +1,148 @@
+{
+  "control_us": 24.869699589908123,
+  "control_drift_percent": 0.24719136444131262,
+  "rows": [
+    {
+      "index": 0,
+      "config": null,
+      "microseconds": 24.838999658823013,
+      "trials": [
+        24.860000237822533,
+        24.847999215126038,
+        24.831999093294144,
+        24.825500324368477,
+        24.829499423503876
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true,
+        "h_relative_l2": 0.0,
+        "v_relative_l2": 0.0,
+        "h_different": 0,
+        "v_different": 0
+      },
+      "prep_seconds": 4.9143098294734955e-05,
+      "gain_percent": 0.12359568222066741
+    },
+    {
+      "index": 1,
+      "config": [
+        4,
+        1
+      ],
+      "microseconds": 12.91979979723692,
+      "trials": [
+        12.943499721586704,
+        12.911999598145485,
+        12.921500019729137,
+        12.910000048577785,
+        12.911999598145485
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true,
+        "h_relative_l2": 0.0,
+        "v_relative_l2": 0.0,
+        "h_different": 0,
+        "v_different": 0
+      },
+      "prep_seconds": 0.3022990385070443,
+      "gain_percent": 92.4929176938706
+    },
+    {
+      "index": 2,
+      "config": [
+        4,
+        2
+      ],
+      "microseconds": 12.965399958193302,
+      "trials": [
+        12.989499606192112,
+        12.959999963641167,
+        12.957500293850899,
+        12.959999963641167,
+        12.959999963641167
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true,
+        "h_relative_l2": 0.0,
+        "v_relative_l2": 0.0,
+        "h_different": 0,
+        "v_different": 0
+      },
+      "prep_seconds": 0.10019033402204514,
+      "gain_percent": 91.81590749302005
+    },
+    {
+      "index": 3,
+      "config": [
+        8,
+        1
+      ],
+      "microseconds": 15.65690003335476,
+      "trials": [
+        15.677500516176224,
+        15.647999942302704,
+        15.66299982368946,
+        15.647999942302704,
+        15.647999942302704
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true,
+        "h_relative_l2": 0.0,
+        "v_relative_l2": 0.0,
+        "h_different": 0,
+        "v_different": 0
+      },
+      "prep_seconds": 0.08551835548132658,
+      "gain_percent": 58.841785646755284
+    },
+    {
+      "index": 4,
+      "config": null,
+      "microseconds": 24.900399520993233,
+      "trials": [
+        24.911999702453613,
+        24.89599958062172,
+        24.87500011920929,
+        24.924999102950096,
+        24.893999099731445
+      ],
+      "proof": {
+        "relative_l2": 0.0,
+        "max_abs": 0.0,
+        "argmax_different": 0,
+        "finite": true,
+        "untouched": true,
+        "h_relative_l2": 0.0,
+        "v_relative_l2": 0.0,
+        "h_different": 0,
+        "v_different": 0
+      },
+      "prep_seconds": 8.946843445301056e-05,
+      "gain_percent": -0.1232909177189212
+    }
+  ],
+  "source_sha256": "32da89e387b400a415bcf16919ac7abf058abced42cddc2e85519348aa086ec0",
+  "reference_sha256": "c663ea9bcdea7ef6b2747a77345e9242817d8b591ed0b3dd571ffdba245542a9",
+  "scope": "Training entity16->64->64 bias/ReLU and masked sum/max;4096games. Actual cuBLAS plus separate bias/ReLU baseline. BF16 pre-bias rounding retained and intermediate tensors saved. Synthetic inputs; no optimizer-state claim.",
+  "entity": "spell",
+  "entities_per_game": 8,
+  "concat_offset": 838,
+  "pad": -1,
+  "eps": 0.25
+}

@@ -1,0 +1,5 @@
+{
+  "source_sha256": "99b7cde4b2113e31f009a9f2d79ea9d8872e9a9d705c413f31a5a5d38f6eb6f3",
+  "description": "Optional main-thread horizon wait uses existing mutex/cond; completion writes and notification under same mutex. Existing collector idle sleep controlled independently. No per-step new synchronization; default off.",
+  "hypothesis": "After cheaperGPUtraining, main and earlycompleted collectors may compete with simulation while waiting for remaining buffers. Prior pool-tail sleeping and CUDA waits do not cover this horizon-boundary spin."
+}

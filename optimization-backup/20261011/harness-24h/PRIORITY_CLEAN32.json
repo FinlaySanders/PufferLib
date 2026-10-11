@@ -1,0 +1,45 @@
+[
+  {
+    "kind": "full",
+    "label": "priority_clean32_base_a",
+    "binary": "inference_priority_v22",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_POOL_WORKERS": 32,
+      "PUF_ROLLOUT_DETAIL": "1"
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "priority_clean32_priority",
+    "binary": "inference_priority_v22",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_POOL_WORKERS": 32,
+      "PUF_ROLLOUT_DETAIL": "1",
+      "PUF_INFER_PRIORITY": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "priority_clean32_base_b",
+    "binary": "inference_priority_v22",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_POOL_WORKERS": 32,
+      "PUF_ROLLOUT_DETAIL": "1"
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

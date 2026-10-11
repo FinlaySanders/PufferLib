@@ -1,0 +1,23 @@
+--- before/algo.cu
++++ after/algo.cu
+@@ -1328,9 +1328,17 @@
+     size_t workspace=4UL<<20;uint32_t reductions=CUBLASLT_REDUCTION_SCHEME_COMPUTE_TYPE;
+     cublasLtMatmulPreferenceSetAttribute(pref,CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES,&workspace,sizeof(workspace));
+     cublasLtMatmulPreferenceSetAttribute(pref,CUBLASLT_MATMUL_PREF_REDUCTION_SCHEME_MASK,&reductions,sizeof(reductions));
+-    cublasLtMatmulHeuristicResult_t result;int count=0;
+-    assert(cublasLtMatmulAlgoGetHeuristic(outplace_handle,p.desc,p.a,p.b,p.c,p.c,pref,1,&result,&count)==CUBLAS_STATUS_SUCCESS && count==1);
+-    p.algo=result.algo;cublasLtMatmulPreferenceDestroy(pref);outplace_plans.push_back(p);return outplace_plans.back();
++    const char* rank_env = getenv("PUF_OUTPLACE_RANK");
++    cublasLtMatmulHeuristicResult_t results[4]; int count = 0;
++    int requested = rank_env ? 4 : 1;
++    assert(cublasLtMatmulAlgoGetHeuristic(outplace_handle,p.desc,p.a,p.b,p.c,p.c,pref,requested,results,&count)==CUBLAS_STATUS_SUCCESS && count>0);
++    int rank = rank_env ? atoi(rank_env) : 0;
++    assert(rank >= 0 && rank < 4);
++    if (rank >= count) rank = 0;
++    assert(results[rank].state == CUBLAS_STATUS_SUCCESS);
++    p.algo = results[rank].algo;
++    if (rank_env) fprintf(stderr,"OUTPLACE_RANK M=%d N=%d K=%d requested=%s selected=%d choices=%d workspace=%zu\n",M,N,K,rank_env,rank,count,results[rank].workspaceSize);
++    cublasLtMatmulPreferenceDestroy(pref);outplace_plans.push_back(p);return outplace_plans.back();
+ }
+ static void outplace_mm(Prec* A,Prec* B,Prec* C,Prec* D,cudaStream_t stream,float alpha,float beta) {
+     int M=A->shape[0],K=A->shape[1],N=B->shape[1];auto& p=outplace_plan(M,N,K);

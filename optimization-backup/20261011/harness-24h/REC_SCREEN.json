@@ -1,0 +1,54 @@
+[
+  {
+    "kind": "inference",
+    "label": "rec_algo1",
+    "binary": "wait_rec_v8",
+    "env": {
+      "NH_REC_LT": 1
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "inference",
+    "label": "rec_algo2",
+    "binary": "wait_rec_v8",
+    "env": {
+      "NH_REC_LT": 2
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "inference",
+    "label": "rec_algo3",
+    "binary": "wait_rec_v8",
+    "env": {
+      "NH_REC_LT": 3
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "inference",
+    "label": "rec_algo4",
+    "binary": "wait_rec_v8",
+    "env": {
+      "NH_REC_LT": 4
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "inference",
+    "label": "rec_base_b",
+    "binary": "wait_rec_v8",
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

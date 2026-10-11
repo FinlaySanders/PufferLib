@@ -1,0 +1,30 @@
+--- before/nethack.cu
++++ after/nethack.cu
+@@ -1519,6 +1519,17 @@
+         f[17 + c] = from_float(cat == c ? 1.0f : 0.0f);
+ }
+ 
++#include "sfeat_fast.cuh"
++static int nh_sfeat_fast_mode = getenv("NH_SFEAT_FAST") ? atoi(getenv("NH_SFEAT_FAST")) : 0;
++static void nh_sfeat_launch(precision_t* out, const nh_obs_t* obs, int B, cudaStream_t stream) {
++    if (nh_sfeat_fast_mode == 1)
++        nh_inv_sfeat_packed_kernel<<<grid_size(B * NH_INV), BLOCK_SIZE, 0, stream>>>(out, obs, B);
++    else if (nh_sfeat_fast_mode == 2)
++        nh_inv_sfeat_flat_kernel<<<grid_size(B * NH_INV * NH_SFEAT), BLOCK_SIZE, 0, stream>>>(out, obs, B);
++    else
++        nh_inv_sfeat_kernel<<<grid_size(B * NH_INV), BLOCK_SIZE, 0, stream>>>(out, obs, B);
++}
++
+ __global__ void nh_inv_gather_kernel(precision_t* __restrict__ out,
+     const precision_t* __restrict__ T, const precision_t* __restrict__ b1,
+     const precision_t* __restrict__ ws, const precision_t* __restrict__ sfeat,
+@@ -2086,8 +2097,7 @@
+     nh_inv_table_kernel<<<grid_size(NH_GLYPH_VOCAB * NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
+         a->invt_T.data, a->e_eff.data, ew->invt_w.data);
+     }
+-    nh_inv_sfeat_kernel<<<grid_size(B * NH_INV), BLOCK_SIZE, 0, stream>>>(
+-        a->inv_sfeat.data, (const nh_obs_t*)input.data, B);
++    nh_sfeat_launch(a->inv_sfeat.data, (const nh_obs_t*)input.data, B, stream);
+     nh_inv_gather_kernel<<<grid_size(B * NH_INV_FLAT), BLOCK_SIZE, 0, stream>>>(
+         a->inv_out.data, a->inv_T.data, ew->inv1_b.data, ew->inv1s_w.data,
+         a->inv_sfeat.data, a->inv_idx.data, a->invt_T.data, a->invt_idx.data, B);

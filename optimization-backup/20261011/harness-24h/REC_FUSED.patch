@@ -1,0 +1,29 @@
+--- src/algo.cu
++++ src/algo.cu
+@@ -1,4 +1,5 @@
+ #include <cublasLt.h>
++#include "rec_fused.cuh"
+ thread_local cublasLtHandle_t g_nh_epilogue_handle = NULL;
+ thread_local cublasLtHandle_t g_rec_lt = NULL;
+ static size_t nh_rec_workspace_bytes() {
+@@ -127,6 +128,7 @@
+ }
+ 
+ void cublas_init_handle() {
++    rec_fused_init();
+     if((getenv("NH_REC_LT") || getenv("NH_TRAIN_DW_LT")) && !g_rec_lt)
+         assert(cublasLtCreate(&g_rec_lt)==CUBLAS_STATUS_SUCCESS);
+     if (getenv("NH_FUSED_BR") && atoi(getenv("NH_FUSED_BR")) && !g_nh_epilogue_handle)
+@@ -967,6 +969,12 @@
+     int H = state.shape[2];
+     for (int i = 0; i < m->num_layers; i++) {
+         Prec state_i = mingru_state_layer(state, i, 0, B);
++        Prec fused_out = x.data == a->out.data ? a->next_state : a->out;
++        if (rec_fused_try(x.data, m->weights[i].data, state_i.data,
++                fused_out.data, B, H, stream)) {
++            x = fused_out;
++            continue;
++        }
+         puf_mm(&x, &m->weights[i], &a->combined[i], stream);
+ #ifdef PUF_MINGRU_NOCOPY
+         mingru_gate<<<grid_size(B*H), BLOCK_SIZE, 0, stream>>>(

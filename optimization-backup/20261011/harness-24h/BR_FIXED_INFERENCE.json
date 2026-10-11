@@ -1,0 +1,38 @@
+[
+  {
+    "kind": "inference",
+    "label": "br_fixed_inf_base_a",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 0
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "inference",
+    "label": "br_fixed_inf_infer",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 1
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "kind": "inference",
+    "label": "br_fixed_inf_base_b",
+    "binary": "dispatch_fixed_v20",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "NH_FUSED_BR": 0
+    },
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

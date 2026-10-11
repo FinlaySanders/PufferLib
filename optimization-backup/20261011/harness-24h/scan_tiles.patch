@@ -1,0 +1,139 @@
+--- algo.before_tiles
++++ algo.tiles
+@@ -422,20 +422,21 @@
+ // Use when T is long and seq occupancy B*H is not already huge.
+ #define MINGRU_TILE 32
+ 
++template<int TILE>
+ __global__ void mingru_scan_forward_row(PrefixScan scan) {
+     int T_seq = scan.T, H = scan.H;
+     int hx = threadIdx.x, t_local = threadIdx.y;
+-    int h = blockIdx.y * MINGRU_TILE + hx;
++    int h = blockIdx.y * 32 + hx;
+     int h_ok = h < H;
+     int b = blockIdx.x, H3 = 3 * H, bHT = b * H * T_seq, cbase = 3 * bHT;
+     float h_t = h_ok ? to_float(scan.state_ptr[b * H + h]) : 0.0f;
+-    __shared__ float sm_z[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_ht[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_s[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_x[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_term[MINGRU_TILE][MINGRU_TILE];
+-    for (int c = 0; c < (T_seq + MINGRU_TILE - 1) / MINGRU_TILE; c++) {
+-        int t = c * MINGRU_TILE + t_local;
++    __shared__ float sm_z[TILE][32];
++    __shared__ float sm_ht[TILE][32];
++    __shared__ float sm_s[TILE][32];
++    __shared__ float sm_x[TILE][32];
++    __shared__ float sm_term[TILE][32];
++    for (int c = 0; c < (T_seq + TILE - 1) / TILE; c++) {
++        int t = c * TILE + t_local;
+         float z = 0.0f, h_tilde = 0.0f, s = 0.0f, x = 0.0f, term = 0.0f;
+         if (t < T_seq && h_ok) {
+             int off = t * H3 + h;
+@@ -456,12 +457,12 @@
+         sm_term[t_local][hx] = term;
+         __syncthreads();
+         if (t_local == 0 && h_ok) {
+-            int nloc = min(MINGRU_TILE, T_seq - c * MINGRU_TILE);
++            int nloc = min(TILE, T_seq - c * TILE);
+             for (int i = 0; i < nloc; i++) {
+                 if (sm_term[i][hx] != 0.0f) {
+                     h_t = 0.0f;
+                 }
+-                int tt = c * MINGRU_TILE + i;
++                int tt = c * TILE + i;
+                 scan.scan_h.data[bHT + tt * H + h] = from_float(h_t);
+                 h_t = lerp(h_t, sm_ht[i][hx], sm_z[i][hx]);
+                 float sv = sm_s[i][hx];
+@@ -477,25 +478,26 @@
+     }
+ }
+ 
++template<int TILE>
+ __global__ void mingru_scan_backward_row(PrefixScan scan,
+         const precision_t* __restrict__ grad_out,
+         const precision_t* __restrict__ grad_next_state) {
+     int T_seq = scan.T, H = scan.H;
+     int hx = threadIdx.x, t_local = threadIdx.y;
+-    int h = blockIdx.y * MINGRU_TILE + hx;
++    int h = blockIdx.y * 32 + hx;
+     int h_ok = h < H;
+     int b = blockIdx.x, H3 = 3 * H, bHT = b * H * T_seq, cbase = 3 * bHT;
+     float dh = h_ok ? to_float(grad_next_state[b * H + h]) : 0.0f;
+-    __shared__ float sm_z[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_ht[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_s[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_x[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_hp[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_go[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_hid[MINGRU_TILE][MINGRU_TILE];
+-    __shared__ float sm_term[MINGRU_TILE][MINGRU_TILE];
+-    for (int c = (T_seq + MINGRU_TILE - 1) / MINGRU_TILE - 1; c >= 0; c--) {
+-        int t = c * MINGRU_TILE + t_local;
++    __shared__ float sm_z[TILE][32];
++    __shared__ float sm_ht[TILE][32];
++    __shared__ float sm_s[TILE][32];
++    __shared__ float sm_x[TILE][32];
++    __shared__ float sm_hp[TILE][32];
++    __shared__ float sm_go[TILE][32];
++    __shared__ float sm_hid[TILE][32];
++    __shared__ float sm_term[TILE][32];
++    for (int c = (T_seq + TILE - 1) / TILE - 1; c >= 0; c--) {
++        int t = c * TILE + t_local;
+         float z = 0.0f, h_tilde = 0.0f, s = 0.0f, x = 0.0f;
+         float h_prev = 0.0f, gout = 0.0f, hidden = 0.0f, term = 0.0f;
+         if (t < T_seq && h_ok) {
+@@ -522,8 +524,8 @@
+         sm_term[t_local][hx] = term;
+         __syncthreads();
+         if (t_local == 0 && h_ok) {
+-            for (int i = min(MINGRU_TILE, T_seq - c * MINGRU_TILE) - 1; i >= 0; i--) {
+-                int tt = c * MINGRU_TILE + i;
++            for (int i = min(TILE, T_seq - c * TILE) - 1; i >= 0; i--) {
++                int tt = c * TILE + i;
+                 z = sm_z[i][hx];
+                 s = sm_s[i][hx];
+                 gout = sm_go[i][hx];
+@@ -876,9 +878,17 @@
+         if ((getenv("PUF_SCAN_ROW") && (atoi(getenv("PUF_SCAN_ROW")) & 1))
+                 || scan.T >= 256 && scan.B * scan.H <= 32768
+                 || scan.T >= 128 && scan.H <= 32) {
+-            dim3 block(MINGRU_TILE, MINGRU_TILE);
+-            dim3 grid(scan.B, (scan.H + MINGRU_TILE - 1) / MINGRU_TILE);
+-            mingru_scan_forward_row<<<grid, block, 0, stream>>>(scan);
++            int tile=getenv("PUF_SCAN_TILE")?atoi(getenv("PUF_SCAN_TILE")):32;
++            dim3 grid(scan.B, (scan.H + 31) / 32);
++#define NH_SCAN_LAUNCH(T) mingru_scan_forward_row<T><<<grid, dim3(32,T), 0, stream>>>(scan)
++            if(tile==4) { NH_SCAN_LAUNCH(4); }
++            else if(tile==8) { NH_SCAN_LAUNCH(8); }
++            else if(tile==16) { NH_SCAN_LAUNCH(16); }
++            else { NH_SCAN_LAUNCH(32); }
++#undef NH_SCAN_LAUNCH
++        } else {
++            int block=getenv("PUF_SCAN_BLOCK")?atoi(getenv("PUF_SCAN_BLOCK")):BLOCK_SIZE;
++            mingru_scan_forward<<<(scan.B * scan.H + block - 1)/block, block, 0, stream>>>(scan);
+         } else {
+             mingru_scan_forward<<<grid_size(scan.B * scan.H), BLOCK_SIZE, 0, stream>>>(scan);
+         }
+@@ -903,10 +913,17 @@
+         if ((getenv("PUF_SCAN_ROW") && (atoi(getenv("PUF_SCAN_ROW")) & 2))
+                 || scan.T >= 256 && scan.B * scan.H <= 32768
+                 || scan.T >= 128 && scan.H <= 32) {
+-            dim3 block(MINGRU_TILE, MINGRU_TILE);
+-            dim3 grid(scan.B, (scan.H + MINGRU_TILE - 1) / MINGRU_TILE);
+-            mingru_scan_backward_row<<<grid, block, 0, stream>>>(
+-                scan, grad.data, a->grad_next_state.data);
++            int tile=getenv("PUF_SCAN_TILE")?atoi(getenv("PUF_SCAN_TILE")):32;
++            dim3 grid(scan.B, (scan.H + 31) / 32);
++#define NH_SCAN_LAUNCH(T) mingru_scan_backward_row<T><<<grid, dim3(32,T), 0, stream>>>(scan, grad.data, a->grad_next_state.data)
++            if(tile==4) { NH_SCAN_LAUNCH(4); }
++            else if(tile==8) { NH_SCAN_LAUNCH(8); }
++            else if(tile==16) { NH_SCAN_LAUNCH(16); }
++            else { NH_SCAN_LAUNCH(32); }
++#undef NH_SCAN_LAUNCH
++        } else {
++            int block=getenv("PUF_SCAN_BLOCK")?atoi(getenv("PUF_SCAN_BLOCK")):BLOCK_SIZE;
++            mingru_scan_backward<<<(scan.B * scan.H + block - 1)/block, block, 0, stream>>>(scan, grad.data, a->grad_next_state.data);
+         } else {
+             mingru_scan_backward<<<grid_size(scan.B * scan.H), BLOCK_SIZE, 0,
+                 stream>>>(scan, grad.data, a->grad_next_state.data);

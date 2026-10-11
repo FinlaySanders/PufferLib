@@ -1,0 +1,38 @@
+{
+  "status": "Validated conditional scheduler: repeated+1.36% and exactlivefinalstate onexperimentalGPUstack. CleanGPUstack\u22120.401%,notageneraldefault.",
+  "binary": "binaries/inference_priority_v22",
+  "binary_sha256": "76bcd084541e9ef9de2ff5a61eb032ea6f299bdfd9ddfd62c766450bbe215012",
+  "patch": "FAST_INFER_PRIORITY.patch",
+  "environment": {
+    "PUF_CUDA_WAIT": "block",
+    "PUF_OUTPLACE": 1,
+    "PUF_OUTPLACE_RANK": 1,
+    "PUF_SCAN_ROW": 3,
+    "PUF_SCAN_TILE": 4,
+    "NH_EMBED_REDUCE": 7,
+    "NH_IDENTITY_WARP": 1,
+    "NH_FUSED_BR": 1,
+    "NH_PASS_FAST": 3,
+    "NH_SFEAT_FAST": 1,
+    "PUF_POOL_WORKERS": 32,
+    "PUF_ROLLOUT_DETAIL": "1",
+    "PUF_INFER_PRIORITY": 1
+  },
+  "first_screen": "GPU_CONTENTION_FULL_SUMMARY.json",
+  "gain_percent": [
+    1.5802500916131779,
+    1.3595735961069666
+  ],
+  "confirmation": "PRIORITY_CONFIRM_SUMMARY.json",
+  "live_proof": "PRIORITY_LIVE_PROOF.json",
+  "combination_numerics": "CORRECTED_COMBO_PROOF_SUMMARY.json",
+  "limitations": [
+    "Priority scheduling matches final live tensors/weights ofsameGPUstack; stackitselfchangesrounding.",
+    "NoequivalentlearningqualityclaimforwholeGPUcombination.",
+    "Recordedspeedworkload2048instancesbut512uniquetrajectories.",
+    "Direct combined gain is8.32% including32workers,3.90% with24workers fixed. Secondary depth repeat+3.86%, shortliveupdate finite; no equal-learning-quality claim."
+  ],
+  "clean_stack_result": "PRIORITY_CLEAN32_SUMMARY.json",
+  "direct_comparison": "COMBINED_DIRECT_SUMMARY.json",
+  "secondary_workload": "COMBINED_DEPTH_VALIDATION.json"
+}

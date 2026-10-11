@@ -1,0 +1,62 @@
+{
+  "checked_at": "2026-10-10T04:42:53.810066+00:00",
+  "control_sps": 382948.8920853693,
+  "candidate_sps": 397736.0958601044,
+  "gain_percent": 3.8614039837563174,
+  "control_drift_percent": 0.15072096990105255,
+  "observation_proofs_exact": true,
+  "frozen_actor_unchanged": true,
+  "live_runs": [
+    {
+      "label": "combo_depth_live_base_a",
+      "updates": 904,
+      "steps": 2097152,
+      "workload": "depth",
+      "binary_sha256": "76bcd084541e9ef9de2ff5a61eb032ea6f299bdfd9ddfd62c766450bbe215012",
+      "state_hashes": {
+        "momentum.bin": "f8658a4dc2b956d15f1abf4c3b02f2639c8d659d1419b6d40ebb5380efceffbf",
+        "updates.bin": "be4eaa2a35d156447c77db8b48d6136ad680c4f3a179174b36fc17c5b263a4a0",
+        "master.bin": "e99b2e1fcc8eb65be4f2869e34e10f78c515e8274cfbe7b165282bc04b6842e5"
+      }
+    },
+    {
+      "label": "combo_depth_live_combo",
+      "updates": 904,
+      "steps": 2097152,
+      "workload": "depth",
+      "binary_sha256": "76bcd084541e9ef9de2ff5a61eb032ea6f299bdfd9ddfd62c766450bbe215012",
+      "state_hashes": {
+        "momentum.bin": "408abc8383494b0a1295d0211c7edb8498df897ccd1f4607b958db4ecc5ece6d",
+        "updates.bin": "738bde8eb405252de88eb37d7494fdd65891c59cb9e89f5c9525a45d90f1f850",
+        "master.bin": "1000902443f9edd72e049fd8a44c0c8c04f0bfec7eb53ae709a62cd5b43ac121"
+      }
+    }
+  ],
+  "live_final_differences": {
+    "master.bin": {
+      "count": 4311176,
+      "different": 3908318,
+      "nonfinite": 0,
+      "max_abs": 0.7154067158699036,
+      "relative_l2": 0.024705675730224058
+    },
+    "momentum.bin": {
+      "count": 4311176,
+      "different": 3903692,
+      "nonfinite": 0,
+      "max_abs": 0.37116554379463196,
+      "relative_l2": 2.8082702102547294
+    },
+    "updates.bin": {
+      "count": 4311176,
+      "different": 3923376,
+      "nonfinite": 0,
+      "max_abs": 13.0,
+      "relative_l2": 1.401200515791089
+    }
+  },
+  "limitations": [
+    "Depth model is smaller; this is not the headline 15.55M model.",
+    "Final live states diverge with roundoff and sampled actions. Finite short runs are not equal-learning-quality evidence."
+  ]
+}

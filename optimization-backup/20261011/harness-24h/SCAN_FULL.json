@@ -1,0 +1,35 @@
+[
+  {
+    "kind": "full",
+    "label": "scan_full_base_a",
+    "binary": "baseline",
+    "env": {},
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "scan_full_tile4",
+    "binary": "scan_tiles_v5",
+    "env": {
+      "PUF_SCAN_ROW": 3,
+      "PUF_SCAN_TILE": 4
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "scan_full_base_b",
+    "binary": "baseline",
+    "env": {},
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

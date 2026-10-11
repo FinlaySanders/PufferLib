@@ -1,0 +1,15 @@
+{
+  "before_sha256": "2a9f95fbacdacdab9bf38c19267124c5b3a6bfea32c288814aa91992532583c2",
+  "after_sha256": "302130f441f48424036fb55a8110a0d6c24739fdef7056f61f028c7c598c3a8b",
+  "limits": [
+    32,
+    64
+  ],
+  "shared_bytes_per_cta": 40960,
+  "hypothesis": "One CTA per small matrix retains five NS iterations and BF16 intermediates in shared memory, removes intermediate kernel launches/copies. Global clipping, normalization, momentum and final weight update unchanged.",
+  "caveats": [
+    "BF16-only isolated prototype.",
+    "WMMA reduction order and epilogue contraction may differ.",
+    "No compiled/timing/validation result yet."
+  ]
+}

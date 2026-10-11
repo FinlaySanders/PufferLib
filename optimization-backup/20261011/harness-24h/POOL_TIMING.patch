@@ -1,0 +1,119 @@
+--- before/src/env_pool.h
++++ after/src/env_pool.h
+@@ -5,6 +5,8 @@
+ #include <stdlib.h>
+ #include <assert.h>
+ #include <sched.h>
++#include <time.h>
++#include <string.h>
+ 
+ typedef struct {
+     pthread_mutex_t mu;
+@@ -13,6 +15,21 @@
+     unsigned long generation;
+     int* next;
+ } EPRegion;
++typedef struct {
++    double claim_wall, tail_wall, drain_wall;
++    double claim_cpu, tail_cpu, drain_cpu;
++    unsigned long samples;
++    char padding[8];
++} EPTiming;
++
++static void ep_clocks(double* wall, double* cpu) {
++    struct timespec w, c;
++    clock_gettime(CLOCK_MONOTONIC, &w);
++    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &c);
++    *wall = w.tv_sec + w.tv_nsec * 1e-9;
++    *cpu = c.tv_sec + c.tv_nsec * 1e-9;
++}
++
+ typedef struct EnvPool EnvPool;
+ typedef struct { EnvPool* pool; int id; } EPWorker;
+ struct EnvPool {
+@@ -22,6 +39,7 @@
+     pthread_mutex_t mu;
+     pthread_cond_t ready;
+     EPRegion* region;
++    EPTiming* timing;
+     pthread_t* threads;
+     EPWorker* args;
+     void (*step)(void*, int);
+@@ -141,6 +159,11 @@
+     p->check_claim = getenv("PUF_POOL_CHECK_CLAIM") != NULL;
+     p->batch_done = getenv("PUF_POOL_DONE_BATCH") != NULL;
+     p->workers = workers; p->buffers = buffers; p->step = step; p->context = context;
++    if (getenv("PUF_POOL_TIMING")) {
++        assert(sizeof(EPTiming) == 64);
++        assert(posix_memalign((void**)&p->timing, 64, buffers * sizeof(EPTiming)) == 0);
++        memset(p->timing, 0, buffers * sizeof(EPTiming));
++    }
+     p->region = (EPRegion*)calloc(buffers, sizeof(*p->region));
+     p->threads = (pthread_t*)calloc(workers, sizeof(*p->threads));
+     p->args = (EPWorker*)calloc(workers, sizeof(*p->args));
+@@ -164,6 +187,8 @@
+ static void ep_run(EnvPool* p, int buffer, int start, int count) {
+     assert(buffer >= 0 && buffer < p->buffers && count >= 0);
+     EPRegion* r = &p->region[buffer];
++    double w0=0, w1=0, w2=0, w3=0, c0=0, c1=0, c2=0, c3=0;
++    if (p->timing) ep_clocks(&w0, &c0);
+     pthread_mutex_lock(&r->mu);
+     assert(!r->active && !r->readers);
+     r->start = start; r->count = count; r->generation++;
+@@ -177,6 +202,7 @@
+     nvtxRangePushA("pool.submitter_work");
+     ep_claim(p, r, buffer % p->workers);
+     nvtxRangePop();
++    if (p->timing) ep_clocks(&w1, &c1);
+     nvtxRangePushA("pool.tail_wait");
+     if (p->sleep_tail) {
+         pthread_mutex_lock(&r->mu);
+@@ -187,12 +213,20 @@
+         while (__atomic_load_n(&r->done, __ATOMIC_ACQUIRE) < count) sched_yield();
+     }
+     nvtxRangePop();
++    if (p->timing) ep_clocks(&w2, &c2);
+     pthread_mutex_lock(&r->mu);
+     r->active = 0;
+     nvtxRangePushA("pool.reader_drain");
+     while (r->readers) pthread_cond_wait(&r->quiet, &r->mu);
+     nvtxRangePop();
+     pthread_mutex_unlock(&r->mu);
++    if (p->timing) {
++        ep_clocks(&w3, &c3);
++        EPTiming* t = &p->timing[buffer];
++        t->claim_wall += w1-w0; t->tail_wall += w2-w1; t->drain_wall += w3-w2;
++        t->claim_cpu += c1-c0; t->tail_cpu += c2-c1; t->drain_cpu += c3-c2;
++        t->samples++;
++    }
+ }
+ 
+ /* Submitters must be joined before destroying the pool or its environments. */
+@@ -208,6 +242,6 @@
+         free(p->region[b].next);
+     }
+     pthread_mutex_destroy(&p->mu); pthread_cond_destroy(&p->ready);
+-    free(p->region); free(p->threads); free(p->args); free(p);
++    free(p->timing); free(p->region); free(p->threads); free(p->args); free(p);
+ }
+ #endif
+--- before/src/pufferl.cu
++++ after/src/pufferl.cu
+@@ -1620,6 +1620,17 @@
+             eval_prof[i] += src[i];
+         }
+         memset(src, 0, NUM_PROF * sizeof(float));
++#ifdef PUF_ENV_POOL
++        if (p->vec->env_pool->timing) {
++            EPTiming* timing = &p->vec->env_pool->timing[buf];
++            if (p->epoch >= 64)
++                fprintf(stderr, "POOL_TIMING epoch=%ld buffer=%d samples=%lu claim_wall_ms=%.6f tail_wall_ms=%.6f drain_wall_ms=%.6f claim_cpu_ms=%.6f tail_cpu_ms=%.6f drain_cpu_ms=%.6f\n",
++                    p->epoch, buf, timing->samples, 1000*timing->claim_wall,
++                    1000*timing->tail_wall, 1000*timing->drain_wall,
++                    1000*timing->claim_cpu, 1000*timing->tail_cpu, 1000*timing->drain_cpu);
++            memset(timing, 0, sizeof(*timing));
++        }
++#endif
+     }
+     p->profile.accum[PROF_MODEL] += eval_prof[PROF_MODEL] / p->vec->buffers;
+     p->profile.accum[PROF_ENV] += eval_prof[PROF_ENV] / p->vec->buffers;

@@ -1,0 +1,28 @@
+[
+  {
+    "kind": "full",
+    "label": "actor_cache_smoke_base",
+    "binary": "actor_cache_v19",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ACTOR_CACHE_MB": 0
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "actor_cache_smoke_32",
+    "binary": "actor_cache_v19",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ACTOR_CACHE_MB": 32
+    },
+    "args": [
+      "--epochs=4",
+      "--start=1"
+    ]
+  }
+]

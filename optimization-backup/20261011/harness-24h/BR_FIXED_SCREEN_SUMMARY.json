@@ -1,0 +1,49 @@
+{
+  "BR_FIXED_GPU": {
+    "control_ms": 1153.969408,
+    "rows": [
+      {
+        "label": "br_fixed_gpu_base_a",
+        "mean_ms": 1153.85856,
+        "gain_percent": 0.009606723375177317
+      },
+      {
+        "label": "br_fixed_gpu_train",
+        "mean_ms": 1135.979776,
+        "gain_percent": 1.5836225591396413
+      },
+      {
+        "label": "br_fixed_gpu_base_b",
+        "mean_ms": 1154.080256,
+        "gain_percent": -0.009604877947066992
+      }
+    ]
+  },
+  "BR_FIXED_INFERENCE": {
+    "control_ms": 0.39858900375000006,
+    "rows": [
+      {
+        "label": "br_fixed_inf_base_a",
+        "mean_ms": 0.39865399900000004,
+        "gain_percent": -0.016303674405127033
+      },
+      {
+        "label": "br_fixed_inf_infer",
+        "mean_ms": 0.36841399225,
+        "gain_percent": 8.1905172264803
+      },
+      {
+        "label": "br_fixed_inf_base_b",
+        "mean_ms": 0.3985240085,
+        "gain_percent": 0.016308992335156702
+      }
+    ]
+  },
+  "inference_output": {
+    "elements": 380416,
+    "different": 284848,
+    "relative_l2": 0.0073846960840616895,
+    "max_abs": 3.0,
+    "finite": true
+  }
+}

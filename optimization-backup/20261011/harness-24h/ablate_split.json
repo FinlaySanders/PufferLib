@@ -1,0 +1,79 @@
+[
+ {
+  "label": "split24_pin",
+  "runner": "scale",
+  "kind": "full",
+  "binary": "cohort_pin2",
+  "env": {
+   "PUF_POOL_WORKERS": 24,
+   "PUF_INFER_PRIORITY": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1,
+   "PUF_CPU_AFFINITY": 1,
+   "PUF_POOL_WORKER_STATS": 16
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512",
+   "--buffers=32",
+   "--agents=4096",
+   "--horizon=128",
+   "--minibatch=4096",
+   "--extra=--vec.cohort_buffers=4",
+   "--extra=--vec.cohort_steps=64",
+   "--source=/puffertank/experiments/nethack-engine-scaling-20261010/trainer_cohort/source"
+  ]
+ },
+ {
+  "label": "split24_pin_sleep",
+  "runner": "scale",
+  "kind": "full",
+  "binary": "cohort_pin2",
+  "env": {
+   "PUF_POOL_WORKERS": 24,
+   "PUF_INFER_PRIORITY": 1,
+   "LD_LIBRARY_PATH": "/puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build",
+   "PUF_OUTPLACE": 1,
+   "PUF_OUTPLACE_RANK": 1,
+   "PUF_SCAN_ROW": 3,
+   "PUF_SCAN_TILE": 4,
+   "NH_EMBED_REDUCE": 7,
+   "NH_IDENTITY_WARP": 1,
+   "NH_FUSED_BR": 1,
+   "NH_PASS_FAST": 3,
+   "NH_SFEAT_FAST": 1,
+   "NH_ENTITY_FUSED": 15,
+   "NH_ENTITY_TRAIN_FUSED": 15,
+   "PUF_CUDA_WAIT": "block",
+   "PUF_FINISH_SLEEP": 1,
+   "PUF_CPU_AFFINITY": 1,
+   "PUF_POOL_WORKER_STATS": 16,
+   "PUF_POOL_SLEEP": 1
+  },
+  "args": [
+   "--epochs=44",
+   "--start=32",
+   "--width=512",
+   "--buffers=32",
+   "--agents=4096",
+   "--horizon=128",
+   "--minibatch=4096",
+   "--extra=--vec.cohort_buffers=4",
+   "--extra=--vec.cohort_steps=64",
+   "--source=/puffertank/experiments/nethack-engine-scaling-20261010/trainer_cohort/source"
+  ]
+ }
+]

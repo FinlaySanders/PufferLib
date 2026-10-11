@@ -1,0 +1,41 @@
+{
+  "control_sps": 206754.28663982515,
+  "control_drift_percent": 0.1313368924763969,
+  "rows": [
+    {
+      "label": "gpu_contention_base_a",
+      "sps": 206618.60341332454,
+      "gain_percent": -0.06562535108980416,
+      "tail_ms": 190.94727813333336,
+      "memory_mib": 8290.1,
+      "early_sps": 239031.3425719627
+    },
+    {
+      "label": "gpu_contention_priority",
+      "sps": 210021.52144386515,
+      "gain_percent": 1.5802500916131779,
+      "tail_ms": 161.7978732,
+      "memory_mib": 8290.1,
+      "early_sps": 239539.6634018184
+    },
+    {
+      "label": "gpu_contention_two_lanes",
+      "sps": 206696.70200824353,
+      "gain_percent": -0.027851723181893107,
+      "tail_ms": 141.59348806666665,
+      "memory_mib": 8230.1,
+      "early_sps": 232022.83087933421
+    },
+    {
+      "label": "gpu_contention_base_b",
+      "sps": 206889.96986632573,
+      "gain_percent": 0.06562535108978196,
+      "tail_ms": 185.28337466666667,
+      "memory_mib": 8290.1,
+      "early_sps": 237747.24122684787
+    }
+  ],
+  "observation_proofs_exact": true,
+  "frozen_actor_unchanged": true,
+  "scope": "Frozen-actor replay throughput; not by itself an update-equivalence or learning-stability proof"
+}

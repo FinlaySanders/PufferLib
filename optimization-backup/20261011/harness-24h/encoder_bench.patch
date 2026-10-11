@@ -1,0 +1,54 @@
+--- a/src/pipeline_bench.cuh
++++ b/src/pipeline_bench.cuh
+@@ -55,6 +55,43 @@
+         epoch, (double)sum / p->vec->size, over, p->vec->size, slot);
+ }
+ 
++
++static void encoder_benchmark(PuffeRL* p, RolloutBuf src) {
++    Policy* pol = &p->policies[0];
++    int B = p->hypers.total_agents / p->hypers.num_buffers;
++    Prec input = puf_slice(src.observations, 0, 0, B);
++    cudaStream_t stream = p->train_stream;
++    assert(cudaDeviceSynchronize() == cudaSuccess);
++    cudaGraph_t graph;
++    cudaGraphExec_t executable;
++    assert(cudaStreamBeginCapture(stream,cudaStreamCaptureModeThreadLocal) == cudaSuccess);
++    Prec output = pol->arch.encoder.forward(pol->weights.encoder,pol->buf_acts[0].encoder,input,stream);
++    assert(cudaStreamEndCapture(stream,&graph) == cudaSuccess);
++    assert(cudaGraphInstantiate(&executable,graph,0) == cudaSuccess);
++    cudaGraphDestroy(graph);
++    cudaEvent_t begin,end;
++    cudaEventCreate(&begin);cudaEventCreate(&end);
++    int repeats=256;
++    int trials=getenv("NH_PIPELINE_TRIALS")?atoi(getenv("NH_PIPELINE_TRIALS")):10;
++    fprintf(stderr,"ENCODER_BENCH B=%d repeats=%d output_elements=%ld\n",B,repeats,numel(output.shape));
++    for(int trial=-2;trial<trials;trial++) {
++        assert(cudaEventRecord(begin,stream) == cudaSuccess);
++        for(int i=0;i<repeats;i++) assert(cudaGraphLaunch(executable,stream) == cudaSuccess);
++        assert(cudaEventRecord(end,stream) == cudaSuccess);
++        assert(cudaEventSynchronize(end) == cudaSuccess);
++        float ms;
++        assert(cudaEventElapsedTime(&ms,begin,end) == cudaSuccess);
++        fprintf(stderr,"PIPELINE_TRIAL trial=%d milliseconds=%.9f model_ms=%.9f\n",trial,ms/repeats,ms/repeats);
++    }
++    if(const char* path=getenv("NH_ENCODER_OUTPUT")) {
++        FILE* f=fopen(path,"wb");assert(f);
++        pipeline_file(f,output.data,numel(output.shape)*sizeof(precision_t),true);
++        fclose(f);
++    }
++    fprintf(stderr,"PIPELINE_COMPLETE mode=encoder_only inference=1 updating=0\n");
++    exit(0);
++}
++
+ static void pipeline_benchmark(PuffeRL* p) {
+     FILE* file = fopen(getenv("NH_PIPELINE_LOAD"), "rb"); assert(file);
+     uint64_t header[6]; assert(fread(header, sizeof(header), 1, file) == 1);
+@@ -76,6 +113,7 @@
+         }
+     }
+     assert(fgetc(file) == EOF); fclose(file);
++    if(getenv("NH_ENCODER_BENCH")) encoder_benchmark(p,src);
+     bool proof = getenv("NH_PIPELINE_PROOF") != NULL;
+     if (proof) assert(cudaMalloc(&pipeline_raw_grads, 2 * numel(p->grad.shape) * sizeof(precision_t)) == cudaSuccess);
+     int trials = getenv("NH_PIPELINE_TRIALS") ? atoi(getenv("NH_PIPELINE_TRIALS")) : 10;

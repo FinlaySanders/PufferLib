@@ -1,0 +1,54 @@
+{
+  "gradients": {
+    "first": {
+      "relative_l2": 0.0009703317502921611,
+      "different": 881923,
+      "max_abs": 0.0009765625
+    },
+    "last": {
+      "relative_l2": 0.4342435769372718,
+      "different": 14220650,
+      "max_abs": 0.060546875
+    }
+  },
+  "state": {
+    "master.bin": {
+      "count": 15552136,
+      "different": 14705762,
+      "nonfinite": 0,
+      "max_abs": 0.017300700768828392,
+      "relative_l2": 0.0003884513963342194
+    },
+    "momentum.bin": {
+      "count": 15552136,
+      "different": 14703723,
+      "nonfinite": 0,
+      "max_abs": 0.02391866222023964,
+      "relative_l2": 0.25091991956335563
+    },
+    "params.bin": {
+      "count": 15552136,
+      "different": 1834337,
+      "nonfinite": 0,
+      "max_abs": 0.0172119140625,
+      "relative_l2": 0.0008479989237426198
+    },
+    "raw_gradients.bin": {
+      "count": 31104272,
+      "different": 15102573,
+      "nonfinite": 0,
+      "max_abs": 0.060546875,
+      "relative_l2": 0.12462591686118822
+    },
+    "updates.bin": {
+      "count": 15552136,
+      "different": 14957820,
+      "nonfinite": 0,
+      "max_abs": 2.97802734375,
+      "relative_l2": 0.4215644423793274
+    }
+  },
+  "finite": true,
+  "updates": 113,
+  "scope": "Corrected fastGPUcombination changesrounding. Finite113updatecheck, notproof ofequallearningquality. Savedproofsinglecoldtimingsnotperformanceclaims."
+}

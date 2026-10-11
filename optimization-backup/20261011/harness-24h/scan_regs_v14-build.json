@@ -1,0 +1,20 @@
+{
+  "command": [
+    "./build.sh",
+    "nethack",
+    "puffer_scan_regs_v14"
+  ],
+  "flags": "-DPUF_PERF_LOAD -DPUF_ENV_POOL -DPUF_HEAD_SAMPLER -DPUF_MUON_BATCH_NORM -DPUF_MINGRU_NOCOPY -DPUF_SKIP_UNUSED_LOGPS -DPUF_PPO_ZERO -DPUF_BYTE_OBS -DPUF_REUSE_ROLLOUT -DPUF_MUON_PARALLEL -lcublasLt -DPUF_MUON_OUTPLACE",
+  "rc": 0,
+  "seconds": 6.773212194442749,
+  "source_hashes": {
+    "ocean/nethack/embedding_reduce.cuh": "afb3ec2e1aa45dd797922366085813fdabe8863ac64167146d810c947ecd9947",
+    "ocean/nethack/nethack.cu": "762d6dbca22ee2dc2e67ed28344a330b4d384b57a657a4807c4924d47ab52ba8",
+    "src/algo.cu": "2a9f95fbacdacdab9bf38c19267124c5b3a6bfea32c288814aa91992532583c2",
+    "src/env_pool.h": "c9127880ebd68585acb215a38584b0310da0044a84607460f62962ae61c75fa4",
+    "src/pipeline_bench.cuh": "b7f0b7ccb57cfe7667c2cad7f816ddec4eb8a2cc96eabdc2e18992cd57919093",
+    "src/pufferl.cu": "dc54a40e678430e29b880194146b7ccb212fada0b745b7f8562abfc8016fe3ff",
+    "src/rec_lt.cuh": "60fd47dfec0c94868c473c57d7a9e9baa7a793bcc31d00a634c6b7ac38b4a4ae"
+  },
+  "binary_sha256": "873910a6af59ac6c1b6171a64caa0cd35c5c7c6679a8def1edf602085740f5ef"
+}

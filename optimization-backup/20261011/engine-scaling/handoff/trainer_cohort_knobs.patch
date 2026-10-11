@@ -1,0 +1,115 @@
+--- a/src/pufferl.cu
++++ b/src/pufferl.cu
+@@ -442,6 +442,8 @@
+     // CPU pins / workers (unused on GPU)
+     double* perf_completed;
+     int cohort_size, cohort_steps, cohort_ticket, cohort_arrived;
++    int cohort_ini_buffers, cohort_ini_steps;
++    int cohort_active, *group_active;
+     bool collector_sleep;
+     bool finish_sleep;
+     pthread_mutex_t cohort_mutex;
+@@ -1143,6 +1145,8 @@
+     int num_buffers = vec->buffers;
+     int apb = vec->agents_per_buf;
+     vec->num_workers = dict_get(vk, "num_threads") / num_buffers;
++    vec->cohort_ini_buffers = dict_get(vk, "cohort_buffers");
++    vec->cohort_ini_steps = dict_get(vk, "cohort_steps");
+     if (vec->num_workers < 1) {
+         vec->num_workers = 1;
+     }
+@@ -1411,7 +1415,22 @@
+             clock_gettime(CLOCK_MONOTONIC, &t0);
+             nvtxRangePushA("rollout.env");
+ #ifdef PUF_ENV_POOL
++            if (vec->cohort_active) {
++                int g = vec->cohort_size ? buf / vec->cohort_size : 0;
++                pthread_mutex_lock(&vec->cohort_mutex);
++                while (vec->group_active[g] >= vec->cohort_active)
++                    pthread_cond_wait(&vec->cohort_cond, &vec->cohort_mutex);
++                vec->group_active[g]++;
++                pthread_mutex_unlock(&vec->cohort_mutex);
++            }
+             ep_run(vec->env_pool, buf, env_start, env_count);
++            if (vec->cohort_active) {
++                int g = vec->cohort_size ? buf / vec->cohort_size : 0;
++                pthread_mutex_lock(&vec->cohort_mutex);
++                vec->group_active[g]--;
++                pthread_cond_broadcast(&vec->cohort_cond);
++                pthread_mutex_unlock(&vec->cohort_mutex);
++            }
+ #elif defined(PUF_ENV_WS)
+             {
+                 int nw = vec->num_workers;
+@@ -1517,8 +1536,11 @@
+         return;
+     }
+     vec->perf_completed = (double*)calloc(vec->buffers, sizeof(double));
+-    vec->cohort_size = getenv("PUF_COHORT_BUFFERS") ? atoi(getenv("PUF_COHORT_BUFFERS")) : 0;
+-    vec->cohort_steps = getenv("PUF_COHORT_STEPS") ? atoi(getenv("PUF_COHORT_STEPS")) : p->hypers.horizon;
++    vec->cohort_size = getenv("PUF_COHORT_BUFFERS") ? atoi(getenv("PUF_COHORT_BUFFERS")) : vec->cohort_ini_buffers;
++    vec->cohort_steps = getenv("PUF_COHORT_STEPS") ? atoi(getenv("PUF_COHORT_STEPS")) : vec->cohort_ini_steps;
++    if (vec->cohort_steps <= 0) vec->cohort_steps = p->hypers.horizon;
++    vec->cohort_active = getenv("PUF_COHORT_ACTIVE") ? atoi(getenv("PUF_COHORT_ACTIVE")) : 0;
++    vec->group_active = (int*)calloc(vec->buffers, sizeof(int));
+     vec->collector_sleep = vec->cohort_size || getenv("PUF_COLLECTOR_SLEEP");
+     vec->finish_sleep = getenv("PUF_FINISH_SLEEP") != NULL;
+     assert(!vec->cohort_size || (vec->cohort_size > 0 &&
+--- a/src/env_pool.h
++++ b/src/env_pool.h
+@@ -1,6 +1,7 @@
+ #ifndef ENV_POOL_H
+ #define ENV_POOL_H
+ #include <pthread.h>
++#include <immintrin.h>
+ #include <nvtx3/nvToolsExt.h>
+ #include <stdlib.h>
+ #include <assert.h>
+@@ -54,6 +55,7 @@
+ typedef struct { EnvPool* pool; int id; } EPWorker;
+ struct EnvPool {
+     int workers, buffers, stop, buffer_focus, buffer_fair;
++    long spin_ns;
+     int sleep_tail, check_claim, buffer_lead, batch_done, cost_order;
+     unsigned long epoch;
+     pthread_mutex_t mu;
+@@ -169,6 +171,17 @@
+             if (p->buffer_focus && worked) {repeat_ready_scan = 1; break;}
+         }
+         if (repeat_ready_scan) continue;
++        if (p->spin_ns) {
++            struct timespec s0, s1; clock_gettime(CLOCK_MONOTONIC, &s0);
++            int woke = 0;
++            for (;;) {
++                if (__atomic_load_n(&p->epoch, __ATOMIC_ACQUIRE) != epoch || __atomic_load_n(&p->stop, __ATOMIC_ACQUIRE)) { woke = 1; break; }
++                _mm_pause();
++                clock_gettime(CLOCK_MONOTONIC, &s1);
++                if ((s1.tv_sec - s0.tv_sec) * 1000000000L + (s1.tv_nsec - s0.tv_nsec) > p->spin_ns) break;
++            }
++            if (woke) continue;
++        }
+         pthread_mutex_lock(&p->mu);
+         while (!p->stop && epoch == p->epoch) pthread_cond_wait(&p->ready, &p->mu);
+         pthread_mutex_unlock(&p->mu);
+@@ -187,6 +200,7 @@
+     p->check_claim = getenv("PUF_POOL_CHECK_CLAIM") != NULL;
+     p->batch_done = getenv("PUF_POOL_DONE_BATCH") != NULL;
+     p->cost_order = getenv("PUF_POOL_COST") ? atoi(getenv("PUF_POOL_COST")) : 0;
++    p->spin_ns = getenv("PUF_POOL_SPIN_US") ? atol(getenv("PUF_POOL_SPIN_US")) * 1000L : 0;
+     assert(p->cost_order >= 0 && p->cost_order <= 2);
+     p->workers = workers; p->buffers = buffers; p->step = step; p->context = context;
+     if (getenv("PUF_POOL_TIMING")) {
+--- a/config/default.ini
++++ b/config/default.ini
+@@ -31,6 +31,11 @@
+ total_agents = 4096
+ num_buffers = 2
+ num_threads = 8
++# Cohort rollout (CPU env pool): only cohort_buffers buffers advance at a time, for
++# cohort_steps steps, so each worker's games stay cache-resident. 0 = all buffers
++# free-run (default). Needs num_buffers % cohort_buffers == 0 and horizon % cohort_steps == 0.
++cohort_buffers = 0
++cohort_steps = 0
+ # Total policies including trainable policies[0]. 1 = train only.
+ num_policies = 1
+ # Required > 0 when num_policies > 1 (historical opponent arch).

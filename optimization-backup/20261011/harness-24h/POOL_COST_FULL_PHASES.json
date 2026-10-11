@@ -1,0 +1,369 @@
+{
+  "rows": [
+    {
+      "label": "pool_cost_base_a",
+      "sps": 209763.91264567882,
+      "phases": {
+        "ROLLOUT_DETAIL": {
+          "means": {
+            "complete_ms": 1233.47166375,
+            "model_ms": 109.33685158333333,
+            "env_ms": 952.6074798166667,
+            "copy_ms": 69.36351021666667
+          },
+          "by_buffer": {
+            "0": {
+              "complete_ms": 1236.2791538,
+              "model_ms": 107.90839126666667,
+              "env_ms": 960.1406290666666,
+              "copy_ms": 68.17295733333333
+            },
+            "1": {
+              "complete_ms": 1235.6972694666667,
+              "model_ms": 109.7195334,
+              "env_ms": 957.0027016666667,
+              "copy_ms": 69.2719808
+            },
+            "2": {
+              "complete_ms": 1231.4269383333333,
+              "model_ms": 110.2771564,
+              "env_ms": 949.7758340666667,
+              "copy_ms": 70.17987206666666
+            },
+            "3": {
+              "complete_ms": 1230.4832934,
+              "model_ms": 109.44232526666667,
+              "env_ms": 943.5107544666666,
+              "copy_ms": 69.82923066666666
+            }
+          }
+        },
+        "POOL_TIMING": {
+          "means": {
+            "samples": 128.0,
+            "claim_wall_ms": 660.8254232,
+            "tail_wall_ms": 290.72630775,
+            "drain_wall_ms": 0.9248012666666666,
+            "claim_cpu_ms": 516.7680330166667,
+            "tail_cpu_ms": 115.04111056666667,
+            "drain_cpu_ms": 0.14955155
+          },
+          "by_buffer": {
+            "0": {
+              "samples": 128.0,
+              "claim_wall_ms": 662.5044815333333,
+              "tail_wall_ms": 296.5835166666667,
+              "drain_wall_ms": 0.9762135333333333,
+              "claim_cpu_ms": 522.3653094666666,
+              "tail_cpu_ms": 121.24745753333333,
+              "drain_cpu_ms": 0.14854853333333334
+            },
+            "1": {
+              "samples": 128.0,
+              "claim_wall_ms": 667.4359122,
+              "tail_wall_ms": 288.82885593333333,
+              "drain_wall_ms": 0.662833,
+              "claim_cpu_ms": 517.9865792666667,
+              "tail_cpu_ms": 112.88170353333334,
+              "drain_cpu_ms": 0.14455653333333332
+            },
+            "2": {
+              "samples": 128.0,
+              "claim_wall_ms": 654.4867393333333,
+              "tail_wall_ms": 293.42980773333335,
+              "drain_wall_ms": 1.5636442666666668,
+              "claim_cpu_ms": 516.3285837333333,
+              "tail_cpu_ms": 112.734613,
+              "drain_cpu_ms": 0.1564298
+            },
+            "3": {
+              "samples": 128.0,
+              "claim_wall_ms": 658.8745597333334,
+              "tail_wall_ms": 284.06305066666664,
+              "drain_wall_ms": 0.49651426666666665,
+              "claim_cpu_ms": 510.3916596,
+              "tail_cpu_ms": 113.3006682,
+              "drain_cpu_ms": 0.14867133333333332
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "pool_cost_measure",
+      "sps": 209906.45693102328,
+      "phases": {
+        "ROLLOUT_DETAIL": {
+          "means": {
+            "complete_ms": 1230.8007240333334,
+            "model_ms": 109.5433095,
+            "env_ms": 942.6629577666666,
+            "copy_ms": 68.96344031666666
+          },
+          "by_buffer": {
+            "0": {
+              "complete_ms": 1233.8452498666666,
+              "model_ms": 109.2046784,
+              "env_ms": 944.2229614666667,
+              "copy_ms": 68.4760502
+            },
+            "1": {
+              "complete_ms": 1228.4570376666668,
+              "model_ms": 108.5847336,
+              "env_ms": 940.4336669333334,
+              "copy_ms": 69.067098
+            },
+            "2": {
+              "complete_ms": 1225.8573372,
+              "model_ms": 110.4886952,
+              "env_ms": 940.7385009333334,
+              "copy_ms": 69.1848368
+            },
+            "3": {
+              "complete_ms": 1235.0432714,
+              "model_ms": 109.8951308,
+              "env_ms": 945.2567017333333,
+              "copy_ms": 69.12577626666666
+            }
+          }
+        },
+        "POOL_TIMING": {
+          "means": {
+            "samples": 128.0,
+            "claim_wall_ms": 654.1083409666667,
+            "tail_wall_ms": 287.7605748666667,
+            "drain_wall_ms": 0.7160344,
+            "claim_cpu_ms": 503.50374343333334,
+            "tail_cpu_ms": 109.40118635,
+            "drain_cpu_ms": 0.14137743333333333
+          },
+          "by_buffer": {
+            "0": {
+              "samples": 128.0,
+              "claim_wall_ms": 661.3618428666666,
+              "tail_wall_ms": 282.140394,
+              "drain_wall_ms": 0.6346446666666666,
+              "claim_cpu_ms": 503.79784686666665,
+              "tail_cpu_ms": 99.8341702,
+              "drain_cpu_ms": 0.12916433333333333
+            },
+            "1": {
+              "samples": 128.0,
+              "claim_wall_ms": 650.5822944,
+              "tail_wall_ms": 289.3092517333333,
+              "drain_wall_ms": 0.4663934,
+              "claim_cpu_ms": 501.32447873333336,
+              "tail_cpu_ms": 108.3075208,
+              "drain_cpu_ms": 0.14202513333333333
+            },
+            "2": {
+              "samples": 128.0,
+              "claim_wall_ms": 652.1419640666667,
+              "tail_wall_ms": 287.4180178,
+              "drain_wall_ms": 1.1081302,
+              "claim_cpu_ms": 503.79804226666664,
+              "tail_cpu_ms": 114.85675806666667,
+              "drain_cpu_ms": 0.14498286666666665
+            },
+            "3": {
+              "samples": 128.0,
+              "claim_wall_ms": 652.3472625333334,
+              "tail_wall_ms": 292.1746359333333,
+              "drain_wall_ms": 0.6549693333333333,
+              "claim_cpu_ms": 505.09460586666665,
+              "tail_cpu_ms": 114.60629633333333,
+              "drain_cpu_ms": 0.1493374
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "pool_cost_sort",
+      "sps": 207270.07402338184,
+      "phases": {
+        "ROLLOUT_DETAIL": {
+          "means": {
+            "complete_ms": 1248.3439882333334,
+            "model_ms": 108.30430545,
+            "env_ms": 973.4308095166667,
+            "copy_ms": 68.40950165
+          },
+          "by_buffer": {
+            "0": {
+              "complete_ms": 1247.8660423333333,
+              "model_ms": 108.2328756,
+              "env_ms": 979.8646769333334,
+              "copy_ms": 68.13551226666667
+            },
+            "1": {
+              "complete_ms": 1248.166291,
+              "model_ms": 108.64489593333333,
+              "env_ms": 972.782963,
+              "copy_ms": 68.2137416
+            },
+            "2": {
+              "complete_ms": 1242.4794356,
+              "model_ms": 109.094303,
+              "env_ms": 965.5502280000001,
+              "copy_ms": 68.823557
+            },
+            "3": {
+              "complete_ms": 1254.864184,
+              "model_ms": 107.24514726666666,
+              "env_ms": 975.5253701333334,
+              "copy_ms": 68.46519573333333
+            }
+          }
+        },
+        "POOL_TIMING": {
+          "means": {
+            "samples": 128.0,
+            "claim_wall_ms": 676.1897999166666,
+            "tail_wall_ms": 296.29346395,
+            "drain_wall_ms": 0.8688601666666667,
+            "claim_cpu_ms": 539.3048621,
+            "tail_cpu_ms": 121.66760688333333,
+            "drain_cpu_ms": 0.1425068
+          },
+          "by_buffer": {
+            "0": {
+              "samples": 128.0,
+              "claim_wall_ms": 682.3304402,
+              "tail_wall_ms": 296.75803940000003,
+              "drain_wall_ms": 0.6974732,
+              "claim_cpu_ms": 550.2842064,
+              "tail_cpu_ms": 123.67089,
+              "drain_cpu_ms": 0.1415454
+            },
+            "1": {
+              "samples": 128.0,
+              "claim_wall_ms": 675.2931103333333,
+              "tail_wall_ms": 296.38422453333334,
+              "drain_wall_ms": 1.0341912,
+              "claim_cpu_ms": 539.9194464,
+              "tail_cpu_ms": 125.78548786666667,
+              "drain_cpu_ms": 0.14488753333333332
+            },
+            "2": {
+              "samples": 128.0,
+              "claim_wall_ms": 669.1757987333333,
+              "tail_wall_ms": 295.5412668,
+              "drain_wall_ms": 0.7533036666666667,
+              "claim_cpu_ms": 538.0288178666667,
+              "tail_cpu_ms": 130.54720093333333,
+              "drain_cpu_ms": 0.13569006666666666
+            },
+            "3": {
+              "samples": 128.0,
+              "claim_wall_ms": 677.9598504,
+              "tail_wall_ms": 296.4903250666667,
+              "drain_wall_ms": 0.9904725999999999,
+              "claim_cpu_ms": 528.9869777333333,
+              "tail_cpu_ms": 106.66684873333334,
+              "drain_cpu_ms": 0.1479042
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "pool_cost_base_b",
+      "sps": 210037.43302675302,
+      "phases": {
+        "ROLLOUT_DETAIL": {
+          "means": {
+            "complete_ms": 1231.2960584666666,
+            "model_ms": 109.47556195,
+            "env_ms": 949.0763234166667,
+            "copy_ms": 68.8289252
+          },
+          "by_buffer": {
+            "0": {
+              "complete_ms": 1232.6246104,
+              "model_ms": 109.17978153333333,
+              "env_ms": 948.5301718,
+              "copy_ms": 68.30205273333334
+            },
+            "1": {
+              "complete_ms": 1238.2433096,
+              "model_ms": 109.0781418,
+              "env_ms": 954.4390868,
+              "copy_ms": 68.5013026
+            },
+            "2": {
+              "complete_ms": 1229.0129184,
+              "model_ms": 110.34333146666667,
+              "env_ms": 947.8741413333333,
+              "copy_ms": 69.741099
+            },
+            "3": {
+              "complete_ms": 1225.3033954666666,
+              "model_ms": 109.300993,
+              "env_ms": 945.4618937333333,
+              "copy_ms": 68.77124646666667
+            }
+          }
+        },
+        "POOL_TIMING": {
+          "means": {
+            "samples": 128.0,
+            "claim_wall_ms": 663.8470856,
+            "tail_wall_ms": 284.60204023333335,
+            "drain_wall_ms": 0.5426660333333333,
+            "claim_cpu_ms": 514.7819745666667,
+            "tail_cpu_ms": 114.08973533333334,
+            "drain_cpu_ms": 0.14560545
+          },
+          "by_buffer": {
+            "0": {
+              "samples": 128.0,
+              "claim_wall_ms": 662.2888011333333,
+              "tail_wall_ms": 285.88214553333336,
+              "drain_wall_ms": 0.27911406666666666,
+              "claim_cpu_ms": 509.0122148,
+              "tail_cpu_ms": 115.13876766666667,
+              "drain_cpu_ms": 0.13636686666666667
+            },
+            "1": {
+              "samples": 128.0,
+              "claim_wall_ms": 669.5055810666667,
+              "tail_wall_ms": 284.12682106666665,
+              "drain_wall_ms": 0.731321,
+              "claim_cpu_ms": 509.5908397333333,
+              "tail_cpu_ms": 100.34684646666666,
+              "drain_cpu_ms": 0.15238906666666666
+            },
+            "2": {
+              "samples": 128.0,
+              "claim_wall_ms": 656.0219964666667,
+              "tail_wall_ms": 291.31361506666667,
+              "drain_wall_ms": 0.46384960000000003,
+              "claim_cpu_ms": 515.6542000000001,
+              "tail_cpu_ms": 120.47680153333333,
+              "drain_cpu_ms": 0.15029886666666667
+            },
+            "3": {
+              "samples": 128.0,
+              "claim_wall_ms": 667.5719637333333,
+              "tail_wall_ms": 277.0855792666667,
+              "drain_wall_ms": 0.6963794666666666,
+              "claim_cpu_ms": 524.8706437333333,
+              "tail_cpu_ms": 120.39652566666666,
+              "drain_cpu_ms": 0.143367
+            }
+          }
+        }
+      }
+    }
+  ],
+  "loop_epoch_window": [
+    64,
+    78
+  ],
+  "detail_epoch_window": [
+    65,
+    79
+  ],
+  "caveat": "Per-buffer stages overlap across buffers and are not additive pipeline wall time."
+}

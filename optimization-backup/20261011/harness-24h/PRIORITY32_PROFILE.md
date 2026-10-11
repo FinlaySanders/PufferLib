@@ -1,0 +1,11 @@
+# Profile after inference priority
+
+The capture includes226PPOupdates and1024inferencegraphs over2matureepochs onthecorrectedfastGPUstack,32CPUworkers,highpriorityactorstreams. Source/binary/commands arein runs/priority32_profile_node/command.json.
+
+Inference graph span averages0.9014ms during PPO versus0.3824ms without it. Summed inferencekernels average0.7554ms versus0.3726ms. The lastprofile beforepriority showed1.6915ms and0.3901ms. Theseare observational phasegroupsfromdifferenttraces, notcontrolledcausalestimates. The lower spanisconsistentwithless schedulingdelay;kernelexecutionisstill slowerduringtraining.
+
+CPU environmentrange averages7.836ms duringPPO and7.337ms without. Pooltail~2.17ms inbothgroups. Sampling40.4us/inference,messagepool21.2us. Messagebackward138.3us/update;subsequentexactaccumulatorshardingwasneutralinunprofiledGPUtiming.
+
+Weightapply154.4us andseparate FP32→BF16cast~105us/update expose redundantfullweightreads. Newfusioncandidatesarebeingtested. Large GEMMsremaindominant,butthefirstshape-specificrecurrentdWalgorithmgainonlytranslatedto+.44%wholeGPU;parked.
+
+Never interpret summedkerneltimesasadditivewallshares. Nsightnodetracingheavilyslowsthefullprocess;profiled66kSPSisnotthroughput. Currentunprofiledcombinedscoremeasurement210,222SPS.

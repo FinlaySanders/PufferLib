@@ -1,0 +1,81 @@
+--- a/ocean/nethack/nethack.cu
++++ b/ocean/nethack/nethack.cu
+@@ -1249,6 +1249,44 @@
+         nh_fxp_atomic_add(&dmsg_acc[(int64_t)(int)mi[t] * NH_MSG_HID + d], g);
+ }
+ 
++static int nh_msg_grad_shards() {
++    static int shards = getenv("NH_MSG_SHARDS") ? atoi(getenv("NH_MSG_SHARDS")) : 1;
++    assert(shards >= 1 && shards <= 16 && (shards & (shards - 1)) == 0);
++    return shards;
++}
++
++__global__ void nh_msg_bwd_shards_kernel(
++    long long* __restrict__ acc, const precision_t* __restrict__ grad_concat,
++    const float* __restrict__ ids, int B, int shards) {
++    int b = blockIdx.x;
++    if (b >= B) return;
++    int d = threadIdx.x;
++    const float* mi = ids + (int64_t)b * NH_MSG_LEN;
++    int count = 0;
++    for (int t = 0; t < NH_MSG_LEN; t++) {
++        if ((int)mi[t] < 0) break;
++        count++;
++    }
++    float g = to_float(grad_concat[(int64_t)b * NH_CONCAT + NH_MSG_CONCAT_OFF + d])
++        * rsqrtf((float)count + 1.0f);
++    if (g == 0.0f) return;
++    long long q = __float2ll_rn(g * NH_FXP);
++    int64_t base = (int64_t)(b & (shards - 1)) * NH_MSG_VOCAB * NH_MSG_HID;
++    for (int t = 0; t < count; t++)
++        atomicAdd((unsigned long long*)&acc[base + (int64_t)(int)mi[t] * NH_MSG_HID + d],
++            (unsigned long long)q);
++}
++
++__global__ void nh_msg_reduce_shards_kernel(precision_t* __restrict__ out,
++        const long long* __restrict__ acc, int shards) {
++    int i = blockIdx.x * blockDim.x + threadIdx.x;
++    const int n = NH_MSG_VOCAB * NH_MSG_HID;
++    if (i >= n) return;
++    unsigned long long sum = 0;
++    for (int s = 0; s < shards; s++) sum += (unsigned long long)acc[(int64_t)s * n + i];
++    out[i] = from_float(nh_fxp_to_float((long long)sum));
++}
++
+ // spell-key forward: per slot, build the 36-dim input [e_eff(book glyph) |
+ // known, lev/7, fail/100, know/20000], key = spk_w . input. Saves inputs +
+ // glyph ids for the backward; empty slot -> zero input -> zero key.
+@@ -2385,11 +2423,19 @@
+     // Message branch: scatter (1/sqrt(count+1))*dout into the trigram embedding
+     // grad (fixed-point). Reads its grad straight off the concat-grad slice;
+     // ids saved from the forward, so no obs re-read.
+-    cudaMemsetAsync(a->dmsg_acc.data, 0, (size_t)NH_MSG_VOCAB * NH_MSG_HID * sizeof(long long), stream);
+-    nh_msg_bwd_kernel<<<B, NH_MSG_HID, 0, stream>>>(
+-        (long long*)a->dmsg_acc.data, grad_concat.data, a->msg_ids.data, B);
+-    nh_fxp_to_precision_kernel<<<grid_size(NH_MSG_VOCAB * NH_MSG_HID), BLOCK_SIZE, 0, stream>>>(
+-        a->msg_wgrad.data, (long long*)a->dmsg_acc.data, NH_MSG_VOCAB * NH_MSG_HID);
++    int msg_shards = nh_msg_grad_shards();
++    cudaMemsetAsync(a->dmsg_acc.data, 0, (size_t)msg_shards * NH_MSG_VOCAB * NH_MSG_HID * sizeof(long long), stream);
++    if (msg_shards > 1) {
++        nh_msg_bwd_shards_kernel<<<B, NH_MSG_HID, 0, stream>>>(
++            (long long*)a->dmsg_acc.data, grad_concat.data, a->msg_ids.data, B, msg_shards);
++        nh_msg_reduce_shards_kernel<<<grid_size(NH_MSG_VOCAB * NH_MSG_HID), BLOCK_SIZE, 0, stream>>>(
++            a->msg_wgrad.data, (long long*)a->dmsg_acc.data, msg_shards);
++    } else {
++        nh_msg_bwd_kernel<<<B, NH_MSG_HID, 0, stream>>>(
++            (long long*)a->dmsg_acc.data, grad_concat.data, a->msg_ids.data, B);
++        nh_fxp_to_precision_kernel<<<grid_size(NH_MSG_VOCAB * NH_MSG_HID), BLOCK_SIZE, 0, stream>>>(
++            a->msg_wgrad.data, (long long*)a->dmsg_acc.data, NH_MSG_VOCAB * NH_MSG_HID);
++    }
+ 
+     // Global branch to the embed table + glb1: scatter dt16 occurrences into
+     // dT, then dE = dT @ W' and dW' = dT^T @ E (the fused-table backward).
+@@ -2799,7 +2845,7 @@
+     a->dE_i = {.shape = {NH_GLYPH_VOCAB, NH_EMBED_DIM}};
+     a->loc2_wgrad = {.shape = {NH_LOC_HID, NH_LOC_H1}};
+     a->loc2_bgrad = {.shape = {NH_LOC_HID}};
+-    a->dmsg_acc = {.shape = {NH_MSG_VOCAB * NH_MSG_HID}};
++    a->dmsg_acc = {.shape = {nh_msg_grad_shards() * NH_MSG_VOCAB * NH_MSG_HID}};
+     a->bias_acc = {.shape = {ew->hidden + NH_LOC_HID + NH_GLB_HID + NH_BL_HID + NH_P1 + NH_INV_HID + NH_INV_POOL}}; // superset of packed slots
+     alloc_register(acts,&a->loc_grad);  alloc_register(acts,&a->glb_grad);
+     a->mh1 = {.shape = {B_TT, NH_INV * NH_MV}};  a->mdh1 = {.shape = {B_TT, NH_INV * NH_MV}};

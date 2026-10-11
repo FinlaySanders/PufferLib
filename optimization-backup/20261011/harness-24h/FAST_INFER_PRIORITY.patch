@@ -1,0 +1,24 @@
+--- before/pufferl.cu
++++ after/pufferl.cu
+@@ -2468,8 +2468,20 @@
+         }
+     }
+     pufferl->streams = (cudaStream_t*)calloc(1, num_buffers * sizeof(cudaStream_t));
++    int infer_high = 0, infer_low = 0;
++    bool infer_priority = getenv("PUF_INFER_PRIORITY") && atoi(getenv("PUF_INFER_PRIORITY"));
++    if (infer_priority)
++        assert(cudaDeviceGetStreamPriorityRange(&infer_low, &infer_high) == cudaSuccess);
+     for (int i = 0; i < num_buffers; i++) {
+-        if (hypers.async) {
++        if (hypers.async && infer_priority) {
++            assert(cudaStreamCreateWithPriority(&pufferl->streams[i],
++                cudaStreamNonBlocking, infer_high) == cudaSuccess);
++            int actual = 0;
++            assert(cudaStreamGetPriority(pufferl->streams[i], &actual) == cudaSuccess);
++            assert(actual == infer_high);
++            fprintf(stderr, "INFER_PRIORITY buffer=%d requested=%d actual=%d low=%d\n",
++                i, infer_high, actual, infer_low);
++        } else if (hypers.async) {
+             assert(cudaStreamCreateWithFlags(
+                 &pufferl->streams[i], cudaStreamNonBlocking) == cudaSuccess);
+         } else {

@@ -1,0 +1,58 @@
+[
+  {
+    "kind": "full",
+    "label": "workers_full_base_a",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_WORKERS": 24
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "workers28_full",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_WORKERS": 28
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "workers32_full",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_WORKERS": 32
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "workers_full_base_b",
+    "binary": "completion_workspace_v13",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1,
+      "PUF_POOL_WORKERS": 24
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

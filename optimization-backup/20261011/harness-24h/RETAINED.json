@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "retained_at": "2026-10-09T23:51:57.372425+00:00",
+  "binary": "/puffertank/experiments/nethack-24h-20261009/binaries/clean_wait",
+  "binary_sha256": "fd37cca70fb8392ae4f77be8c2a2565d5be87650004d05f7d90493e461d7d392",
+  "environment": {
+    "PUF_CUDA_WAIT": "block"
+  },
+  "patch": "/puffertank/experiments/nethack-24h-20261009/clean_wait/wait.patch",
+  "source": "/puffertank/experiments/nethack-24h-20261009/clean_wait/source",
+  "fixed_baseline": "/puffertank/experiments/nethack-24h-20261009/binaries/baseline",
+  "control_sps": 194195.5504434895,
+  "candidate_sps": 200502.87079436227,
+  "gain_percent": 3.2479221776547273,
+  "proof": {
+    "saved_batch_updates": 113,
+    "live_steps": 2097152,
+    "live_updates": 904,
+    "exact": true
+  },
+  "timing_artifact": "CLEAN_VALIDATE2.results.json",
+  "secondary": "WAIT_CONFIRM_FAIR.results.json",
+  "limitations": [
+    "Score mature workload on this RTX4090/i9-14900K host; depth approximately neutral.",
+    "No production/default changes."
+  ],
+  "early_window": {
+    "epochs": "3-14",
+    "control_sps": 207574.7387534657,
+    "candidate_sps": 207312.40230285597,
+    "gain_percent": -0.12638168410333828
+  }
+}

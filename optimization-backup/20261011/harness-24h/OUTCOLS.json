@@ -1,0 +1,66 @@
+[
+  {
+    "kind": "inference",
+    "label": "inference_micro_smoke",
+    "binary": "outplace_cols_v6",
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "outcols_base_a",
+    "binary": "outplace_cols_v6",
+    "env": {},
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "outcols_outplace",
+    "binary": "outplace_cols_v6",
+    "env": {
+      "PUF_OUTPLACE": 1
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "outcols_cols128",
+    "binary": "outplace_cols_v6",
+    "env": {
+      "NH_COLSUM_BLOCKS": 128
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "outcols_cols256",
+    "binary": "outplace_cols_v6",
+    "env": {
+      "NH_COLSUM_BLOCKS": 256
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "outcols_cols512",
+    "binary": "outplace_cols_v6",
+    "env": {
+      "NH_COLSUM_BLOCKS": 512
+    },
+    "args": [
+      "--trials=4"
+    ]
+  },
+  {
+    "label": "outcols_base_b",
+    "binary": "outplace_cols_v6",
+    "env": {},
+    "args": [
+      "--trials=4"
+    ]
+  }
+]

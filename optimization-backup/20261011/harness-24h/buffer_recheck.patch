@@ -1,0 +1,67 @@
+--- baseline/env_pool.h
++++ candidate/env_pool.h
+@@ -15,7 +15,7 @@
+ typedef struct EnvPool EnvPool;
+ typedef struct { EnvPool* pool; int id; } EPWorker;
+ struct EnvPool {
+-    int workers, buffers, stop;
++    int workers, buffers, stop, buffer_focus;
+     unsigned long epoch;
+     pthread_mutex_t mu;
+     pthread_cond_t ready;
+@@ -26,7 +26,8 @@
+     void* context;
+ };
+ 
+-static void ep_claim(EnvPool* p, EPRegion* r, int id) {
++static int ep_claim(EnvPool* p, EPRegion* r, int id) {
++    int worked = 0;
+     for (int k = 0; k < p->workers; k++) {
+         int home = (id + k) % p->workers;
+         for (;;) {
+@@ -34,9 +35,11 @@
+             int offset = home + n * p->workers;
+             if (offset >= r->count) break;
+             p->step(p->context, r->start + offset);
++            worked++;
+             __atomic_fetch_add(&r->done, 1, __ATOMIC_RELEASE);
+         }
+     }
++    return worked;
+ }
+ 
+ static void* ep_worker(void* arg) {
+@@ -48,20 +51,23 @@
+         int stop = p->stop;
+         pthread_mutex_unlock(&p->mu);
+         if (stop) return NULL;
++        int repeat_ready_scan = 0;
+         for (int k = 0; k < p->buffers; k++) {
+-            EPRegion* r = &p->region[(w->id + k) % p->buffers];
++            EPRegion* r = &p->region[(p->buffer_focus ? k : w->id + k) % p->buffers];
+             pthread_mutex_lock(&r->mu);
+             int active = r->active;
+             if (active) r->readers++;
+             pthread_mutex_unlock(&r->mu);
+             if (!active) continue;
+             nvtxRangePushA("pool.worker_work");
+-            ep_claim(p, r, w->id);
++            int worked = ep_claim(p, r, w->id);
+             nvtxRangePop();
+             pthread_mutex_lock(&r->mu);
+             if (--r->readers == 0) pthread_cond_signal(&r->quiet);
+             pthread_mutex_unlock(&r->mu);
++            if (p->buffer_focus && worked) {repeat_ready_scan = 1; break;}
+         }
++        if (repeat_ready_scan) continue;
+         pthread_mutex_lock(&p->mu);
+         while (!p->stop && epoch == p->epoch) pthread_cond_wait(&p->ready, &p->mu);
+         pthread_mutex_unlock(&p->mu);
+@@ -72,6 +78,7 @@
+     assert(workers > 0 && buffers > 0);
+     EnvPool* p = (EnvPool*)calloc(1, sizeof(*p));
+     assert(p);
++    p->buffer_focus = getenv("PUF_BUFFER_FOCUS") != NULL;
+     p->workers = workers; p->buffers = buffers; p->step = step; p->context = context;
+     p->region = (EPRegion*)calloc(buffers, sizeof(*p->region));
+     p->threads = (pthread_t*)calloc(workers, sizeof(*p->threads));

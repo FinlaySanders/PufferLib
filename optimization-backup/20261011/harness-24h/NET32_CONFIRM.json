@@ -1,0 +1,52 @@
+[
+  {
+    "kind": "full",
+    "label": "net32_base_a",
+    "binary": "baseline",
+    "env": {
+      "PUF_POOL_WORKERS": 24
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "net32_block24",
+    "binary": "clean_wait",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_POOL_WORKERS": 24
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "net32_block32",
+    "binary": "clean_wait",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_POOL_WORKERS": 32
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "net32_base_b",
+    "binary": "baseline",
+    "env": {
+      "PUF_POOL_WORKERS": 24
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]

@@ -1,0 +1,119 @@
+[
+  {
+    "kind": "full",
+    "label": "wait_block_b",
+    "binary": "wait_rec_v8",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "wait_base_c",
+    "binary": "baseline",
+    "env": {
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "fair_full_smoke",
+    "binary": "fair_sym_ws_v9",
+    "env": {
+      "PUF_BUFFER_FAIR": 1,
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64",
+      "--epochs=4",
+      "--start=1"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "fair_full_base_a",
+    "binary": "fair_sym_ws_v9",
+    "env": {
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "fair_full_a",
+    "binary": "fair_sym_ws_v9",
+    "env": {
+      "PUF_BUFFER_FAIR": 1,
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "fair_full_base_b",
+    "binary": "fair_sym_ws_v9",
+    "env": {
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "wait_depth_base_a",
+    "binary": "baseline",
+    "env": {
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64",
+      "--workload=depth"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "wait_depth_block",
+    "binary": "wait_rec_v8",
+    "env": {
+      "PUF_CUDA_WAIT": "block",
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64",
+      "--workload=depth"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "wait_depth_base_b",
+    "binary": "baseline",
+    "env": {
+      "PUF_ROLLOUT_DETAIL": 1
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64",
+      "--workload=depth"
+    ]
+  }
+]

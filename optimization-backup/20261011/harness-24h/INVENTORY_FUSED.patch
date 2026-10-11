@@ -1,0 +1,43 @@
+--- src/algo.cu
++++ src/algo.cu
+@@ -1,5 +1,6 @@
+ #include <cublasLt.h>
+ #include "rec_fused.cuh"
++#include "inventory_fused.cuh"
+ thread_local cublasLtHandle_t g_nh_epilogue_handle = NULL;
+ thread_local cublasLtHandle_t g_rec_lt = NULL;
+ static size_t nh_rec_workspace_bytes() {
+@@ -129,6 +130,7 @@
+ 
+ void cublas_init_handle() {
+     rec_fused_init();
++    inventory_fused_init();
+     if((getenv("NH_REC_LT") || getenv("NH_TRAIN_DW_LT")) && !g_rec_lt)
+         assert(cublasLtCreate(&g_rec_lt)==CUBLAS_STATUS_SUCCESS);
+     if (getenv("NH_FUSED_BR") && atoi(getenv("NH_FUSED_BR")) && !g_nh_epilogue_handle)
+--- ocean/nethack/nethack.cu
++++ ocean/nethack/nethack.cu
+@@ -2169,6 +2169,15 @@
+     nh_inv_gather_kernel<<<grid_size(B * NH_INV_FLAT), BLOCK_SIZE, 0, stream>>>(
+         a->inv_out.data, a->inv_T.data, ew->inv1_b.data, ew->inv1s_w.data,
+         a->inv_sfeat.data, a->inv_idx.data, a->invt_T.data, a->invt_idx.data, B);
++    bool inventory_fused = false;
++#ifndef NH_ENT_LINPOOL
++    if (!a->training && NH_CONCAT == 1698 && NH_MINV_OFF == 1010
++            && NH_INV == 55 && NH_INV_HID == 16 && NH_MV == 64)
++        inventory_fused = inventory_fused_try(a->inv_out.data,
++            ew->mv1_w.data, ew->mv1_b.data, ew->mv2_w.data, ew->mv2_b.data,
++            a->inv_idx.data, a->concat.data, a->mvmax.data, a->mh1.data, a->mvv.data, B, stream);
++#endif
++    if (!inventory_fused) {
+     { Prec invf = {.data = a->inv_out.data, .shape = {B * NH_INV, NH_INV_HID}};
+       Prec h1f = {.data = a->mh1.data, .shape = {B * NH_INV, NH_MV}};
+       NH_MM_BR(&invf, &ew->mv1_w, &h1f, ew->mv1_b); }
+@@ -2178,6 +2187,7 @@
+     nh_min_summax_kernel<<<grid_size(B * NH_MV), BLOCK_SIZE, 0, stream>>>(
+         a->concat.data, a->mvmax.data, a->mvv.data, a->inv_idx.data,
+         0.2f, NH_INV, NH_PAD_GLYPH, NH_MINV_OFF, B);
++    }
+ #ifdef NH_NOPASS
+     nh_pass_launch(
+         a->concat.data, a->inv_out.data, a->inv_sfeat.data, a->inv_idx.data,

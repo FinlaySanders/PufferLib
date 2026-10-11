@@ -1,0 +1,189 @@
+--- before/ocean/nethack/nethack.cu
++++ after/ocean/nethack/nethack.cu
+@@ -1669,6 +1669,21 @@
+         if (sdata[j] != 0) atomicAdd((unsigned long long*)&bias_acc[j], (unsigned long long)sdata[j]);
+ }
+ 
++// Exact wide-column path: each CTA thread owns a distinct column.
++__global__ void nh_relu_bias_bwd_direct_kernel(
++    precision_t* __restrict__ grad, const precision_t* __restrict__ out,
++    long long* __restrict__ bias_acc, int64_t total, int dim) {
++    int64_t i0 = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
++    int64_t stride = (int64_t)gridDim.x * blockDim.x;
++    float acc = 0.0f;
++    for (int64_t i = i0; i < total; i += stride) {
++        float g = to_float(out[i]) > 0.0f ? to_float(grad[i]) : 0.0f;
++        grad[i] = from_float(g);
++        acc += g;
++    }
++    if (acc != 0.0f) nh_fxp_atomic_add(&bias_acc[(int)(i0 % dim)], acc);
++}
++
+ // bias-grad column sums without a relu mask (NH_ENT_LINPOOL: linear last entity layer)
+ __global__ void nh_bias_bwd_kernel(
+     precision_t* __restrict__ grad, const precision_t* __restrict__ out,
+@@ -1702,6 +1717,21 @@
+     if (g > cap) g = cap;
+     while ((g * BLOCK_SIZE) % dim) g++;
+     return (int)g;
++}
++
++static void nh_relu_bias_backward(precision_t* grad, const precision_t* out,
++    long long* bias_acc, int64_t total, int dim, cudaStream_t stream) {
++    static thread_local int direct = -1;
++    if (direct < 0) direct = getenv("NH_BIAS_DIRECT") ? atoi(getenv("NH_BIAS_DIRECT")) : 0;
++    assert(direct == 0 || direct == 1);
++    int blocks = nh_colsum_grid(total, dim);
++    if (direct && dim >= BLOCK_SIZE) {
++        nh_relu_bias_bwd_direct_kernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
++            grad, out, bias_acc, total, dim);
++    } else {
++        nh_relu_bias_bwd_kernel<<<blocks, BLOCK_SIZE, dim * sizeof(long long), stream>>>(
++            grad, out, bias_acc, total, dim);
++    }
+ }
+ 
+ // Cast the packed fixed-point bias accumulators to their grad tensors in one launch.
+@@ -2224,8 +2254,7 @@
+     // fixed-point bias-grad accumulators: [proj H | loc 256 | glb2/terr2 128 | bl 64 | glb1 16? | inv1 | inv2 128?]
+     long long* bacc = (long long*)a->bias_acc.data;
+     cudaMemsetAsync(bacc, 0, (H + NH_LOC_HID + NH_GLB_HID + NH_BL_HID + NH_BACC_GLB1 + NH_INV_HID + NH_BACC_INVP) * sizeof(long long), stream);
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * H, H), BLOCK_SIZE, H * sizeof(long long), stream>>>(
+-        grad.data, a->out.data, bacc, (int64_t)B * H, H);
++    nh_relu_bias_backward(grad.data, a->out.data, bacc, (int64_t)B * H, H, stream);
+     puf_mm_tn(&grad, &a->concat, &a->proj_wgrad, stream);
+ 
+ 
+@@ -2248,16 +2277,14 @@
+     // x_local in place before scattering into the embed table.
+     nh_slice_kernel<<<grid_size(B * NH_LOC_HID), BLOCK_SIZE, 0, stream>>>(
+         a->loc_grad.data, grad_concat.data, B, NH_CONCAT, 0, NH_LOC_HID);
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_LOC_HID, NH_LOC_HID), BLOCK_SIZE, NH_LOC_HID * sizeof(long long), stream>>>(
+-        a->loc_grad.data, a->loc_out.data, bacc + H, (int64_t)B * NH_LOC_HID, NH_LOC_HID);
++    nh_relu_bias_backward(a->loc_grad.data, a->loc_out.data, bacc + H, (int64_t)B * NH_LOC_HID, NH_LOC_HID, stream);
+     Prec locg = {.data = a->loc_grad.data, .shape = {B, NH_LOC_HID}};
+     // second layer: dW2 = dout^T h1, dh1 = dout W2 (in place over h1 after wgrad), relu mask + own bias acc
+     nh_pipeline_wgrad(&locg, &a->loc_h1, &a->loc2_wgrad, stream, 2);
+     Prec dh1 = {.data = a->loc_h1_grad.data, .shape = {B, NH_LOC_H1}};
+     puf_mm_nn(&locg, &ew->loc2_w, &dh1, stream);
+     cudaMemsetAsync(a->loc1b_acc.data, 0, NH_LOC_H1 * sizeof(long long), stream);
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_LOC_H1, NH_LOC_H1), BLOCK_SIZE, NH_LOC_H1 * sizeof(long long), stream>>>(
+-        dh1.data, a->loc_h1.data, (long long*)a->loc1b_acc.data, (int64_t)B * NH_LOC_H1, NH_LOC_H1);
++    nh_relu_bias_backward(dh1.data, a->loc_h1.data, (long long*)a->loc1b_acc.data, (int64_t)B * NH_LOC_H1, NH_LOC_H1, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_LOC_H1), BLOCK_SIZE, 0, stream>>>(
+         a->loc_bgrad.data, (long long*)a->loc1b_acc.data, NH_LOC_H1);
+     puf_mm_tn(&dh1, &a->x_local, &a->loc_wgrad, stream);
+@@ -2268,8 +2295,7 @@
+     // fixed-point staging, dt16 overwrites t16), then b1's column sum.
+     nh_slice_kernel<<<grid_size(B * NH_GLB_HID), BLOCK_SIZE, 0, stream>>>(
+         a->glb_grad.data, grad_concat.data, B, NH_CONCAT, NH_LOC_HID, NH_GLB_HID);
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_GLB_HID, NH_GLB_HID), BLOCK_SIZE, NH_GLB_HID * sizeof(long long), stream>>>(
+-        a->glb_grad.data, a->glb_out.data, bacc + H + NH_LOC_HID, (int64_t)B * NH_GLB_HID, NH_GLB_HID);
++    nh_relu_bias_backward(a->glb_grad.data, a->glb_out.data, bacc + H + NH_LOC_HID, (int64_t)B * NH_GLB_HID, NH_GLB_HID, stream);
+     // terrain MLP backward: features are inputs (no grad past terr_tf); the
+     // bacc glb2 slot above carries terr2_b's grad.
+     { Prec glbg = {.data = a->glb_grad.data, .shape = {B, NH_GLB_HID}};
+@@ -2277,8 +2303,7 @@
+       Prec tdh = {.data = a->terr_dh.data, .shape = {B, NH_TERR_H1}};
+       puf_mm_nn(&glbg, &ew->terr2_w, &tdh, stream);
+       cudaMemsetAsync(a->terr1b_acc.data, 0, NH_TERR_H1 * sizeof(long long), stream);
+-      nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_TERR_H1, NH_TERR_H1), BLOCK_SIZE, NH_TERR_H1 * sizeof(long long), stream>>>(
+-          tdh.data, a->terr_h.data, (long long*)a->terr1b_acc.data, (int64_t)B * NH_TERR_H1, NH_TERR_H1);
++      nh_relu_bias_backward(tdh.data, a->terr_h.data, (long long*)a->terr1b_acc.data, (int64_t)B * NH_TERR_H1, NH_TERR_H1, stream);
+       nh_fxp_to_precision_kernel<<<grid_size(NH_TERR_H1), BLOCK_SIZE, 0, stream>>>(
+           a->terr1_bgrad.data, (long long*)a->terr1b_acc.data, NH_TERR_H1);
+       nh_pipeline_wgrad(&tdh, &a->terr_tf, &a->terr1_wgrad, stream, 2); }
+@@ -2305,9 +2330,8 @@
+       nh_pipeline_wgrad(&dvf, &h1f, &a->mv2_wgrad, stream, 2);
+       Prec dh1f = {.data = a->mdh1.data, .shape = {B * NH_INV, NH_MV}};
+       puf_mm_nn(&dvf, &ew->mv2_w, &dh1f, stream); }
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_INV * NH_MV, NH_MV), BLOCK_SIZE, NH_MV * sizeof(long long), stream>>>(
+-        a->mdh1.data, a->mh1.data, (long long*)a->mv1b_acc.data,
+-        (int64_t)B * NH_INV * NH_MV, NH_MV);
++    nh_relu_bias_backward(a->mdh1.data, a->mh1.data, (long long*)a->mv1b_acc.data,
++        (int64_t)B * NH_INV * NH_MV, NH_MV, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_MV), BLOCK_SIZE, 0, stream>>>(
+         a->mv1_bgrad.data, (long long*)a->mv1b_acc.data, NH_MV);
+     { Prec dh1f = {.data = a->mdh1.data, .shape = {B * NH_INV, NH_MV}};
+@@ -2331,9 +2355,8 @@
+             a->inv_grad.data, nh_ptr_keygrad->data, B * NH_INV_FLAT);
+     // attention tail: third consumer of inv_out, also pre-relu-mask
+     // no encoder attention under MIN
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_INV_FLAT, NH_INV_HID), BLOCK_SIZE, NH_INV_HID * sizeof(long long), stream>>>(
+-        a->inv_grad.data, a->inv_out.data, bacc + H + NH_LOC_HID + NH_GLB_HID + NH_BL_HID + NH_BACC_GLB1,
+-        (int64_t)B * NH_INV_FLAT, NH_INV_HID);
++    nh_relu_bias_backward(a->inv_grad.data, a->inv_out.data, bacc + H + NH_LOC_HID + NH_GLB_HID + NH_BL_HID + NH_BACC_GLB1,
++        (int64_t)B * NH_INV_FLAT, NH_INV_HID, stream);
+     // state-path weight grad: dW_s = dslot^T @ sfeat over the B*55 slot rows
+     Prec dsflat = {.data = a->inv_grad.data, .shape = {B * NH_INV, NH_INV_HID}};
+     Prec sfflat = {.data = a->inv_sfeat.data, .shape = {B * NH_INV, NH_SFEAT}};
+@@ -2355,8 +2378,7 @@
+     // Blstats branch (raw-feature slice of concat has no upstream params)
+     nh_slice_kernel<<<grid_size(B * NH_BL_HID), BLOCK_SIZE, 0, stream>>>(
+         a->bl_grad.data, grad_concat.data, B, NH_CONCAT, NH_LOC_HID + NH_GLB_HID + NH_INVP_DIM, NH_BL_HID);
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_BL_HID, NH_BL_HID), BLOCK_SIZE, NH_BL_HID * sizeof(long long), stream>>>(
+-        a->bl_grad.data, a->bl_out.data, bacc + H + NH_LOC_HID + NH_GLB_HID, (int64_t)B * NH_BL_HID, NH_BL_HID);
++    nh_relu_bias_backward(a->bl_grad.data, a->bl_out.data, bacc + H + NH_LOC_HID + NH_GLB_HID, (int64_t)B * NH_BL_HID, NH_BL_HID, stream);
+     Prec blg = {.data = a->bl_grad.data, .shape = {B, NH_BL_HID}};
+     nh_pipeline_wgrad(&blg, &a->bl_feats, &a->bl_wgrad, stream, 2);
+ 
+@@ -2415,9 +2437,8 @@
+       nh_pipeline_wgrad(&dvf, &hf, &a->spm2_wgrad, stream, 2);
+       Prec dhf = {.data = a->spdh1.data, .shape = {B * NH_SPELL_SLOTS, NH_SPM}};
+       puf_mm_nn(&dvf, &ew->spm2_w, &dhf, stream); }
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_SPELL_SLOTS * NH_SPM, NH_SPM), BLOCK_SIZE, NH_SPM * sizeof(long long), stream>>>(
+-        a->spdh1.data, a->sph1.data, (long long*)a->spm1b_acc.data,
+-        (int64_t)B * NH_SPELL_SLOTS * NH_SPM, NH_SPM);
++    nh_relu_bias_backward(a->spdh1.data, a->sph1.data, (long long*)a->spm1b_acc.data,
++        (int64_t)B * NH_SPELL_SLOTS * NH_SPM, NH_SPM, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_SPM), BLOCK_SIZE, 0, stream>>>(
+         a->spm1_bgrad.data, (long long*)a->spm1b_acc.data, NH_SPM);
+     { Prec dhf = {.data = a->spdh1.data, .shape = {B * NH_SPELL_SLOTS, NH_SPM}};
+@@ -2455,9 +2476,8 @@
+       nh_pipeline_wgrad(&dvf, &h1f, &a->mm2_wgrad, stream, 2);
+       Prec dh1f = {.data = a->mdh1m.data, .shape = {B * NH_LABK, NH_MV}};
+       puf_mm_nn(&dvf, &ew->mm2_w, &dh1f, stream); }
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_LABK * NH_MV, NH_MV), BLOCK_SIZE, NH_MV * sizeof(long long), stream>>>(
+-        a->mdh1m.data, a->mh1m.data, (long long*)a->mm1b_acc.data,
+-        (int64_t)B * NH_LABK * NH_MV, NH_MV);
++    nh_relu_bias_backward(a->mdh1m.data, a->mh1m.data, (long long*)a->mm1b_acc.data,
++        (int64_t)B * NH_LABK * NH_MV, NH_MV, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_MV), BLOCK_SIZE, 0, stream>>>(
+         a->mm1_bgrad.data, (long long*)a->mm1b_acc.data, NH_MV);
+     { Prec dh1f = {.data = a->mdh1m.data, .shape = {B * NH_LABK, NH_MV}};
+@@ -2468,9 +2488,8 @@
+     nh_min_sgate_bwd_kernel<<<grid_size(B * NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
+         a->mdrp.data, grad_concat.data, a->lm_tok.data, a->lm_gid.data,
+         0, NH_MLM_OFF + 2 * NH_MV, B);
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_LABK * NH_INV_HID, NH_INV_HID), BLOCK_SIZE, NH_INV_HID * sizeof(long long), stream>>>(
+-        a->mdrp.data, a->mrp.data, (long long*)a->mrb_acc.data,
+-        (int64_t)B * NH_LABK * NH_INV_HID, NH_INV_HID);
++    nh_relu_bias_backward(a->mdrp.data, a->mrp.data, (long long*)a->mrb_acc.data,
++        (int64_t)B * NH_LABK * NH_INV_HID, NH_INV_HID, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
+         a->mr_bgrad.data, (long long*)a->mrb_acc.data, NH_INV_HID);
+     Prec mtokf = {.data = a->lm_tok.data, .shape = {B * NH_LABK, NH_LAB_IN}};
+@@ -2495,9 +2514,8 @@
+       nh_pipeline_wgrad(&dvf, &h1f, &a->im2_wgrad, stream, 2);
+       Prec dh1f = {.data = a->mdh1i.data, .shape = {B * NH_LABK, NH_MV}};
+       puf_mm_nn(&dvf, &ew->im2_w, &dh1f, stream); }
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_LABK * NH_MV, NH_MV), BLOCK_SIZE, NH_MV * sizeof(long long), stream>>>(
+-        a->mdh1i.data, a->mh1i.data, (long long*)a->im1b_acc.data,
+-        (int64_t)B * NH_LABK * NH_MV, NH_MV);
++    nh_relu_bias_backward(a->mdh1i.data, a->mh1i.data, (long long*)a->im1b_acc.data,
++        (int64_t)B * NH_LABK * NH_MV, NH_MV, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_MV), BLOCK_SIZE, 0, stream>>>(
+         a->im1_bgrad.data, (long long*)a->im1b_acc.data, NH_MV);
+     { Prec dh1f = {.data = a->mdh1i.data, .shape = {B * NH_LABK, NH_MV}};
+@@ -2508,9 +2526,8 @@
+     nh_min_sgate_bwd_kernel<<<grid_size(B * NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
+         a->idrp.data, grad_concat.data, a->li_tok.data, a->li_gid.data,
+         1, NH_MLI_OFF + 2 * NH_MV, B);
+-    nh_relu_bias_bwd_kernel<<<nh_colsum_grid((int64_t)B * NH_LABK * NH_INV_HID, NH_INV_HID), BLOCK_SIZE, NH_INV_HID * sizeof(long long), stream>>>(
+-        a->idrp.data, a->irp.data, (long long*)a->irb_acc.data,
+-        (int64_t)B * NH_LABK * NH_INV_HID, NH_INV_HID);
++    nh_relu_bias_backward(a->idrp.data, a->irp.data, (long long*)a->irb_acc.data,
++        (int64_t)B * NH_LABK * NH_INV_HID, NH_INV_HID, stream);
+     nh_fxp_to_precision_kernel<<<grid_size(NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
+         a->ir_bgrad.data, (long long*)a->irb_acc.data, NH_INV_HID);
+     Prec itokf = {.data = a->li_tok.data, .shape = {B * NH_LABK, NH_LAB_IN}};

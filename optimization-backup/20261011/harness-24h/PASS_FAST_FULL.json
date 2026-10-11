@@ -1,0 +1,41 @@
+[
+  {
+    "kind": "full",
+    "label": "pass_full_base_a",
+    "binary": "pass_fast_v16",
+    "env": {
+      "NH_PASS_FAST": 0,
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "pass_full_both",
+    "binary": "pass_fast_v16",
+    "env": {
+      "NH_PASS_FAST": 3,
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  },
+  {
+    "kind": "full",
+    "label": "pass_full_base_b",
+    "binary": "pass_fast_v16",
+    "env": {
+      "NH_PASS_FAST": 0,
+      "PUF_CUDA_WAIT": "block"
+    },
+    "args": [
+      "--epochs=80",
+      "--start=64"
+    ]
+  }
+]
