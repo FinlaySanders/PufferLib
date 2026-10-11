@@ -184,3 +184,23 @@ ptr3_cos, dec_assemble) + sampler → 2. Expected forward alone 195 → ~80-100 
 less behind PPO and steal fewer SMs from it. Target: async epoch → max(rollout ≈ 0.65, PPO ≈ 0.85) → ~300-310K at 15M/2048 (+15-18%);
 15M/512 (champion) gains PPO relief only (same 2048 forwards/epoch), order +5-10%, unmeasured. Numerics change → determinism reference moves.
 Not a lever: forward batch size (512 rows = 327 µs: fixed cost dominates either way); host launch path (already one graph).
+
+## Contention measured (17:55 UTC; fwd_c128_async = same 15M/2048 cohort config in production async mode, node trace)
+| mode | forward proper median wall / busy | p10 / p90 | env phase | cycle | rollout s/epoch | PPO s/epoch |
+| sync (PPO and rollout alternate) | 195 / 191 µs | 184 / 274 | 726 µs | 933 µs | 0.60 | 0.83 |
+| async (production) | 744 / 652 µs | 418 / 1137 | 752 µs | 1587 µs | ≈0.99 (epoch 0.986) | 0.98 |
+The forward stretches 3.8x under PPO; 460 of the 550 µs stretch is inside kernel durations (blocks waiting for SMs held by PPO's GEMM blocks,
+which run to completion), ~90 µs is inter-node gaps. 57 kernels = 57 chances to wait; PUF_INFER_PRIORITY only orders new blocks. Env phase is
+unchanged (CPU). Mechanism for the lever confirmed: fewer, fatter kernels wait fewer times; expected contended forward ≈ 195 + ~10 waits
+≈ 300-400 µs → cycle ≈ 1.1 ms → rollout ≈ 0.7 s → epoch bound by PPO ≈ 0.85-0.9 s → 290-310K at 15M/2048 (+10-18%). PPO itself recovers part of
+0.98 → 0.83 as inference stops interleaving at 57 points per forward. Alternative without kernel work: SM partitioning (green contexts) — gives the
+forward its 195 µs but taxes PPO permanently; worse than fusion. Champion-shape (512 × 512, mb 4096) sync/async graph traces pending → PPO stretch there.
+
+## Headroom from GPU sharing, both 15M regimes (18:10 UTC; graph traces fwd_champ_{sync,async}, node traces fwd_c128{,_async})
+| regime | rollout alone | PPO alone | production epoch (async) | PPO contended | forward alone → contended | perfect-overlap bound | headroom |
+| 15M/2048 cohort, mb 8192 | 0.60 s | 0.83 s | 0.99 s (263K) | 0.98 s | 195 → 744 µs | 0.83 s (316K) | +20% |
+| 15M/512×512 champion, mb 4096 | 0.83 s | 0.99 s | 1.14 s (230K; ledger 229K) | 1.14 s | 183 → 546 µs | 0.99 s (264K) | +15% |
+In both, the rollout is fully hidden only on paper: 2048 forwards × 57 kernels per epoch interleave with PPO (68-70% of PPO busy time overlapped by
+inference graphs), PPO loses 14-18%, the forward 3-4x. The bound is PPO-alone; fusion of the forward (57 → ~10 kernels) is the lever for the
+interference term; the PPO-alone term is optimizer work (Muon 42% of PPO kernel time per the September profile) and the sweep's minibatch choice.
+5M regimes: no GPU headroom of this kind (env-bound).
