@@ -429,3 +429,13 @@ Cost vs age under the mature stream: 10.6K turns 41 us → 12.9K 59 → 19K 69 �
 −24% SPS; at 15M both are GPU-bound (~230K), no effect. So yes, the effect persists wherever the env binds, and its size is the game regime's,
 not the code's. LANDMINE: PUF_LIVE_AFTER_WARM goes live only after BENCH_CAPTURE_START epochs at width 1024 (replays before); with --start=0 the
 width-512 run was live from epoch 0 but the width-1024 run replayed throughout — check PERF_EPOCH mean_turn to know which regime a run is in.
+
+## Overnight: 10 seeds × 1B of the champion config (launched 22:27 UTC; /puffertank/docker/champion10_20261011 = host disk, survives a container wipe)
+config/nethack.ini (identical to repo HEAD: 512×512, mb 4096, hidden 1024 ×4, eval 10K episodes inline), seeds 3001-3010 sequential, trainer
+cohort_d8 (experiment stack: env pool, head sampler, cuBLASLt epilogue, GPU kernels, 4 Muon lanes, grad overlap, inference priority, blocking
+waits; NO cohort keys at 512 agents; NO CPU pinning — the inline eval's pool asserts under the pin map) + engine mt7_pgo. ~75 min + eval per seed,
+~13-14 h total. Per-seed dirs s<seed>/{run.log,checkpoints,logs,loaded.bin}; RESULTS.txt gets one line per seed (rc, wall, epochs, last dashboard
+score); PROVENANCE.txt has binary + engine sha256; the inis are copied alongside. NOTE: this is the experiment trainer stack, not the repo trainer —
+a baseline for the config under the handoff stack; the repo trainer at HEAD would take ~2x longer per seed.
+Smoke (2M steps, 64 eval episodes) exited 0 with checkpoint + eval. Landmines hit: NETHACKDIR must be set for a direct trainer run;
+PUF_PERF_LOADED_PROOF is required by the PUF_PERF_LOAD build; PUF_CPU_AFFINITY=1 crashes the inline eval's pool (ep_pin_cpu assertion).
