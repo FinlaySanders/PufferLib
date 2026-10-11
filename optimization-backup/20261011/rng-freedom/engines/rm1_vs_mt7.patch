@@ -1,0 +1,22 @@
+diff -ru mt7/source/src/rnd.c rm1/source/src/rnd.c
+--- mt7/source/src/rnd.c	2026-09-13 13:53:56.000000000 +0000
++++ rm1/source/src/rnd.c	2026-10-11 15:25:30.199020643 +0000
+@@ -89,7 +89,8 @@
+ static int
+ RND(int x)
+ {
+-    int r = (int) (isaac64_next_uint64(nle_rng_state(CORE)) % x);
++    /* multiply-high instead of modulo: same [0,x) uniform, no 64-bit divide */
++    int r = (int) ((unsigned __int128) isaac64_next_uint64(nle_rng_state(CORE)) * (uint64_t) x >> 64);
+ 
+     return nle_rng_trace("RND", x, r);
+ }
+@@ -101,7 +102,7 @@
+ rn2_on_display_rng(x)
+ register int x;
+ {
+-    return (isaac64_next_uint64(nle_rng_state(DISP)) % x);
++    return (int) ((unsigned __int128) isaac64_next_uint64(nle_rng_state(DISP)) * (uint64_t) x >> 64);
+ }
+ 
+ #else   /* USE_ISAAC64 */

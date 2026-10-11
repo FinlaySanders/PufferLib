@@ -1,0 +1,130 @@
+diff -ru mt7/source/include/hack.h rc1/source/include/hack.h
+--- mt7/source/include/hack.h	2026-10-10 21:49:24.092973513 +0000
++++ rc1/source/include/hack.h	2026-10-11 15:27:44.999204408 +0000
+@@ -734,3 +734,7 @@
+ #endif /* NH_CTX_GEN_H */
+ 
+ #endif /* HACK_H */
++
++extern unsigned long long nh_cnt[32];
++extern __thread int nh_in_movemon;
++#define NH_CNT(i) __atomic_fetch_add(&nh_cnt[(i)], 1ULL, __ATOMIC_RELAXED)
+diff -ru mt7/source/src/mon.c rc1/source/src/mon.c
+--- mt7/source/src/mon.c	2026-10-10 21:59:22.652185496 +0000
++++ rc1/source/src/mon.c	2026-10-11 15:27:45.013489685 +0000
+@@ -827,7 +827,9 @@
+      * teleport another, this scheme would have problems.
+      */
+ 
++    NH_CNT(1); nh_in_movemon = 1;
+     for (mtmp = fmon; mtmp; mtmp = nmtmp) {
++        NH_CNT(2);
+         /* end monster movement early if hero is flagged to leave the level */
+         if (u.utotype
+ #ifdef SAFERHANGUP
+@@ -861,6 +863,7 @@
+             continue;
+ 
+         mtmp->movement -= NORMAL_SPEED;
++        NH_CNT(3);
+         if (mtmp->movement >= NORMAL_SPEED)
+             somebody_can_move = TRUE;
+ 
+@@ -940,6 +943,7 @@
+         somebody_can_move = FALSE;
+     }
+ 
++    nh_in_movemon = 0;
+     return somebody_can_move;
+ }
+ 
+@@ -2066,6 +2070,7 @@
+ int
+ mfndpos(struct monst *mon, coord *poss, long *info, long flag)
+ {
++    NH_CNT(13);
+ #ifdef NH_MOVEMENT_MASK_VERIFY
+     coord reference[9];
+     long refinfo[9];
+diff -ru mt7/source/src/monmove.c rc1/source/src/monmove.c
+--- mt7/source/src/monmove.c	2026-10-10 23:54:24.194603931 +0000
++++ rc1/source/src/monmove.c	2026-10-11 15:27:45.024993164 +0000
+@@ -402,6 +402,7 @@
+      */
+ 
+     mdat = mtmp->data;
++    NH_CNT(4);
+ 
+     if (mtmp->mstrategy & STRAT_ARRIVE) {
+         int res = m_arrival(mtmp);
+@@ -954,6 +955,7 @@
+     long flag;
+     int omx = mtmp->mx, omy = mtmp->my;
+ 
++    NH_CNT(5);
+     if (mtmp->mtrapped) {
+         int i = mintrap(mtmp);
+ 
+@@ -1286,6 +1288,7 @@
+ 
+         cnt = mfndpos(mtmp, poss, info, flag);
+         chcnt = 0;
++        NH_CNT(6); NH_CNT(16 + (cnt < 0 ? 0 : cnt > 9 ? 9 : cnt));
+         jcnt = min(MTSZ, cnt - 1);
+         trackmask = 0; /* neighbourhood bits of the recent track: the avoidance loop (and its RNG draw) only runs on a hit */
+         for (j = 0; j < jcnt; j++)
+@@ -1296,6 +1299,7 @@
+         if (!mtmp->mpeaceful && level.lflags.shortsighted
+             && nidist > (couldsee(nix, niy) ? 144 : 36) && appr == 1)
+             appr = 0;
++        NH_CNT(8 + appr);
+         if (SPWQ(ptr, SPW_UNICORN, is_unicorn(ptr)) && level.lflags.noteleport) {
+             /* on noteleport levels, perhaps we cannot avoid hero */
+             for (i = 0; i < cnt; i++)
+@@ -1316,9 +1320,11 @@
+             if (appr != 0 && (trackmask & nh_move_position_bit(omx, omy, nx, ny))) {
+                 mtrk = &mtmp->mtrack[0];
+                 for (j = 0; j < jcnt; mtrk++, j++)
+-                    if (nx == mtrk->x && ny == mtrk->y)
++                    if (nx == mtrk->x && ny == mtrk->y) {
++                        NH_CNT(11);
+                         if (rn2(4 * (cnt - j)))
+                             goto nxti;
++                    }
+             }
+ 
+             nearer = ((ndist = dist2(nx, ny, gx, gy)) < nidist);
+@@ -1334,6 +1340,8 @@
+  nxti:
+             ;
+         }
++        __atomic_fetch_add(&nh_cnt[10], (unsigned long long) chcnt, __ATOMIC_RELAXED);
++        if (mmoved) NH_CNT(12);
+     }
+ 
+     if (mmoved) {
+diff -ru mt7/source/src/rnd.c rc1/source/src/rnd.c
+--- mt7/source/src/rnd.c	2026-09-13 13:53:56.000000000 +0000
++++ rc1/source/src/rnd.c	2026-10-11 15:27:44.999281195 +0000
+@@ -86,10 +86,21 @@
+ #define nle_rng_trace(fn, x, r) (r)
+ #endif
+ 
++unsigned long long nh_cnt[32];
++__thread int nh_in_movemon;
++__attribute__((destructor)) static void nh_census_dump(void)
++{
++    int i;
++    fprintf(stderr, "NH_CENSUS");
++    for (i = 0; i < 32; i++) fprintf(stderr, " %d=%llu", i, nh_cnt[i]);
++    fprintf(stderr, "\n");
++}
++
+ static int
+ RND(int x)
+ {
+     int r = (int) (isaac64_next_uint64(nle_rng_state(CORE)) % x);
++    NH_CNT(0); if (nh_in_movemon) NH_CNT(14);
+ 
+     return nle_rng_trace("RND", x, r);
+ }

@@ -1,0 +1,275 @@
+diff -ru mt7/source/src/mon.c lz0/source/src/mon.c
+--- mt7/source/src/mon.c	2026-10-10 21:59:22.652185496 +0000
++++ lz0/source/src/mon.c	2026-10-11 15:40:23.210383176 +0000
+@@ -1793,10 +1793,20 @@
+ }
+ 
+ /* return number of acceptable neighbour positions */
+-static int mfndpos_masked(mon, poss, info, flag) struct monst *mon;
+-coord *poss; /* coord poss[9] */
+-long *info;  /* long info[9] */
+-long flag;
++/* Per-call neighbour-query context + per-cell test, split out of mfndpos_masked (same checks, same order). */
++struct nh_mfnd {
++    struct monst *mon;
++    struct permonst *mdat;
++    long flag;
++    const struct rm *origin;
++    int origin_typ;
++    xchar x, y;
++    struct nh_mover mover;
++    boolean wantpool, poolok, lavaok, nodiag, rockok, treeok, thrudoor, poisongas_ok, in_poisongas;
++    unsigned int candidates;
++};
++
++static void nh_mfnd_begin(struct monst *mon, long flag, struct nh_mfnd *c)
+ {
+     struct permonst *mdat = mon->data;
+     int trap_type, origin_typ, cell_typ;
+@@ -1862,8 +1872,6 @@
+             thrudoor = TRUE;
+     }
+ 
+-nexttry: /* eels prefer the water, but if there is no water nearby,
+-            they will crawl over land */
+     if (mon->mconf) {
+         flag |= ALLOW_ALL;
+         flag &= ~NOTONL;
+@@ -1887,50 +1895,66 @@
+                        | nh_move_position_bit(x, y, mon->mux, mon->muy));
+         candidates &= ~occupied;
+     }
+-    while (candidates) {
+-            bit = __builtin_ctz(candidates);
+-            candidates &= candidates - 1;
+-            nx = x - 1 + bit / 3;
+-            ny = y - 1 + bit % 3;
++    c->mon = mon; c->mdat = mdat; c->flag = flag; c->origin = origin; c->origin_typ = origin_typ;
++    c->x = x; c->y = y; c->mover = mover;
++    c->wantpool = wantpool; c->poolok = poolok; c->lavaok = lavaok; c->nodiag = nodiag;
++    c->rockok = rockok; c->treeok = treeok; c->thrudoor = thrudoor;
++    c->poisongas_ok = poisongas_ok; c->in_poisongas = in_poisongas; c->candidates = candidates;
++}
++
++static int nh_mfnd_cell(struct nh_mfnd *c, int nx, int ny, long *info_out)
++{
++    struct monst *mon = c->mon;
++    struct permonst *mdat = c->mdat;
++    long flag = c->flag;
++    const struct rm *origin = c->origin, *cell;
++    int origin_typ = c->origin_typ, cell_typ, trap_type;
++    xchar x = c->x, y = c->y;
++    struct nh_mover *mp = &c->mover;
++    boolean wantpool = c->wantpool, poolok = c->poolok, lavaok = c->lavaok, nodiag = c->nodiag;
++    boolean rockok = c->rockok, treeok = c->treeok, thrudoor = c->thrudoor;
++    boolean poisongas_ok = c->poisongas_ok, in_poisongas = c->in_poisongas;
++    long inf = 0;
++
+             cell = nh_move_cell(nx, ny);
+             cell_typ = TYP_AT(nx, ny);
+             if (IS_ROCK(cell_typ)
+                 && !((flag & ALLOW_WALL) && nh_cell_passwall(cell, nx, ny))
+                 && !((IS_TREE(cell_typ) ? treeok : rockok) && nh_cell_dig(cell)))
+-                continue;
++                return 0;
+             /* KMH -- Added iron bars */
+             if ((cell_typ == IRONBARS)
+                 && (!(flag & ALLOW_BARS)
+                     || ((cell->rmflags & W_NONDIGGABLE)
+                         && (SPWQ(mdat, SPW_RUSTDMG, dmgtype(mdat, AD_RUST))
+                             || SPWQ(mdat, SPW_CORRDMG, dmgtype(mdat, AD_CORR))))))
+-                continue;
+-            if (IS_DOOR(cell_typ) && !(SPWQ(mdat, SPW_AMORPHOUS, amorphous(mdat)) || nh_mover_fog(&mover))
++                return 0;
++            if (IS_DOOR(cell_typ) && !(SPWQ(mdat, SPW_AMORPHOUS, amorphous(mdat)) || nh_mover_fog(mp))
+                 && (((cell->rmflags & D_CLOSED) && !(flag & OPENDOOR))
+                     || ((cell->rmflags & D_LOCKED)
+                         && !(flag & UNLOCKDOOR)))
+                 && !thrudoor)
+-                continue;
++                return 0;
+             /* avoid poison gas? */
+             if (!poisongas_ok && !in_poisongas
+                 && (NH_SUMMARY(nx, ny).move_gas != 0))
+-                continue;
++                return 0;
+             /* first diagonal checks (tight squeezes handled below) */
+             if (nx != x && ny != y
+                 && (nodiag
+                     || (IS_DOOR(origin_typ) && (origin->rmflags & ~D_BROKEN))
+                     || (IS_DOOR(cell_typ) && (cell->rmflags & ~D_BROKEN))
+                     || ((IS_DOOR(origin_typ) || IS_DOOR(cell_typ))
+-                        && mover.rogue)
++                        && mp->rogue)
+                     /* mustn't pass between adjacent long worm segments,
+                        but can attack that way */
+                     || (m_at(x, ny) && m_at(nx, y) && worm_cross(x, y, nx, ny)
+                         && !m_at(nx, ny) && (nx != u.ux || ny != u.uy))))
+-                continue;
++                return 0;
+             if (((nh_cell_pool(cell, nx, ny) != 0) == wantpool || poolok)
+                 && (lavaok || !nh_cell_lava(cell, nx, ny))) {
+                 int dispx, dispy;
+-                boolean monseeu = mover.monseeu;
++                boolean monseeu = mp->monseeu;
+ 
+                 /* Displacement also displaces the Elbereth/scare monster,
+                  * as long as you are visible.
+@@ -1944,11 +1968,11 @@
+                     dispy = ny;
+                 }
+ 
+-                info[cnt] = 0;
+-                if (nh_mover_scary(&mover, dispx, dispy)) {
++                inf = 0;
++                if (nh_mover_scary(mp, dispx, dispy)) {
+                     if (!(flag & ALLOW_SSM))
+-                        continue;
+-                    info[cnt] |= ALLOW_SSM;
++                        return 0;
++                    inf |= ALLOW_SSM;
+                 }
+                 if ((nx == u.ux && ny == u.uy)
+                     || (nx == mon->mux && ny == mon->muy)) {
+@@ -1963,25 +1987,25 @@
+                         mon->muy = u.uy;
+                     }
+                     if (!(flag & ALLOW_U))
+-                        continue;
+-                    info[cnt] |= ALLOW_U;
++                        return 0;
++                    inf |= ALLOW_U;
+                 } else {
+                     if (MON_AT(nx, ny)) {
+                         struct monst *mtmp2 = m_at(nx, ny);
+                         long mmflag = flag | mm_aggression(mon, mtmp2);
+ 
+                         if (mmflag & ALLOW_M) {
+-                            info[cnt] |= ALLOW_M;
++                            inf |= ALLOW_M;
+                             if (mtmp2->mtame) {
+                                 if (!(mmflag & ALLOW_TM))
+-                                    continue;
+-                                info[cnt] |= ALLOW_TM;
++                                    return 0;
++                                inf |= ALLOW_TM;
+                             }
+                         } else {
+                             mmflag = flag | mm_displacement(mon, mtmp2);
+                             if (!(mmflag & ALLOW_MDISP))
+-                                continue;
+-                            info[cnt] |= ALLOW_MDISP;
++                                return 0;
++                            inf |= ALLOW_MDISP;
+                         }
+                     }
+                     /* Note: ALLOW_SANCT only prevents movement, not
+@@ -1990,27 +2014,27 @@
+                         && !*in_rooms(x, y, TEMPLE)
+                         && in_your_sanctuary((struct monst *) 0, nx, ny)) {
+                         if (!(flag & ALLOW_SANCT))
+-                            continue;
+-                        info[cnt] |= ALLOW_SANCT;
++                            return 0;
++                        inf |= ALLOW_SANCT;
+                     }
+                 }
+                 if (NH_SUMMARY(nx, ny).move_pile & 2U) {
+-                    if (flag & NOGARLIC) continue;
+-                    info[cnt] |= NOGARLIC;
++                    if (flag & NOGARLIC) return 0;
++                    inf |= NOGARLIC;
+                 }
+                 if (NH_SUMMARY(nx, ny).move_pile & 1U) {
+-                    if (!(flag & ALLOW_ROCK)) continue;
+-                    info[cnt] |= ALLOW_ROCK;
++                    if (!(flag & ALLOW_ROCK)) return 0;
++                    inf |= ALLOW_ROCK;
+                 }
+                 if (monseeu && onlineu(nx, ny)) {
+                     if (flag & NOTONL)
+-                        continue;
+-                    info[cnt] |= NOTONL;
++                        return 0;
++                    inf |= NOTONL;
+                 }
+                 /* check for diagonal tight squeeze */
+-                if (nx != x && ny != y && nh_mover_bad_rock(&mover, x, ny)
+-                    && nh_mover_bad_rock(&mover, nx, y) && nh_mover_squeeze(&mover))
+-                    continue;
++                if (nx != x && ny != y && nh_mover_bad_rock(mp, x, ny)
++                    && nh_mover_bad_rock(mp, nx, y) && nh_mover_squeeze(mp))
++                    return 0;
+                 /* The monster avoids a particular type of trap if it's
+                  * familiar with the trap type.  Pets get ALLOW_TRAPS
+                  * and checking is done in dogmove.c.  In either case,
+@@ -2022,7 +2046,7 @@
+                         impossible("A monster looked at a very strange trap "
+                                    "of type %d.",
+                                    trap_type);
+-                        continue;
++                        return 0;
+                     }
+                     if ((trap_type != RUST_TRAP
+                          || mdat == &mons[PM_IRON_GOLEM])
+@@ -2031,7 +2055,7 @@
+                         && ((!is_pit(trap_type) && !is_hole(trap_type))
+                             || (!SPWQ(mdat, SPW_FLYER, is_flyer(mdat)) && !SPWQ(mdat, SPW_FLOATER, is_floater(mdat))
+                                 && !SPWQ(mdat, SPW_CLINGER, is_clinger(mdat)))
+-                            || mover.sokoban)
++                            || mp->sokoban)
+                         && (trap_type != SLP_GAS_TRAP || !resists_sleep(mon))
+                         && (trap_type != BEAR_TRAP
+                             || (mdat->msize > MZ_SMALL && !SPWQ(mdat, SPW_AMORPHOUS, amorphous(mdat))
+@@ -2045,19 +2069,43 @@
+                         && (trap_type != ANTI_MAGIC || !resists_magm(mon))) {
+                         if (!(flag & ALLOW_TRAPS)) {
+                             if (mon->mtrapseen & (1L << (trap_type - 1)))
+-                                continue;
++                                return 0;
+                         }
+-                        info[cnt] |= ALLOW_TRAPS;
++                        inf |= ALLOW_TRAPS;
+                     }
+                 }
+-                poss[cnt].x = nx;
+-                poss[cnt].y = ny;
+-                cnt++;
++                *info_out = inf;
++                return 1;
+             }
++    return 0;
++}
++
++static int mfndpos_masked(mon, poss, info, flag) struct monst *mon;
++coord *poss; /* coord poss[9] */
++long *info;  /* long info[9] */
++long flag;
++{
++    struct nh_mfnd c;
++    unsigned int cand;
++    int bit, nx, ny, cnt = 0;
++
++    nh_mfnd_begin(mon, flag, &c);
++ again:
++    cand = c.candidates;
++    while (cand) {
++        bit = __builtin_ctz(cand);
++        cand &= cand - 1;
++        nx = c.x - 1 + bit / 3;
++        ny = c.y - 1 + bit % 3;
++        if (nh_mfnd_cell(&c, nx, ny, &info[cnt])) {
++            poss[cnt].x = nx;
++            poss[cnt].y = ny;
++            cnt++;
+         }
+-    if (!cnt && wantpool && !nh_cell_pool(origin, x, y)) {
+-        wantpool = FALSE;
+-        goto nexttry;
++    }
++    if (!cnt && c.wantpool && !nh_cell_pool(c.origin, c.x, c.y)) {
++        c.wantpool = FALSE;
++        goto again;
+     }
+     return cnt;
+ }
