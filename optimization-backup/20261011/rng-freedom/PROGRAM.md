@@ -225,3 +225,29 @@ inv_gather 440, lab_tok 384×2, inv_table 374×2, dec_assemble 372, cast mask 37
 capped at PUF_NARROW_BLOCKS, inference only; identical per-element math → proofs must match): narrow/make_narrow.py (13 kernels in nethack.cu,
 16 launches) + the pufferl.cu pass (cast obs/mask, zero_term_state ×2, record_step). Binary cohort_nw2. Ladder 16/32/64/128 at 15M/2048, then
 champion shape 512×512 mb4096 with 32/64.
+
+## Narrowing result (18:43 UTC) and the SM-time attribution — fusion/narrowing direction closed
+nw ladder 15M/2048 (cohort_nw2, all proofs identical = numerics exact): ctrl 263,693 / 262,560 | cap 16: 232,043 (−12%, rollout tail 160 ms) |
+32: 252,652 (−4%) | 64: 260,793 (−1%) | 128: 262,581 (0%). PPO time unchanged at every cap → the wide-kernel channel is not launch width per se.
+SM-time attribution (fwd_c128 sync node trace, inference streams only; SM.us = duration × min(blocks,128)): per 128-row forward 212 us kernel
+time, 14,804 SM.us = 116 us of the whole GPU → 2048 forwards/epoch = 24% of the GPU's SM-seconds; PPO loses 15-18% ≈ 2/3 of that (the burn probe
+gave the same ratio: 2% SM-seconds → −1.1%). Top: Kernel2 (15 GEMMs) 21.5%, entity_fused ×4 10.7%, mingru_gate ×4 (512 blocks, 2.9 us) 10.0%,
+sampler 9.3%, msg_pool 8.0%, inv_table ×2 7.2%, terr_feat 4%, lab_tok ×2 4%; wide (≥300 blocks) short (<6 us) elementwise kernels = 40%.
+Kernels sit at the ~2-3 us launch floor, so SM-time ≈ floor × blocks: narrowing trades blocks for time (same SM-time); fusion removes ~320 SM.us
+(2% of inference SM-time ≈ 0.3% SPS) per wide kernel removed — ~15 candidates → ≤ +5% for a multi-day job. CLOSED as the lever.
+THE LEVER: fewer forwards. A 512-row forward costs 1.7× a 128-row one (327 vs 195 us), so 4×128 spend ~2.5× the SM-time of 1×512. Shape with
+512-row forwards and partial residency, no code: 4 buffers × 512, cohort 2 active (1024 resident, depth 2; the 15M forward ~0.6 ms contended hides
+under the 1.5 ms pool step). Ledger priors: 1024 resident cost 4 points of the cohort's 12 at 15M (b16c8s32 +8%); b8c2s32 (256-row, depth 2) −7.5%
+from bubbles. Queued ablate_big.json: ctrl(16×128 g4 s64), b4c2s64, b4c2s128, b8c4s64, b8c4s128, b4plain (4×512 no cohort = old control), ctrl.
+
+## Champion narrowing + big-forward shapes (18:52 UTC) — GPU-side inference program CLOSED
+Champion 512×512 mb4096 (cohort_nw2): ctrl 228,343 / 227,971 | cap 32: 224,887 | cap 64: 225,861 (−1%); proofs identical. Null, as at 2048.
+Why narrowing cannot cut SM-time: floor-bound kernels take ~2.5 us whatever the grid; a grid > 128 blocks capped at 128 still fills every SM and
+runs longer; capped at 32-64 the duration grows ~proportionally (latency/bandwidth-bound) → SM-time flat. Only fewer launches or fewer forwards cut it.
+Big-forward shapes 15M/2048 (cohort_d8): ctrl 16×128 g4 s64 262,939 / 261,497 | 4×512 c2 s64 237,206 (−9.7%, rollout tail 186 ms; PPO ≈0.93 s) |
+4×512 c2 s128 238,546 | 8×256 c4 s64 255,038 (−2.9%) | 8×256 c4 s128 255,679 | 4×512 plain 223,360 (−15%, the pre-cohort control).
+PPO does speed up with 4× fewer forwards (0.98 → 0.93 s) but 1024 resident games cost the rollout more than PPO gains. The recipe stands.
+VERDICT: inference-side work (fusion, narrowing, bigger forwards, table cache, L2 persistence, recurrent fusion) cannot lift 15M/2048 above the
+~263K it sits at; the bound is PPO-alone 0.83 s (316K) and the gap to it is inference SM-time that only a ~2x cheaper forward in SM-seconds would
+close — a full encoder/recurrent/decoder rewrite worth ≤ +5-10% by the attribution. Next GPU lever is PPO itself (Muon 42% of PPO kernel time;
+minibatch choice is the sweep's). Numerics-exact narrowing patch retained (narrow/narrowing.patch) for the record; default off.
