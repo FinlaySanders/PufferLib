@@ -1,0 +1,460 @@
+--- a/ocean/nethack/nethack.cu	2026-10-11 18:34:18.348413872 +0000
++++ b/ocean/nethack/nethack.cu	2026-10-11 18:34:46.438149161 +0000
+@@ -524,13 +524,13 @@
+ __global__ void nh_loc3_gather_kernel(precision_t* __restrict__ x,
+     const precision_t* __restrict__ locc_w, const float* __restrict__ crop_glyph,
+     const unsigned char* __restrict__ lut, int B) {
+-    int t = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (t >= B * NH_LOC_IN) return;
++    for (int t = blockIdx.x * blockDim.x + threadIdx.x; t < B * NH_LOC_IN; t += gridDim.x * blockDim.x) {
+     int b = t / NH_LOC_IN, j = t % NH_LOC_IN;
+     int p = j / NH_LOCC_DIM, d = j % NH_LOCC_DIM;
+     int g = (int)crop_glyph[(int64_t)b * NH_CGRID + p];
+     int cls = p == (NH_CGRID / 2) ? 7 : (int)lut[g];
+     x[t] = locc_w[cls * NH_LOCC_DIM + d];
++    }
+ }
+ __global__ void nh_loc3_scatter_kernel(long long* __restrict__ acc,
+     const precision_t* __restrict__ dx, const float* __restrict__ crop_glyph,
+@@ -615,8 +615,7 @@
+     const unsigned char* __restrict__ haz, int list_off, int is_mon, int B) {
+     // thread per (b, token, out dim): pure independent writes -> bit-identical
+     // to the serial per-token version by construction.
+-    int t = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (t >= B * NH_LABK * NH_LAB_IN) return;
++    for (int t = blockIdx.x * blockDim.x + threadIdx.x; t < B * NH_LABK * NH_LAB_IN; t += gridDim.x * blockDim.x) {
+     int d = t % NH_LAB_IN;
+     int bk = t / NH_LAB_IN;
+     int k = bk % NH_LABK;
+@@ -629,9 +628,9 @@
+     precision_t* o = tok + (int64_t)bk * NH_LAB_IN;
+     if (d < NH_EMBED_DIM) {
+         o[d] = g >= 0 ? e_eff[(int64_t)g * NH_EMBED_DIM + d] : from_float(0.0f);
+-        return;
++        continue;
+     }
+-    if (d >= 46) { o[d] = from_float(0.0f); return; }
++    if (d >= 46) { o[d] = from_float(0.0f); continue; }
+     int dx = (int)nh_obs_float(e[2]); if (dx >= 128) dx -= 256;
+     int dy = (int)nh_obs_float(e[3]); if (dy >= 128) dy -= 256;
+     int f4 = (int)nh_obs_float(e[4]), f5 = (int)nh_obs_float(e[5]), f6 = (int)nh_obs_float(e[6]);
+@@ -656,6 +655,7 @@
+     }
+     }
+     o[d] = from_float(v);
++    }
+ }
+ // embed-table scatter for a stream's dtok buffer (first 32 dims only)
+ __global__ void nh_lab_dE_scatter_kernel(long long* __restrict__ dE_i,
+@@ -671,12 +671,12 @@
+ 
+ __global__ void nh_decode_kernel(
+     float* __restrict__ idx, const nh_obs_t* __restrict__ obs, int B) {
+-    int t = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (t >= B * NH_MGRID) return;
++    for (int t = blockIdx.x * blockDim.x + threadIdx.x; t < B * NH_MGRID; t += gridDim.x * blockDim.x) {
+     int b = t / NH_MGRID, cell = t % NH_MGRID;
+     const nh_obs_t* src = obs + (int64_t)b * NH_OBS_SIZE + 2 * cell;
+     int g = (int)nh_obs_float(src[0]) | ((int)nh_obs_float(src[1]) << 8);
+     idx[t] = (float)max(0, min(g, NH_GLYPH_VOCAB - 1));
++    }
+ }
+ 
+ // Egocentric crop glyph ids: window centered on the hero (blstats x,y),
+@@ -684,14 +684,14 @@
+ __global__ void nh_crop_kernel(
+     float* __restrict__ crop, const float* __restrict__ idx,
+     const nh_obs_t* __restrict__ obs, int B) {
+-    int t = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (t >= B * NH_CGRID) return;
++    for (int t = blockIdx.x * blockDim.x + threadIdx.x; t < B * NH_CGRID; t += gridDim.x * blockDim.x) {
+     int b = t / NH_CGRID, p = t % NH_CGRID;
+     const nh_obs_t* bl = obs + (int64_t)b * NH_OBS_SIZE + NH_BL_OFF;
+     int r = nh_bl_read_i32(bl + 4) - NH_CHALF + p / NH_CROP; // blstats[1] = y
+     int c = nh_bl_read_i32(bl)     - NH_CHALF + p % NH_CROP; // blstats[0] = x
+     crop[t] = (r < 0 || r >= NH_MAPH || c < 0 || c >= NH_MAPW)
+         ? (float)NH_PAD_GLYPH : idx[b * NH_MGRID + r * NH_MAPW + c];
++    }
+ }
+ 
+ // Local view: per-cell embedding gather, flattened (B, NH_CGRID*NH_EMBED_DIM).
+@@ -713,12 +713,12 @@
+ __global__ void nh_eff_embed_kernel(precision_t* __restrict__ out,
+     const precision_t* __restrict__ E, const precision_t* __restrict__ K,
+     const precision_t* __restrict__ S) {
+-    int i = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (i >= NH_GLYPH_VOCAB * NH_EMBED_DIM) return;
++    for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < NH_GLYPH_VOCAB * NH_EMBED_DIM; i += gridDim.x * blockDim.x) {
+     int g = i / NH_EMBED_DIM, d = i % NH_EMBED_DIM;
+     out[i] = from_float(to_float(E[i])
+         + to_float(K[nh_glyph_kind[g] * NH_EMBED_DIM + d])
+         + to_float(S[nh_glyph_sub[g] * NH_EMBED_DIM + d]));
++    }
+ }
+ 
+ // Factor grads: dE_eff/dE_res is identity (embed_wgrad IS dE_res); the factor
+@@ -1192,20 +1192,20 @@
+ // at the first -1.
+ __global__ void nh_msg_ids_kernel(
+     float* __restrict__ ids, const nh_obs_t* __restrict__ obs, int B) {
+-    int i = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (i >= B * NH_MSG_LEN) return;
++    for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < B * NH_MSG_LEN; i += gridDim.x * blockDim.x) {
+     int b = i / NH_MSG_LEN, t = i % NH_MSG_LEN;
+     if (t > NH_MSG_LEN - 3) {
+         ids[i] = -1.0f;
+-        return;
++        continue;
+     }
+     const nh_obs_t* m = obs + (int64_t)b * NH_OBS_SIZE + NH_MSG_OFF;
+     int c0 = (int)nh_obs_float(m[t]), c1 = (int)nh_obs_float(m[t + 1]), c2 = (int)nh_obs_float(m[t + 2]);
+     if (c0 == 0 || c1 == 0 || c2 == 0) {
+         ids[i] = -1.0f;
+-        return;
++        continue;
+     }
+     ids[i] = (float)nh_msg_hash(nh_msg_lc(c0), nh_msg_lc(c1), nh_msg_lc(c2));
++    }
+ }
+ // normalized-sum bag: block per sample, one warp = NH_MSG_HID lanes (lane d
+ // owns output dim d). Each trigram is one coalesced read of msg_w[id]; sum
+@@ -1296,8 +1296,7 @@
+     const nh_obs_t* __restrict__ obs, int B) {
+     // thread per (b, slot, key row): rebuilds the float input (cached loads),
+     // computes one matvec row in the original MAC order -> bit-identical.
+-    int t = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (t >= B * NH_SPELL_SLOTS * NH_SPKEY) return;
++    for (int t = blockIdx.x * blockDim.x + threadIdx.x; t < B * NH_SPELL_SLOTS * NH_SPKEY; t += gridDim.x * blockDim.x) {
+     int r = t % NH_SPKEY;
+     int bs = t / NH_SPKEY;
+     int b = bs / NH_SPELL_SLOTS, s = bs % NH_SPELL_SLOTS;
+@@ -1325,6 +1324,7 @@
+     for (int c = 0; c < NH_SPIN; c++)
+         acc += to_float(spk_w[r * NH_SPIN + c]) * in[c];
+     keys[(int64_t)bs * NH_SPKEY + r] = from_float(fmaxf(acc, 0.0f));
++    }
+ }
+ 
+ // inventory-style pool: project each relu'd slot rep, max over slots, bias,
+@@ -1467,8 +1467,7 @@
+     const precision_t* __restrict__ glb, const precision_t* __restrict__ inv,
+     const precision_t* __restrict__ bl_out, const precision_t* __restrict__ bl_feats,
+     const precision_t* __restrict__ msg, int B) {
+-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (idx >= B * NH_CONCAT) return;
++    for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < B * NH_CONCAT; idx += gridDim.x * blockDim.x) {
+     int b = idx / NH_CONCAT, c = idx % NH_CONCAT;
+     precision_t val;
+     if (c < NH_LOC_HID)
+@@ -1484,8 +1483,9 @@
+     else if (c < NH_SPELL_CONCAT_OFF)
+         val = msg[(int64_t)b * NH_MSG_HID + (c - NH_MSG_CONCAT_OFF)];
+     else
+-        return; // spell slice: nh_spell_gather_kernel fills it afterwards
++        continue; // spell slice: nh_spell_gather_kernel fills it afterwards
+     out[idx] = val;
++    }
+ }
+ 
+ // Copy a per-sample slice [offset, offset+n) of a (B, stride) tensor into (B, n).
+@@ -1501,24 +1501,24 @@
+ 
+ __global__ void nh_inv_decode_kernel(
+     float* __restrict__ idx, const nh_obs_t* __restrict__ obs, int B, int off) {
+-    int t = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (t >= B * NH_INV) return;
++    for (int t = blockIdx.x * blockDim.x + threadIdx.x; t < B * NH_INV; t += gridDim.x * blockDim.x) {
+     int b = t / NH_INV, s = t % NH_INV;
+     const nh_obs_t* src = obs + (int64_t)b * NH_OBS_SIZE + off + 2 * s;
+     int g = (int)nh_obs_float(src[0]) | ((int)nh_obs_float(src[1]) << 8);
+     idx[t] = (float)max(0, min(g, NH_GLYPH_VOCAB - 1));
++    }
+ }
+ 
+ // T_inv[g,k] = dot(E[g,:], inv1_w[k,:]) — 5977x16, sequential inner loop
+ __global__ void nh_inv_table_kernel(precision_t* __restrict__ T,
+     const precision_t* __restrict__ E, const precision_t* __restrict__ w1) {
+-    int i = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (i >= NH_GLYPH_VOCAB * NH_INV_HID) return;
++    for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < NH_GLYPH_VOCAB * NH_INV_HID; i += gridDim.x * blockDim.x) {
+     int g = i / NH_INV_HID, k = i % NH_INV_HID;
+     float acc = 0.0f;
+     for (int d = 0; d < NH_EMBED_DIM; d++)
+         acc += to_float(E[g * NH_EMBED_DIM + d]) * to_float(w1[k * NH_EMBED_DIM + d]);
+     T[i] = from_float(acc);
++    }
+ }
+ 
+ // Expand the 8 gated int8 state fields into NH_SFEAT normalized features.
+@@ -1573,8 +1573,7 @@
+     const precision_t* __restrict__ ws, const precision_t* __restrict__ sfeat,
+     const float* __restrict__ idx, const precision_t* __restrict__ Tt,
+     const float* __restrict__ idxt, int B) {
+-    int t = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (t >= B * NH_INV_FLAT) return;
++    for (int t = blockIdx.x * blockDim.x + threadIdx.x; t < B * NH_INV_FLAT; t += gridDim.x * blockDim.x) {
+     int b = t / NH_INV_FLAT, r = t % NH_INV_FLAT;
+     int s = r / NH_INV_HID, k = r % NH_INV_HID;
+     int g = (int)idx[b * NH_INV + s];
+@@ -1587,6 +1586,7 @@
+     for (int j = 0; j < NH_SFEAT; j++)
+         v += to_float(ws[k * NH_SFEAT + j]) * to_float(f[j]);
+     out[t] = from_float(v > 0.0f ? v : 0.0f);
++    }
+ }
+ 
+ // Pooled inventory summary for the trunk: per-slot 32 -> 128 with the
+@@ -2047,6 +2047,14 @@
+ 
+ #include "embedding_reduce.cuh"
+ 
++// Grid narrowing for the rollout forward's elementwise kernels (PUF_NARROW_BLOCKS caps the grid; 0 = unchanged; never in training).
++static inline int nh_narrow_grid(int blocks, bool training) {
++    static thread_local int cap = -1;
++    if (cap < 0) cap = getenv("PUF_NARROW_BLOCKS") ? atoi(getenv("PUF_NARROW_BLOCKS")) : 0;
++    return (!training && cap > 0 && blocks > cap) ? cap : blocks;
++}
++
++
+ // encoder structs
+ 
+ struct NethackEncoderWeights {
+@@ -2164,14 +2172,14 @@
+     int B = input.shape[0];
+ 
+     if (nh_refresh_tables) {
+-    nh_eff_embed_kernel<<<grid_size(NH_GLYPH_VOCAB * NH_EMBED_DIM), BLOCK_SIZE, 0, stream>>>(
++    nh_eff_embed_kernel<<<nh_narrow_grid(grid_size(NH_GLYPH_VOCAB * NH_EMBED_DIM), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->e_eff.data, ew->embed_w.data, ew->ekind_w.data, ew->esub_w.data);
+     }
+-    nh_decode_kernel<<<grid_size(B * NH_MGRID), BLOCK_SIZE, 0, stream>>>(
++    nh_decode_kernel<<<nh_narrow_grid(grid_size(B * NH_MGRID), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->glyph_idx.data, (const nh_obs_t*)input.data, B);
+-    nh_crop_kernel<<<grid_size(B * NH_CGRID), BLOCK_SIZE, 0, stream>>>(
++    nh_crop_kernel<<<nh_narrow_grid(grid_size(B * NH_CGRID), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->crop_glyph.data, a->glyph_idx.data, (const nh_obs_t*)input.data, B);
+-    nh_loc3_gather_kernel<<<grid_size(B * NH_LOC_IN), BLOCK_SIZE, 0, stream>>>(
++    nh_loc3_gather_kernel<<<nh_narrow_grid(grid_size(B * NH_LOC_IN), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->x_local.data, ew->locc_w.data, a->crop_glyph.data, nh_locc_lut_dev, B);
+     NH_MM_BR(&a->x_local, &ew->loc_w, &a->loc_h1, ew->loc_b);
+     NH_MM_BR(&a->loc_h1, &ew->loc2_w, &a->loc_out, ew->loc2_b);
+@@ -2184,18 +2192,18 @@
+     NH_MM_BR(&a->terr_tf, &ew->terr1_w, &a->terr_h, ew->terr1_b);
+     NH_MM_BR(&a->terr_h, &ew->terr2_w, &a->glb_out, ew->terr2_b);
+ 
+-    nh_inv_decode_kernel<<<grid_size(B * NH_INV), BLOCK_SIZE, 0, stream>>>(
++    nh_inv_decode_kernel<<<nh_narrow_grid(grid_size(B * NH_INV), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->inv_idx.data, (const nh_obs_t*)input.data, B, NH_INV_OFF);
+-    nh_inv_decode_kernel<<<grid_size(B * NH_INV), BLOCK_SIZE, 0, stream>>>(
++    nh_inv_decode_kernel<<<nh_narrow_grid(grid_size(B * NH_INV), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->invt_idx.data, (const nh_obs_t*)input.data, B, NH_INVTRUE_OFF);
+     if (nh_refresh_tables) {
+-    nh_inv_table_kernel<<<grid_size(NH_GLYPH_VOCAB * NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
++    nh_inv_table_kernel<<<nh_narrow_grid(grid_size(NH_GLYPH_VOCAB * NH_INV_HID), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->inv_T.data, a->e_eff.data, ew->inv1_w.data);
+-    nh_inv_table_kernel<<<grid_size(NH_GLYPH_VOCAB * NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
++    nh_inv_table_kernel<<<nh_narrow_grid(grid_size(NH_GLYPH_VOCAB * NH_INV_HID), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->invt_T.data, a->e_eff.data, ew->invt_w.data);
+     }
+     nh_sfeat_launch(a->inv_sfeat.data, (const nh_obs_t*)input.data, B, stream);
+-    nh_inv_gather_kernel<<<grid_size(B * NH_INV_FLAT), BLOCK_SIZE, 0, stream>>>(
++    nh_inv_gather_kernel<<<nh_narrow_grid(grid_size(B * NH_INV_FLAT), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->inv_out.data, a->inv_T.data, ew->inv1_b.data, ew->inv1s_w.data,
+         a->inv_sfeat.data, a->inv_idx.data, a->invt_T.data, a->invt_idx.data, B);
+     bool inventory_fused = false;
+@@ -2243,17 +2251,17 @@
+ #ifdef NH_MSG_FROZEN
+     cudaMemcpyAsync(ew->msg_w.data, nh_msg_w0_dev, (size_t)NH_MSG_VOCAB * NH_MSG_HID * sizeof(precision_t), cudaMemcpyDeviceToDevice, stream);
+ #endif
+-    nh_msg_ids_kernel<<<grid_size(B * NH_MSG_LEN), BLOCK_SIZE, 0, stream>>>(
++    nh_msg_ids_kernel<<<nh_narrow_grid(grid_size(B * NH_MSG_LEN), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->msg_ids.data, (const nh_obs_t*)input.data, B);
+     nh_msg_pool_kernel<<<B, NH_MSG_HID, 0, stream>>>(
+         a->msg_out.data, ew->msg_w.data, a->msg_ids.data, B);
+ 
+-    nh_concat_kernel<<<grid_size(B * NH_CONCAT), BLOCK_SIZE, 0, stream>>>(
++    nh_concat_kernel<<<nh_narrow_grid(grid_size(B * NH_CONCAT), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->concat.data, a->loc_out.data, a->glb_out.data,
+         (const precision_t*)NULL, // invpool slice is width-0
+         a->bl_out.data, a->bl_feats.data, a->msg_out.data, B);
+     { // typed streams: tok -> deep values (48->64->64) -> 8-head pool
+-    nh_lab_tok_kernel<<<grid_size(B * NH_LABK * NH_LAB_IN), BLOCK_SIZE, 0, stream>>>(
++    nh_lab_tok_kernel<<<nh_narrow_grid(grid_size(B * NH_LABK * NH_LAB_IN), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->lm_tok.data, a->lm_gid.data, (const nh_obs_t*)input.data, a->e_eff.data,
+         nh_haz_lut_dev,
+         NH_TOKM_OFF, 1, B);
+@@ -2288,7 +2296,7 @@
+     nh_min_sgate_kernel<<<grid_size(B * NH_INV_HID), BLOCK_SIZE, 0, stream>>>(
+         a->concat.data, a->mrp.data, a->lm_tok.data, a->lm_gid.data,
+         0, NH_MLM_OFF + 2 * NH_MV, B);
+-    nh_lab_tok_kernel<<<grid_size(B * NH_LABK * NH_LAB_IN), BLOCK_SIZE, 0, stream>>>(
++    nh_lab_tok_kernel<<<nh_narrow_grid(grid_size(B * NH_LABK * NH_LAB_IN), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->li_tok.data, a->li_gid.data, (const nh_obs_t*)input.data, a->e_eff.data, NULL, NH_TOKI_OFF, 0, B);
+     { Prec tokf = {.data = a->li_tok.data, .shape = {B * NH_LABK, NH_LAB_IN}};
+       Prec rpf = {.data = a->irp.data, .shape = {B * NH_LABK, NH_INV_HID}};
+@@ -2322,7 +2330,7 @@
+         a->concat.data, a->irp.data, a->li_tok.data, a->li_gid.data,
+         1, NH_MLI_OFF + 2 * NH_MV, B);
+     }
+-    nh_spkey_kernel<<<grid_size(B * NH_SPELL_SLOTS * NH_SPKEY), BLOCK_SIZE, 0, stream>>>(
++    nh_spkey_kernel<<<nh_narrow_grid(grid_size(B * NH_SPELL_SLOTS * NH_SPKEY), a->training), BLOCK_SIZE, 0, stream>>>(
+         a->spk_keys.data, a->spk_in.data, a->spell_idx.data,
+         ew->spk_w.data, a->e_eff.data, (const nh_obs_t*)input.data, B);
+     bool spell_fused = false;
+@@ -3187,9 +3195,8 @@
+ __global__ void nh_dec_assemble_kernel(precision_t* __restrict__ out,
+     const precision_t* __restrict__ tmp, const precision_t* __restrict__ slot_logits,
+     const precision_t* __restrict__ q, const precision_t* __restrict__ spkeys, int B) {
+-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+     int od1 = NH_DEC_OD + 1;
+-    if (idx >= B * od1) return;
++    for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < B * od1; idx += gridDim.x * blockDim.x) {
+     int b = idx / od1, c = idx % od1;
+     float v;
+     if (c < NH_ACTIONS) v = to_float(tmp[(int64_t)b * NH_DEC_PAD + c]);
+@@ -3208,6 +3215,7 @@
+     } else // value
+         v = to_float(tmp[(int64_t)b * NH_DEC_PAD + NH_DEC_LIN - 1]);
+     out[idx] = from_float(v);
++    }
+ }
+ 
+ // L2 norm (+eps) of each 32-dim row; runs over queries (B*NH_HEADS rows) and
+@@ -3231,8 +3239,7 @@
+     const precision_t* __restrict__ q, const precision_t* __restrict__ qn,
+     const precision_t* __restrict__ kmat,
+     const precision_t* __restrict__ tau, int B) {
+-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (idx >= B * NH_SLOT_OD) return;
++    for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < B * NH_SLOT_OD; idx += gridDim.x * blockDim.x) {
+     int b = idx / NH_SLOT_OD, hi = idx % NH_SLOT_OD;
+     int h = hi / NH_INV, i = hi % NH_INV;
+     const precision_t* qb = q + ((int64_t)b * NH_QHEADS + h) * NH_INV_HID;
+@@ -3242,6 +3249,7 @@
+         dot += to_float(qb[k]) * to_float(ki[k]);
+     slot_logits[idx] = from_float(expf(to_float(tau[h])) * dot /
+         to_float(qn[(int64_t)b * NH_QHEADS + h]));
++    }
+ }
+ 
+ __global__ void nh_dec_dtmp_kernel(precision_t* __restrict__ dtmp,
+@@ -3356,9 +3364,9 @@
+     puf_mm(&sflat, &dw->k_w, &kflat, stream);
+     nh_ptr_rownorm_kernel<<<grid_size(B * NH_QHEADS), BLOCK_SIZE, 0, stream>>>(
+         a->qn.data, a->q.data, B * NH_QHEADS);
+-    nh_ptr3_cos_kernel<<<grid_size(B * NH_SLOT_OD), BLOCK_SIZE, 0, stream>>>(
++    nh_ptr3_cos_kernel<<<nh_narrow_grid(grid_size(B * NH_SLOT_OD), a->saved_input.data != NULL), BLOCK_SIZE, 0, stream>>>(
+         a->slot_logits.data, a->q.data, a->qn.data, a->kmat.data, dw->tau.data, B);
+-    nh_dec_assemble_kernel<<<grid_size(B * (NH_DEC_OD + 1)), BLOCK_SIZE, 0, stream>>>(
++    nh_dec_assemble_kernel<<<nh_narrow_grid(grid_size(B * (NH_DEC_OD + 1)), a->saved_input.data != NULL), BLOCK_SIZE, 0, stream>>>(
+         a->out.data, a->tmp.data, a->slot_logits.data, a->q.data, ea->spk_keys.data, B);
+     return a->out;
+ }
+--- a/src/pufferl.cu	2026-10-11 18:34:18.347687820 +0000
++++ b/src/pufferl.cu	2026-10-11 18:37:02.620059990 +0000
+@@ -158,8 +158,7 @@
+ 
+ __global__ void cast(precision_t* dst,
+         float* src, int n) {
+-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (idx < n) {
++    for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < n; idx += gridDim.x * blockDim.x) {
+         dst[idx] = from_float(src[idx]);
+     }
+ }
+@@ -786,18 +785,16 @@
+     int L = state.shape[0];
+     int H = state.shape[2];
+     int total = L * count * H;
+-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (idx >= total) {
+-        return;
+-    }
++    for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < total; idx += gridDim.x * blockDim.x) {
+     int h = idx % H;
+     int rel = (idx / H) % count;
+     int layer = idx / (count * H);
+     if (terminals.data[terminal_start + rel] == 0.0f) {
+-        return;
++        continue;
+     }
+     long i = state_elem_idx(layer, (int)state.shape[1], state_start + rel, h, H);
+     state.data[i] = from_float(0.0f);
++    }
+ }
+ 
+ // Select time t, then agents [start, start+count). Rank-2 has F==0 (zero-term shape);
+@@ -876,7 +873,7 @@
+             obs_env->data + (long)start * obs_env->shape[1],
+             n * sizeof(precision_t), cudaMemcpyDeviceToDevice, stream);
+     } else {
+-        cast<<<grid_size(n), BLOCK_SIZE, 0, stream>>>(
++        cast<<<nh_narrow_grid(grid_size(n), false), BLOCK_SIZE, 0, stream>>>(
+             obs_dst.data, obs_env->data + (long)start * obs_env->shape[1], n);
+     }
+ 
+@@ -892,7 +889,7 @@
+     int mask_size = rollouts.action_mask.shape[2];
+     int mask_stride = mask_size;
+     Prec mask_slice = puf_slice(rollouts.action_mask, t, start, block_size);
+-    cast<<<grid_size(block_size * mask_size), BLOCK_SIZE, 0, stream>>>(
++    cast<<<nh_narrow_grid(grid_size(block_size * mask_size), false), BLOCK_SIZE, 0, stream>>>(
+         mask_slice.data,
+         env->action_mask.data + (long)start * mask_size,
+         block_size * mask_size);
+@@ -921,7 +918,7 @@
+ 
+         // Per-policy state is compact (n agents); local index 0..n-1.
+         int state_n = (int)st->shape[0] * n * (int)st->shape[2];
+-        zero_term_state<<<grid_size(state_n), BLOCK_SIZE, 0, stream>>>(
++        zero_term_state<<<nh_narrow_grid(grid_size(state_n), false), BLOCK_SIZE, 0, stream>>>(
+             *st, env->terminals, 0, sub, n);
+ 
+         // Carry path: snapshot trainable policy state into per-slot initial_states.
+@@ -963,11 +960,11 @@
+ #ifdef PUF_REUSE_ROLLOUT
+ struct StepRecord { precision_t *obs,*mask,*lp,*val,*rew,*term;float* actions; };
+ __global__ void record_step(StepRecord dst,StepRecord src,int O,int M,int A,int B) {
+-    int i=blockIdx.x*blockDim.x+threadIdx.x;
++    for(int i=blockIdx.x*blockDim.x+threadIdx.x;i<max(O,max(M,A));i+=gridDim.x*blockDim.x){
+     if(i<O)dst.obs[i]=src.obs[i];
+     if(i<M)dst.mask[i]=src.mask[i];
+     if(i<A)dst.actions[i]=src.actions[i];
+-    if(i<B){dst.lp[i]=src.lp[i];dst.val[i]=src.val[i];dst.rew[i]=src.rew[i];dst.term[i]=src.term[i];}
++    if(i<B){dst.lp[i]=src.lp[i];dst.val[i]=src.val[i];dst.rew[i]=src.rew[i];dst.term[i]=src.term[i];}}
+ }
+ static StepRecord record_view(RolloutBuf& r,int t,int start,int n) {
+     return {puf_slice(r.observations,t,start,n).data,puf_slice(r.action_mask,t,start,n).data,
+@@ -981,7 +978,7 @@
+     auto dst=record_view(p->rollouts,slot*p->hypers.horizon+t,start,B);
+     auto src=record_view(p->step_rollouts,0,start,B);
+     int O=B*p->step_rollouts.observations.shape[2],M=B*p->step_rollouts.action_mask.shape[2],A=B*p->step_rollouts.actions.shape[2];
+-    record_step<<<grid_size(max(O,max(M,A))),BLOCK_SIZE,0,stream>>>(dst,src,O,M,A,B);
++    record_step<<<nh_narrow_grid(grid_size(max(O,max(M,A))), false),BLOCK_SIZE,0,stream>>>(dst,src,O,M,A,B);
+ }
+ static void snapshot_rollout_start(PuffeRL* p,int buf,cudaStream_t stream) {
+     if(!p->rollouts.initial_states.data)return;
+@@ -991,7 +988,7 @@
+         Policy* pol=&p->policies[b];if(pol->frozen)continue;
+         int off=p->vec->policy_layout[b],n=p->vec->policy_layout[b+1]-off;if(!n)continue;
+         Prec st=pol->buffer_states[buf];int count=st.shape[0]*n*st.shape[2];
+-        zero_term_state<<<grid_size(count),BLOCK_SIZE,0,stream>>>(st,p->env.terminals,0,start+off,n);
++        zero_term_state<<<nh_narrow_grid(grid_size(count), false),BLOCK_SIZE,0,stream>>>(st,p->env.terminals,0,start+off,n);
+         snapshot_state<<<grid_size(count),BLOCK_SIZE,0,stream>>>(init_slot(p->rollouts.initial_states,slot),st,start+off,n);
+     }
+ }
+@@ -4238,6 +4235,14 @@
+ 
+ #ifdef PUF_SAMPLER_TEST
+ #include "sampler_test.cuh"
++
++// Grid narrowing for the rollout forward's elementwise kernels (PUF_NARROW_BLOCKS caps the grid; 0 = unchanged; never in training).
++static inline int nh_narrow_grid(int blocks, bool training) {
++    static thread_local int cap = -1;
++    if (cap < 0) cap = getenv("PUF_NARROW_BLOCKS") ? atoi(getenv("PUF_NARROW_BLOCKS")) : 0;
++    return (!training && cap > 0 && blocks > cap) ? cap : blocks;
++}
++
+ #ifndef NH_ENV_TURN
+ #ifdef PUFFER_NETHACK
+ #define NH_ENV_TURN(e) ((long)(e)->blstats[NLE_BL_TIME])

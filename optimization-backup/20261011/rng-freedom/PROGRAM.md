@@ -204,3 +204,24 @@ In both, the rollout is fully hidden only on paper: 2048 forwards × 57 kernels 
 inference graphs), PPO loses 14-18%, the forward 3-4x. The bound is PPO-alone; fusion of the forward (57 → ~10 kernels) is the lever for the
 interference term; the PPO-alone term is optimizer work (Muon 42% of PPO kernel time per the September profile) and the sweep's minibatch choice.
 5M regimes: no GPU headroom of this kind (env-bound).
+
+## Mechanism probes (18:25 UTC; binary cohort_fx = trainer_cohort + PUF_INFER_DUMMY/PUF_INFER_BURN graph-node injections; 15M/2048 cohort, fast protocol)
+ctrl 264,798 / 263,289 | PUF_CACHE_TABLES=1 (−3 kernels/forward) 264,175 (0%) | +50 trivial 1-block kernels/forward 257,160 (−2.6%; rollout became the
+tail by 28 ms) | +100 232,325 (−12%) | +1 kernel holding 16 SMs ~80 µs 261,128 (−1.1%). All proofs identical (injections inert, cache exact).
+READING: kernel COUNT is not what PPO pays for (doubling it costs <3%, mostly via rollout length); steady SM occupancy costs ≈ proportionally
+(2% of SM-seconds → −1.1%). The fusion estimate (+15-18%) assumed count; FALSIFIED. Clocks identical under load (2.72 GHz, 408 W ctrl vs 389 W
+dummy100). Actor-weight L2 persistence (ACTOR_CACHE 16/32 MiB, Oct 9) was neutral → weight traffic is not the channel.
+rec128 screen (REC128_SCREEN.json): Triton fused GEMM+gate at M=128 best (32,32,32,2w) 12.1 µs vs cuBLAS+gate 10.6 µs → SLOWER (−12%); at M=512
+it had won +26%/layer. Recurrent fusion at 128 rows: dead. Remaining hypothesis: WIDE short kernels (cast 2391 blocks, zero_term_state 2048,
+decode 830, concat 849, inv_gather 440, lab_tok 384×2, assemble 372, cos 330 …) fill all SMs for 1-3 µs and stall PPO's GEMM waves; the 1-block
+dummies could not show that. Probe: PUF_INFER_DUMMY_BLOCKS (wide dummies). If confirmed, the fix is numerics-exact grid narrowing, not fusion.
+
+## Wide-kernel probe (18:33 UTC; cohort_fx2, 15M/2048): the interference channel is grid WIDTH
+ctrl 264,572 / 262,824 | +50 kernels × 1 block −2.6% (earlier) | +50 × 128 blocks 249,024 (−5.9%, rollout became tail) | +20 × 2048 blocks 226,088
+(−14.6%, PPO 0.98 → 1.12 s) | +50 × 2048 blocks 178,871 (−32%, rollout 1.46 s). PPO loses ≈3.4 µs per wide short kernel launch (0.14 s / 20×2048);
+the real forward has ~15 launches of 300-2,400 blocks (cast 2391, record_step ~2092, zero_term_state 2048, concat 849, decode 830, eff_embed 748,
+inv_gather 440, lab_tok 384×2, inv_table 374×2, dec_assemble 372, cast mask 371, ptr3_cos 330, loc3_gather 324) → predicts ≈0.10 s of PPO's
+0.15 s loss. Wide 1-3 µs kernels fill every SM and stall PPO's GEMM waves; narrow kernels do not. FIX = grid narrowing (grid-stride loops, launch
+capped at PUF_NARROW_BLOCKS, inference only; identical per-element math → proofs must match): narrow/make_narrow.py (13 kernels in nethack.cu,
+16 launches) + the pufferl.cu pass (cast obs/mask, zero_term_state ×2, record_step). Binary cohort_nw2. Ladder 16/32/64/128 at 15M/2048, then
+champion shape 512×512 mb4096 with 32/64.
