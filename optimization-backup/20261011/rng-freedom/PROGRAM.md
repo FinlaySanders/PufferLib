@@ -374,3 +374,14 @@ mm_aggression) on a slow path gated by a bit. Legal sets/flags are deterministic
 → can stay BIT-EXACT; RNG freedom (lz1) optional on top. Caveat from Phase 3: mt4 (per-query mask assembly) and mt8 (terrain planes) lost on the
 clock — planes pay only if they replace most of the per-cell checks and are maintained incrementally, not rebuilt per query.
 Sizing: mfndpos 86K → ~20K (−13%), selection/preamble memoisation −5%, movers list −3%, lz1 −7% ⇒ ≈ −25..30% of the step → 5M env ≈ 520-560K.
+
+## Craftax layout, for the monster-turn v2 design (ocean/craftax/craftax.h, 21:35 UTC)
+One fixed-size State struct, no pointers, no allocation: byte maps per level (map, item_map, light_map), per-row uint64 bitboards for mob occupancy
+and spawn candidates (occupancy test = one shift; spawn = terrain & ~mobs & col_mask on a whole row), mobs as SoA with capacity 3 per type per level
+(position, health, mask, cooldown, type_id arrays; dead = mask false, slot reused), projectiles the same. Mob AI is straight-line: pick a direction
+(chase axis with p=0.75 if within 10, else random), ONE validity call (bit tests), unconditional writes of position/cooldown/mask — no early-return
+chains. xorshift RNG; static light map instead of vision; numeric obs, no text. ≤9 mobs per tick, ~100-200 instr each.
+Transferable: per-level bitboards for every legality input + straight-line mask evaluation (= the bitboard mfndpos), hot-field SoA for the monster
+scan (movers list), precomputed static layers. Not transferable: the rule set (15 interacting per-cell conditions with per-type and per-pair
+semantics vs one validity function), the entity count (27 monsters × 6.9 turns vs 9 mobs × 1 tick), and the tty observation contract (display +
+obs export ≈ 75K/step has no Craftax analogue). Realistic ceiling stays "a third", not 3.8 us.
