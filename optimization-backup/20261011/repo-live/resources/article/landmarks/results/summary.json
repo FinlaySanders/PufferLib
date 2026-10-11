@@ -1,0 +1,744 @@
+{
+  "manifest": {
+    "source": "/workspace/experiments/nethack-depth-2b-20260914",
+    "cohort": "depth-trained",
+    "steps": "2B",
+    "interface": "fork",
+    "seeds": [
+      801,
+      802,
+      803,
+      804,
+      805,
+      806,
+      807,
+      808
+    ],
+    "evaluation_seed": 7,
+    "burnin_per_seed": 4000,
+    "kept_per_seed": 10000,
+    "columns": [
+      "score",
+      "how",
+      "time",
+      "noprog",
+      "role",
+      "race",
+      "gender",
+      "max_depth",
+      "last_turn",
+      "killer",
+      "killer_level",
+      "visited_medusa",
+      "visited_castle",
+      "medusa_depth",
+      "castle_depth"
+    ],
+    "sha256": {
+      "puffer": "96870ff3cb7c632312ff9803b7a4d81d0a066aa8b855b1bfe888703aedc8ff9e",
+      "lib/libnethack.so": "8131ae6f9fc201c87e2a1a34c500ef127c63fff98b5b3c1bcb120a66ba6eae47",
+      "source.patch": "51b97a1dbbf66ff2b9d5bdc9c13bf1556afc2949d65249ced2399961e84b877e",
+      "engine.patch": "05e63e8e7f555b3128d44b104ec90b723158b6c000786b2a1eb2306a8ca2ea48",
+      "config/nethack.ini": "d2b5364b610babc80f46df94acc73d213640bf52d2fb614b2a98b1ee18578ad1",
+      "config/default.ini": "b45fb46f546190625d3e1ff40d615361199ce1307e477818348e1c1b609dc128"
+    }
+  },
+  "runs": [
+    {
+      "seed": 801,
+      "n": 10000,
+      "medusa": 732,
+      "castle": 230,
+      "roles": [
+        {
+          "role": 0,
+          "n": 781,
+          "medusa": 424,
+          "castle": 147
+        },
+        {
+          "role": 1,
+          "n": 735,
+          "medusa": 38,
+          "castle": 10
+        },
+        {
+          "role": 2,
+          "n": 743,
+          "medusa": 14,
+          "castle": 4
+        },
+        {
+          "role": 3,
+          "n": 784,
+          "medusa": 19,
+          "castle": 6
+        },
+        {
+          "role": 4,
+          "n": 775,
+          "medusa": 9,
+          "castle": 5
+        },
+        {
+          "role": 5,
+          "n": 815,
+          "medusa": 59,
+          "castle": 24
+        },
+        {
+          "role": 6,
+          "n": 800,
+          "medusa": 24,
+          "castle": 5
+        },
+        {
+          "role": 7,
+          "n": 735,
+          "medusa": 19,
+          "castle": 5
+        },
+        {
+          "role": 8,
+          "n": 740,
+          "medusa": 24,
+          "castle": 5
+        },
+        {
+          "role": 9,
+          "n": 769,
+          "medusa": 28,
+          "castle": 6
+        },
+        {
+          "role": 10,
+          "n": 760,
+          "medusa": 11,
+          "castle": 1
+        },
+        {
+          "role": 11,
+          "n": 740,
+          "medusa": 28,
+          "castle": 7
+        },
+        {
+          "role": 12,
+          "n": 823,
+          "medusa": 35,
+          "castle": 5
+        }
+      ],
+      "sha256": "f2475e317dd4a7de0b4cb4eb08d149b6fce852500e1a09b4aee07e84ac61a479"
+    },
+    {
+      "seed": 802,
+      "n": 10000,
+      "medusa": 696,
+      "castle": 247,
+      "roles": [
+        {
+          "role": 0,
+          "n": 780,
+          "medusa": 426,
+          "castle": 165
+        },
+        {
+          "role": 1,
+          "n": 734,
+          "medusa": 37,
+          "castle": 11
+        },
+        {
+          "role": 2,
+          "n": 765,
+          "medusa": 12,
+          "castle": 3
+        },
+        {
+          "role": 3,
+          "n": 790,
+          "medusa": 15,
+          "castle": 3
+        },
+        {
+          "role": 4,
+          "n": 790,
+          "medusa": 8,
+          "castle": 6
+        },
+        {
+          "role": 5,
+          "n": 807,
+          "medusa": 60,
+          "castle": 25
+        },
+        {
+          "role": 6,
+          "n": 791,
+          "medusa": 13,
+          "castle": 1
+        },
+        {
+          "role": 7,
+          "n": 718,
+          "medusa": 26,
+          "castle": 8
+        },
+        {
+          "role": 8,
+          "n": 758,
+          "medusa": 14,
+          "castle": 2
+        },
+        {
+          "role": 9,
+          "n": 777,
+          "medusa": 24,
+          "castle": 8
+        },
+        {
+          "role": 10,
+          "n": 756,
+          "medusa": 9,
+          "castle": 1
+        },
+        {
+          "role": 11,
+          "n": 740,
+          "medusa": 20,
+          "castle": 7
+        },
+        {
+          "role": 12,
+          "n": 794,
+          "medusa": 32,
+          "castle": 7
+        }
+      ],
+      "sha256": "4e3bd3de47dc092c2af378f8ae1b3173eae1dac83d3e945b1376f85d2f8b1a4b"
+    },
+    {
+      "seed": 803,
+      "n": 10000,
+      "medusa": 679,
+      "castle": 246,
+      "roles": [
+        {
+          "role": 0,
+          "n": 778,
+          "medusa": 399,
+          "castle": 155
+        },
+        {
+          "role": 1,
+          "n": 738,
+          "medusa": 36,
+          "castle": 12
+        },
+        {
+          "role": 2,
+          "n": 756,
+          "medusa": 20,
+          "castle": 6
+        },
+        {
+          "role": 3,
+          "n": 782,
+          "medusa": 13,
+          "castle": 2
+        },
+        {
+          "role": 4,
+          "n": 780,
+          "medusa": 17,
+          "castle": 5
+        },
+        {
+          "role": 5,
+          "n": 816,
+          "medusa": 56,
+          "castle": 20
+        },
+        {
+          "role": 6,
+          "n": 804,
+          "medusa": 9,
+          "castle": 2
+        },
+        {
+          "role": 7,
+          "n": 724,
+          "medusa": 25,
+          "castle": 8
+        },
+        {
+          "role": 8,
+          "n": 742,
+          "medusa": 16,
+          "castle": 4
+        },
+        {
+          "role": 9,
+          "n": 783,
+          "medusa": 24,
+          "castle": 13
+        },
+        {
+          "role": 10,
+          "n": 754,
+          "medusa": 18,
+          "castle": 6
+        },
+        {
+          "role": 11,
+          "n": 730,
+          "medusa": 17,
+          "castle": 6
+        },
+        {
+          "role": 12,
+          "n": 813,
+          "medusa": 29,
+          "castle": 7
+        }
+      ],
+      "sha256": "398029e1408c75422534542c896bedb9db6aa38806a312ee78247d8eea53a0ce"
+    },
+    {
+      "seed": 804,
+      "n": 10000,
+      "medusa": 689,
+      "castle": 231,
+      "roles": [
+        {
+          "role": 0,
+          "n": 786,
+          "medusa": 432,
+          "castle": 159
+        },
+        {
+          "role": 1,
+          "n": 733,
+          "medusa": 54,
+          "castle": 16
+        },
+        {
+          "role": 2,
+          "n": 767,
+          "medusa": 7,
+          "castle": 3
+        },
+        {
+          "role": 3,
+          "n": 777,
+          "medusa": 13,
+          "castle": 3
+        },
+        {
+          "role": 4,
+          "n": 792,
+          "medusa": 13,
+          "castle": 6
+        },
+        {
+          "role": 5,
+          "n": 814,
+          "medusa": 53,
+          "castle": 11
+        },
+        {
+          "role": 6,
+          "n": 789,
+          "medusa": 18,
+          "castle": 2
+        },
+        {
+          "role": 7,
+          "n": 719,
+          "medusa": 15,
+          "castle": 5
+        },
+        {
+          "role": 8,
+          "n": 755,
+          "medusa": 18,
+          "castle": 4
+        },
+        {
+          "role": 9,
+          "n": 775,
+          "medusa": 13,
+          "castle": 7
+        },
+        {
+          "role": 10,
+          "n": 758,
+          "medusa": 6,
+          "castle": 2
+        },
+        {
+          "role": 11,
+          "n": 746,
+          "medusa": 21,
+          "castle": 6
+        },
+        {
+          "role": 12,
+          "n": 789,
+          "medusa": 26,
+          "castle": 7
+        }
+      ],
+      "sha256": "0d235f823b6d63cc8f842cda8927fbafe60d2bd8c9e05e268272f5c8bcec864d"
+    },
+    {
+      "seed": 805,
+      "n": 10000,
+      "medusa": 686,
+      "castle": 229,
+      "roles": [
+        {
+          "role": 0,
+          "n": 785,
+          "medusa": 415,
+          "castle": 143
+        },
+        {
+          "role": 1,
+          "n": 739,
+          "medusa": 44,
+          "castle": 14
+        },
+        {
+          "role": 2,
+          "n": 767,
+          "medusa": 21,
+          "castle": 6
+        },
+        {
+          "role": 3,
+          "n": 779,
+          "medusa": 9,
+          "castle": 3
+        },
+        {
+          "role": 4,
+          "n": 800,
+          "medusa": 8,
+          "castle": 5
+        },
+        {
+          "role": 5,
+          "n": 829,
+          "medusa": 50,
+          "castle": 12
+        },
+        {
+          "role": 6,
+          "n": 797,
+          "medusa": 19,
+          "castle": 7
+        },
+        {
+          "role": 7,
+          "n": 737,
+          "medusa": 19,
+          "castle": 5
+        },
+        {
+          "role": 8,
+          "n": 747,
+          "medusa": 18,
+          "castle": 4
+        },
+        {
+          "role": 9,
+          "n": 756,
+          "medusa": 29,
+          "castle": 16
+        },
+        {
+          "role": 10,
+          "n": 744,
+          "medusa": 12,
+          "castle": 1
+        },
+        {
+          "role": 11,
+          "n": 722,
+          "medusa": 20,
+          "castle": 9
+        },
+        {
+          "role": 12,
+          "n": 798,
+          "medusa": 22,
+          "castle": 4
+        }
+      ],
+      "sha256": "f8466942c31dc7a5d2986bdebf038866cac3e90141a6c3aa25936d4ec4d0cfb7"
+    },
+    {
+      "seed": 806,
+      "n": 10000,
+      "medusa": 601,
+      "castle": 200,
+      "roles": [
+        {
+          "role": 0,
+          "n": 774,
+          "medusa": 415,
+          "castle": 143
+        },
+        {
+          "role": 1,
+          "n": 735,
+          "medusa": 32,
+          "castle": 10
+        },
+        {
+          "role": 2,
+          "n": 761,
+          "medusa": 17,
+          "castle": 5
+        },
+        {
+          "role": 3,
+          "n": 780,
+          "medusa": 11,
+          "castle": 5
+        },
+        {
+          "role": 4,
+          "n": 785,
+          "medusa": 10,
+          "castle": 2
+        },
+        {
+          "role": 5,
+          "n": 797,
+          "medusa": 31,
+          "castle": 10
+        },
+        {
+          "role": 6,
+          "n": 791,
+          "medusa": 8,
+          "castle": 1
+        },
+        {
+          "role": 7,
+          "n": 731,
+          "medusa": 11,
+          "castle": 3
+        },
+        {
+          "role": 8,
+          "n": 753,
+          "medusa": 15,
+          "castle": 3
+        },
+        {
+          "role": 9,
+          "n": 776,
+          "medusa": 16,
+          "castle": 9
+        },
+        {
+          "role": 10,
+          "n": 770,
+          "medusa": 9,
+          "castle": 4
+        },
+        {
+          "role": 11,
+          "n": 739,
+          "medusa": 9,
+          "castle": 2
+        },
+        {
+          "role": 12,
+          "n": 808,
+          "medusa": 17,
+          "castle": 3
+        }
+      ],
+      "sha256": "8f9267208a04568ba5ef051f6c47085985382b51651e115f073b302752aaec65"
+    },
+    {
+      "seed": 807,
+      "n": 10000,
+      "medusa": 579,
+      "castle": 180,
+      "roles": [
+        {
+          "role": 0,
+          "n": 791,
+          "medusa": 404,
+          "castle": 141
+        },
+        {
+          "role": 1,
+          "n": 743,
+          "medusa": 33,
+          "castle": 9
+        },
+        {
+          "role": 2,
+          "n": 756,
+          "medusa": 10,
+          "castle": 2
+        },
+        {
+          "role": 3,
+          "n": 791,
+          "medusa": 14,
+          "castle": 4
+        },
+        {
+          "role": 4,
+          "n": 790,
+          "medusa": 5,
+          "castle": 3
+        },
+        {
+          "role": 5,
+          "n": 818,
+          "medusa": 45,
+          "castle": 10
+        },
+        {
+          "role": 6,
+          "n": 779,
+          "medusa": 2,
+          "castle": 0
+        },
+        {
+          "role": 7,
+          "n": 729,
+          "medusa": 9,
+          "castle": 0
+        },
+        {
+          "role": 8,
+          "n": 745,
+          "medusa": 8,
+          "castle": 1
+        },
+        {
+          "role": 9,
+          "n": 780,
+          "medusa": 13,
+          "castle": 4
+        },
+        {
+          "role": 10,
+          "n": 740,
+          "medusa": 6,
+          "castle": 0
+        },
+        {
+          "role": 11,
+          "n": 744,
+          "medusa": 13,
+          "castle": 4
+        },
+        {
+          "role": 12,
+          "n": 794,
+          "medusa": 17,
+          "castle": 2
+        }
+      ],
+      "sha256": "dec575d486dac7f8caa989d2f2e5282385d0f595cec5db97f7ed5033f739eb96"
+    },
+    {
+      "seed": 808,
+      "n": 10000,
+      "medusa": 660,
+      "castle": 216,
+      "roles": [
+        {
+          "role": 0,
+          "n": 793,
+          "medusa": 401,
+          "castle": 139
+        },
+        {
+          "role": 1,
+          "n": 737,
+          "medusa": 37,
+          "castle": 12
+        },
+        {
+          "role": 2,
+          "n": 750,
+          "medusa": 12,
+          "castle": 6
+        },
+        {
+          "role": 3,
+          "n": 812,
+          "medusa": 10,
+          "castle": 1
+        },
+        {
+          "role": 4,
+          "n": 776,
+          "medusa": 8,
+          "castle": 5
+        },
+        {
+          "role": 5,
+          "n": 827,
+          "medusa": 50,
+          "castle": 16
+        },
+        {
+          "role": 6,
+          "n": 787,
+          "medusa": 21,
+          "castle": 6
+        },
+        {
+          "role": 7,
+          "n": 729,
+          "medusa": 19,
+          "castle": 6
+        },
+        {
+          "role": 8,
+          "n": 754,
+          "medusa": 23,
+          "castle": 4
+        },
+        {
+          "role": 9,
+          "n": 763,
+          "medusa": 25,
+          "castle": 8
+        },
+        {
+          "role": 10,
+          "n": 754,
+          "medusa": 11,
+          "castle": 2
+        },
+        {
+          "role": 11,
+          "n": 717,
+          "medusa": 21,
+          "castle": 7
+        },
+        {
+          "role": 12,
+          "n": 801,
+          "medusa": 22,
+          "castle": 4
+        }
+      ],
+      "sha256": "5288516a8758a46c4e7306504de8a6781b7ab4554cebe58d9660e5e91776efc3"
+    }
+  ]
+}

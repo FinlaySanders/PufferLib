@@ -1,0 +1,2028 @@
+{
+  "protocol": {
+    "epochs": 150,
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "learning_rates": [
+      0.0003,
+      0.001
+    ],
+    "batch_size": 1024,
+    "tasks": [
+      "n_items",
+      "n_cursed",
+      "n_blessed",
+      "n_armor",
+      "quantity_sum",
+      "has_blessed_armor",
+      "launcher_ammo_pair",
+      "max_known_enchant",
+      "best_uncursed_enchant",
+      "wield_enchant",
+      "wield_cursed",
+      "quiver_quantity",
+      "worn_armor_count",
+      "worn_max_enchant",
+      "worn_ring_count",
+      "has_worn_cursed"
+    ],
+    "binary": [
+      5,
+      6,
+      10,
+      15
+    ],
+    "normalization_mean": [
+      37.87434387207031,
+      0.6124725341796875,
+      0.9527587890625,
+      6.3418731689453125,
+      72.60897827148438,
+      0.0,
+      0.0,
+      2.557871103286743,
+      2.5058794021606445,
+      0.7763545513153076,
+      0.0,
+      5.887145042419434,
+      3.4048309326171875,
+      0.9192333221435547,
+      9.1552734375e-05,
+      0.0
+    ],
+    "normalization_sd": [
+      13.1564359664917,
+      1.30156672000885,
+      1.440774917602539,
+      3.2485005855560303,
+      24.664588928222656,
+      1.0,
+      1.0,
+      2.3679678440093994,
+      2.4162635803222656,
+      0.7232085466384888,
+      1.0,
+      8.048309326171875,
+      1.296748161315918,
+      1.1114261150360107,
+      0.00956788007169962,
+      1.0
+    ],
+    "torch": "2.11.0+cu130",
+    "data": {
+      "policy": "fixwt4b_s705",
+      "checkpoint_sha256": "6541c5212ae4aae45e3c419bec2bf150883c457188117743d546cfb1d62a2718",
+      "binary_sha256": "2859ef3f5455400b8ac8a633819f8c9d39184c3e64bbc5ee574db3b739ad364f",
+      "columns": 3718,
+      "slots": 55,
+      "sfeat": 24,
+      "slot_rep": 16,
+      "inventory_rep": 384,
+      "encoder_rep": 1024,
+      "sample_stride": 16,
+      "warmup_forward_calls": 256,
+      "splits": {
+        "train": {
+          "frames": 65536,
+          "seed": 101000000,
+          "sha256": "b1ca28b23bef7c8027be77d5fcd909d720c96b1d15dfe8eb532bbcd9334e2ede"
+        },
+        "validation": {
+          "frames": 16384,
+          "seed": 201000000,
+          "sha256": "f1ac1c61bccd1a16643a8b48b759f5c337e7165f51302591a7faeb80374e7638"
+        },
+        "test": {
+          "frames": 16384,
+          "seed": 301000000,
+          "sha256": "317ae5b595880c7b0b94c1cc5ce912ad9c739777e117d26c8305227358693c8d"
+        }
+      }
+    }
+  },
+  "cells": [
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_items",
+      "metric": "r2",
+      "supervised": 0.6521028876304626,
+      "frozen": 0.36678653955459595,
+      "relative_decodability": 0.5624672831727263,
+      "supervised_seeds": [
+        0.671477198600769,
+        0.6401149034500122,
+        0.6521028876304626
+      ],
+      "frozen_seeds": [
+        0.3671269416809082,
+        0.3649386763572693,
+        0.36678653955459595
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_cursed",
+      "metric": "r2",
+      "supervised": 0.24787604808807373,
+      "frozen": -0.12702608108520508,
+      "relative_decodability": -0.5124580695270363,
+      "supervised_seeds": [
+        0.35321497917175293,
+        0.2330285906791687,
+        0.24787604808807373
+      ],
+      "frozen_seeds": [
+        -0.12702608108520508,
+        -0.12939095497131348,
+        -0.11860311031341553
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_blessed",
+      "metric": "r2",
+      "supervised": 0.6842723488807678,
+      "frozen": 0.30064070224761963,
+      "relative_decodability": 0.4393582507598963,
+      "supervised_seeds": [
+        0.6458408236503601,
+        0.7070328593254089,
+        0.6842723488807678
+      ],
+      "frozen_seeds": [
+        0.2963021993637085,
+        0.30064070224761963,
+        0.30198901891708374
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_armor",
+      "metric": "r2",
+      "supervised": 0.6364693641662598,
+      "frozen": 0.4349370002746582,
+      "relative_decodability": 0.6833588932350295,
+      "supervised_seeds": [
+        0.5745434761047363,
+        0.6364693641662598,
+        0.6667627096176147
+      ],
+      "frozen_seeds": [
+        0.4348767399787903,
+        0.4349370002746582,
+        0.43579667806625366
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "quantity_sum",
+      "metric": "r2",
+      "supervised": 0.777416467666626,
+      "frozen": 0.5092370510101318,
+      "relative_decodability": 0.6550376435150386,
+      "supervised_seeds": [
+        0.6808854341506958,
+        0.777416467666626,
+        0.7899783849716187
+      ],
+      "frozen_seeds": [
+        0.5092370510101318,
+        0.506475567817688,
+        0.5095122456550598
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "has_blessed_armor",
+      "metric": "auc",
+      "supervised": 0.9229807438646749,
+      "frozen": 0.6641568353414121,
+      "relative_decodability": 0.388095292096633,
+      "supervised_seeds": [
+        0.94428384111161,
+        0.9229807438646749,
+        0.8650001547977224
+      ],
+      "frozen_seeds": [
+        0.6645976456518823,
+        0.6641568353414121,
+        0.6638094547242712
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "launcher_ammo_pair",
+      "metric": "auc",
+      "supervised": 0.9864214095628786,
+      "frozen": 0.8333918453079476,
+      "relative_decodability": 0.6853971448492561,
+      "supervised_seeds": [
+        0.9864214095628786,
+        0.9867425377567518,
+        0.9783253066968487
+      ],
+      "frozen_seeds": [
+        0.8333167328225974,
+        0.83356132494081,
+        0.8333918453079476
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "max_known_enchant",
+      "metric": "r2",
+      "supervised": 0.8263571262359619,
+      "frozen": 0.3791191577911377,
+      "relative_decodability": 0.4587836732503499,
+      "supervised_seeds": [
+        0.8641793727874756,
+        0.8047049045562744,
+        0.8263571262359619
+      ],
+      "frozen_seeds": [
+        0.37932437658309937,
+        0.3785157799720764,
+        0.3791191577911377
+      ],
+      "test_n": 16377
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "best_uncursed_enchant",
+      "metric": "r2",
+      "supervised": 0.8782957792282104,
+      "frozen": 0.37745463848114014,
+      "relative_decodability": 0.4297580011289851,
+      "supervised_seeds": [
+        0.8848151564598083,
+        0.8499030470848083,
+        0.8782957792282104
+      ],
+      "frozen_seeds": [
+        0.3779241442680359,
+        0.3773675560951233,
+        0.37745463848114014
+      ],
+      "test_n": 16312
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "wield_enchant",
+      "metric": "r2",
+      "supervised": 0.82237309217453,
+      "frozen": 0.5489699840545654,
+      "relative_decodability": 0.6675437089058588,
+      "supervised_seeds": [
+        0.8480492830276489,
+        0.82237309217453,
+        0.8209686875343323
+      ],
+      "frozen_seeds": [
+        0.5493173003196716,
+        0.5479585528373718,
+        0.5489699840545654
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "wield_cursed",
+      "metric": "auc",
+      "supervised": 0.30293473797763293,
+      "frozen": 0.9840325374708142,
+      "relative_decodability": null,
+      "supervised_seeds": [
+        0.06580625724330458,
+        0.30293473797763293,
+        0.8240979428407603
+      ],
+      "frozen_seeds": [
+        0.9811947413305085,
+        0.9840325374708142,
+        0.984695823726211
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "quiver_quantity",
+      "metric": "r2",
+      "supervised": 0.8508732318878174,
+      "frozen": 0.6396016478538513,
+      "relative_decodability": 0.7517002814094627,
+      "supervised_seeds": [
+        0.8292484283447266,
+        0.9097834825515747,
+        0.8508732318878174
+      ],
+      "frozen_seeds": [
+        0.6401875019073486,
+        0.6395441293716431,
+        0.6396016478538513
+      ],
+      "test_n": 12837
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "worn_armor_count",
+      "metric": "r2",
+      "supervised": 0.7978583574295044,
+      "frozen": 0.3288976550102234,
+      "relative_decodability": 0.4122256186797962,
+      "supervised_seeds": [
+        0.7634561061859131,
+        0.7978583574295044,
+        0.8213365077972412
+      ],
+      "frozen_seeds": [
+        0.32716912031173706,
+        0.32998937368392944,
+        0.3288976550102234
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "worn_max_enchant",
+      "metric": "r2",
+      "supervised": 0.43378061056137085,
+      "frozen": 0.0811956524848938,
+      "relative_decodability": 0.18718137811603802,
+      "supervised_seeds": [
+        0.36848485469818115,
+        0.6153743267059326,
+        0.43378061056137085
+      ],
+      "frozen_seeds": [
+        0.0811956524848938,
+        0.08566617965698242,
+        0.08092164993286133
+      ],
+      "test_n": 16239
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "worn_ring_count",
+      "metric": "r2",
+      "supervised": -0.03142118453979492,
+      "frozen": -0.001990795135498047,
+      "relative_decodability": null,
+      "supervised_seeds": [
+        -0.03142118453979492,
+        -0.024340152740478516,
+        -0.041742563247680664
+      ],
+      "frozen_seeds": [
+        -0.0023502111434936523,
+        -0.001990795135498047,
+        -0.0018090009689331055
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": false,
+      "task": "has_worn_cursed",
+      "metric": "auc",
+      "supervised": 0.90215791457154,
+      "frozen": 0.7467921049632101,
+      "relative_decodability": 0.6136696457314361,
+      "supervised_seeds": [
+        0.8898727844694454,
+        0.9480879663303923,
+        0.90215791457154
+      ],
+      "frozen_seeds": [
+        0.746056463498677,
+        0.7467921049632101,
+        0.7468626837188893
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_items",
+      "metric": "r2",
+      "supervised": 0.7025026082992554,
+      "frozen": 0.4055863618850708,
+      "relative_decodability": 0.5773449907424361,
+      "supervised_seeds": [
+        0.7394373416900635,
+        0.6866148710250854,
+        0.7025026082992554
+      ],
+      "frozen_seeds": [
+        0.4055863618850708,
+        0.38391900062561035,
+        0.40693867206573486
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_cursed",
+      "metric": "r2",
+      "supervised": 0.5607048273086548,
+      "frozen": 0.031953394412994385,
+      "relative_decodability": 0.05698790675009615,
+      "supervised_seeds": [
+        0.5607048273086548,
+        0.6687412261962891,
+        0.3074520230293274
+      ],
+      "frozen_seeds": [
+        0.050468623638153076,
+        0.01713550090789795,
+        0.031953394412994385
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_blessed",
+      "metric": "r2",
+      "supervised": 0.741165280342102,
+      "frozen": 0.5788929462432861,
+      "relative_decodability": 0.7810578309551746,
+      "supervised_seeds": [
+        0.741165280342102,
+        0.7523361444473267,
+        0.701431155204773
+      ],
+      "frozen_seeds": [
+        0.580542802810669,
+        0.5776935815811157,
+        0.5788929462432861
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_armor",
+      "metric": "r2",
+      "supervised": 0.5776989459991455,
+      "frozen": 0.15875178575515747,
+      "relative_decodability": 0.2748001997486634,
+      "supervised_seeds": [
+        0.6358907222747803,
+        0.534393310546875,
+        0.5776989459991455
+      ],
+      "frozen_seeds": [
+        0.15875178575515747,
+        0.1221657395362854,
+        0.1691340208053589
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "quantity_sum",
+      "metric": "r2",
+      "supervised": 0.8261863589286804,
+      "frozen": 0.5618209838867188,
+      "relative_decodability": 0.6800172598047184,
+      "supervised_seeds": [
+        0.8261863589286804,
+        0.852458119392395,
+        0.8250840902328491
+      ],
+      "frozen_seeds": [
+        0.5628771185874939,
+        0.5554970502853394,
+        0.5618209838867188
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "has_blessed_armor",
+      "metric": "auc",
+      "supervised": 0.9172348177249303,
+      "frozen": 0.6557123565754015,
+      "relative_decodability": 0.37320077318680944,
+      "supervised_seeds": [
+        0.9673120061814888,
+        0.9172348177249303,
+        0.8793843198623913
+      ],
+      "frozen_seeds": [
+        0.6584099698950993,
+        0.6537300690417881,
+        0.6557123565754015
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "launcher_ammo_pair",
+      "metric": "auc",
+      "supervised": 0.991149201240367,
+      "frozen": 0.8646544434789768,
+      "relative_decodability": 0.7424514639503933,
+      "supervised_seeds": [
+        0.9972953231825071,
+        0.991149201240367,
+        0.9815411368859778
+      ],
+      "frozen_seeds": [
+        0.8631552581104353,
+        0.8656337529691509,
+        0.8646544434789768
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "max_known_enchant",
+      "metric": "r2",
+      "supervised": 0.8680856823921204,
+      "frozen": 0.6109576225280762,
+      "relative_decodability": 0.7037987550313062,
+      "supervised_seeds": [
+        0.8680856823921204,
+        0.8770230412483215,
+        0.8560081124305725
+      ],
+      "frozen_seeds": [
+        0.6092586517333984,
+        0.6139085292816162,
+        0.6109576225280762
+      ],
+      "test_n": 16377
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "best_uncursed_enchant",
+      "metric": "r2",
+      "supervised": 0.9001762866973877,
+      "frozen": 0.6703193187713623,
+      "relative_decodability": 0.7446533847616268,
+      "supervised_seeds": [
+        0.9001762866973877,
+        0.8958459496498108,
+        0.9174456000328064
+      ],
+      "frozen_seeds": [
+        0.6703193187713623,
+        0.6729496717453003,
+        0.6648520231246948
+      ],
+      "test_n": 16312
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "wield_enchant",
+      "metric": "r2",
+      "supervised": 0.9743895530700684,
+      "frozen": 0.9933034181594849,
+      "relative_decodability": 1.0194109891981327,
+      "supervised_seeds": [
+        0.9832795858383179,
+        0.9743895530700684,
+        0.9694440364837646
+      ],
+      "frozen_seeds": [
+        0.9944894909858704,
+        0.9909977316856384,
+        0.9933034181594849
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "wield_cursed",
+      "metric": "auc",
+      "supervised": 0.21233420880640058,
+      "frozen": 1.0,
+      "relative_decodability": null,
+      "supervised_seeds": [
+        0.241334152925141,
+        0.21233420880640058,
+        0.03987735278325117
+      ],
+      "frozen_seeds": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "quiver_quantity",
+      "metric": "r2",
+      "supervised": 0.9894052147865295,
+      "frozen": 0.9994175434112549,
+      "relative_decodability": 1.0101195430093681,
+      "supervised_seeds": [
+        0.9713302254676819,
+        0.994155764579773,
+        0.9894052147865295
+      ],
+      "frozen_seeds": [
+        0.999653697013855,
+        0.9989286661148071,
+        0.9994175434112549
+      ],
+      "test_n": 12837
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "worn_armor_count",
+      "metric": "r2",
+      "supervised": 0.8526391386985779,
+      "frozen": 0.4244219660758972,
+      "relative_decodability": 0.49777443564661117,
+      "supervised_seeds": [
+        0.8151471614837646,
+        0.8526391386985779,
+        0.8739544153213501
+      ],
+      "frozen_seeds": [
+        0.42674320936203003,
+        0.4210755228996277,
+        0.4244219660758972
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "worn_max_enchant",
+      "metric": "r2",
+      "supervised": 0.6801318526268005,
+      "frozen": 0.2950030565261841,
+      "relative_decodability": 0.4337439209571281,
+      "supervised_seeds": [
+        0.6801318526268005,
+        0.7135176062583923,
+        0.38277679681777954
+      ],
+      "frozen_seeds": [
+        0.2950030565261841,
+        0.275989830493927,
+        0.30780738592147827
+      ],
+      "test_n": 16239
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "worn_ring_count",
+      "metric": "r2",
+      "supervised": 0.1290491223335266,
+      "frozen": 0.8350481986999512,
+      "relative_decodability": 6.470777821655963,
+      "supervised_seeds": [
+        0.1290491223335266,
+        0.18564432859420776,
+        0.06592655181884766
+      ],
+      "frozen_seeds": [
+        0.8375327587127686,
+        0.8350481986999512,
+        0.8220455646514893
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "max",
+      "passthrough": true,
+      "task": "has_worn_cursed",
+      "metric": "auc",
+      "supervised": 0.9840629957807575,
+      "frozen": 0.9642686607924059,
+      "relative_decodability": 0.9591079360312911,
+      "supervised_seeds": [
+        0.998073661161359,
+        0.9840629957807575,
+        0.969703513224334
+      ],
+      "frozen_seeds": [
+        0.9642686607924059,
+        0.9651956143333017,
+        0.9619817691038656
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_items",
+      "metric": "r2",
+      "supervised": 0.9382922053337097,
+      "frozen": 0.6638282537460327,
+      "relative_decodability": 0.7074856318452927,
+      "supervised_seeds": [
+        0.9613062143325806,
+        0.905001163482666,
+        0.9382922053337097
+      ],
+      "frozen_seeds": [
+        0.6636377573013306,
+        0.6638498306274414,
+        0.6638282537460327
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_cursed",
+      "metric": "r2",
+      "supervised": 0.8896585702896118,
+      "frozen": 0.012610018253326416,
+      "relative_decodability": 0.014173997390056568,
+      "supervised_seeds": [
+        0.8896585702896118,
+        0.8976846933364868,
+        0.8892298340797424
+      ],
+      "frozen_seeds": [
+        0.01519167423248291,
+        0.00206148624420166,
+        0.012610018253326416
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_blessed",
+      "metric": "r2",
+      "supervised": 0.9341000914573669,
+      "frozen": 0.3787456154823303,
+      "relative_decodability": 0.4054657728289245,
+      "supervised_seeds": [
+        0.9475666284561157,
+        0.9341000914573669,
+        0.9276679158210754
+      ],
+      "frozen_seeds": [
+        0.3787456154823303,
+        0.3745156526565552,
+        0.3816291093826294
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_armor",
+      "metric": "r2",
+      "supervised": 0.9555603265762329,
+      "frozen": 0.5733187198638916,
+      "relative_decodability": 0.5999817111684504,
+      "supervised_seeds": [
+        0.9555603265762329,
+        0.9413635730743408,
+        0.960462212562561
+      ],
+      "frozen_seeds": [
+        0.5733187198638916,
+        0.5735828876495361,
+        0.5728421211242676
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "quantity_sum",
+      "metric": "r2",
+      "supervised": 0.9191604852676392,
+      "frozen": 0.6885732412338257,
+      "relative_decodability": 0.7491327709037975,
+      "supervised_seeds": [
+        0.9191604852676392,
+        0.880722165107727,
+        0.9337791204452515
+      ],
+      "frozen_seeds": [
+        0.6872090101242065,
+        0.6885732412338257,
+        0.6885896921157837
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "has_blessed_armor",
+      "metric": "auc",
+      "supervised": 0.9496560234298627,
+      "frozen": 0.6841706529167548,
+      "relative_decodability": 0.4095811983390049,
+      "supervised_seeds": [
+        0.9496560234298627,
+        0.9028405582456739,
+        0.9851775920628144
+      ],
+      "frozen_seeds": [
+        0.6827977123401437,
+        0.6853979383548379,
+        0.6841706529167548
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "launcher_ammo_pair",
+      "metric": "auc",
+      "supervised": 0.9938746286962798,
+      "frozen": 0.846196280095785,
+      "relative_decodability": 0.7009800868079958,
+      "supervised_seeds": [
+        0.9938746286962798,
+        0.9930268927308776,
+        0.996196673392769
+      ],
+      "frozen_seeds": [
+        0.8462686177864628,
+        0.8451750108844337,
+        0.846196280095785
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "max_known_enchant",
+      "metric": "r2",
+      "supervised": 0.8134256601333618,
+      "frozen": 0.4527856707572937,
+      "relative_decodability": 0.5566405056401332,
+      "supervised_seeds": [
+        0.8126864433288574,
+        0.8134256601333618,
+        0.8313519954681396
+      ],
+      "frozen_seeds": [
+        0.4527856707572937,
+        0.4526851773262024,
+        0.4535370469093323
+      ],
+      "test_n": 16377
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "best_uncursed_enchant",
+      "metric": "r2",
+      "supervised": 0.8374185562133789,
+      "frozen": 0.47309839725494385,
+      "relative_decodability": 0.5649485478255819,
+      "supervised_seeds": [
+        0.8346124887466431,
+        0.8410261273384094,
+        0.8374185562133789
+      ],
+      "frozen_seeds": [
+        0.47337406873703003,
+        0.4702732563018799,
+        0.47309839725494385
+      ],
+      "test_n": 16312
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "wield_enchant",
+      "metric": "r2",
+      "supervised": 0.87101811170578,
+      "frozen": 0.4651053547859192,
+      "relative_decodability": 0.5339789707415711,
+      "supervised_seeds": [
+        0.8986005783081055,
+        0.8705524802207947,
+        0.87101811170578
+      ],
+      "frozen_seeds": [
+        0.46601051092147827,
+        0.4651053547859192,
+        0.4635521173477173
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "wield_cursed",
+      "metric": "auc",
+      "supervised": 0.908510229914939,
+      "frozen": 0.9988702267078406,
+      "relative_decodability": 1.221193963274106,
+      "supervised_seeds": [
+        0.9120258900305404,
+        0.7838974505997517,
+        0.908510229914939
+      ],
+      "frozen_seeds": [
+        0.9984110285310275,
+        0.9989552634072505,
+        0.9988702267078406
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "quiver_quantity",
+      "metric": "r2",
+      "supervised": 0.9238086938858032,
+      "frozen": 0.6949487924575806,
+      "relative_decodability": 0.7522648325969172,
+      "supervised_seeds": [
+        0.9238086938858032,
+        0.9067984819412231,
+        0.9433911442756653
+      ],
+      "frozen_seeds": [
+        0.6949658393859863,
+        0.6949487924575806,
+        0.694635808467865
+      ],
+      "test_n": 12837
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "worn_armor_count",
+      "metric": "r2",
+      "supervised": 0.901248574256897,
+      "frozen": 0.4607330560684204,
+      "relative_decodability": 0.5112164049172636,
+      "supervised_seeds": [
+        0.901248574256897,
+        0.8842613101005554,
+        0.912283182144165
+      ],
+      "frozen_seeds": [
+        0.461211621761322,
+        0.4607330560684204,
+        0.4539923667907715
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "worn_max_enchant",
+      "metric": "r2",
+      "supervised": 0.6756030321121216,
+      "frozen": 0.16992896795272827,
+      "relative_decodability": 0.251521914313326,
+      "supervised_seeds": [
+        0.6756030321121216,
+        0.6370140314102173,
+        0.7260631918907166
+      ],
+      "frozen_seeds": [
+        0.1712406873703003,
+        0.1674765944480896,
+        0.16992896795272827
+      ],
+      "test_n": 16239
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "worn_ring_count",
+      "metric": "r2",
+      "supervised": -0.008966445922851562,
+      "frozen": -0.007234334945678711,
+      "relative_decodability": null,
+      "supervised_seeds": [
+        -0.006865978240966797,
+        -0.008966445922851562,
+        -0.026039958000183105
+      ],
+      "frozen_seeds": [
+        -0.007305622100830078,
+        -0.006365776062011719,
+        -0.007234334945678711
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": false,
+      "task": "has_worn_cursed",
+      "metric": "auc",
+      "supervised": 0.9868955757249929,
+      "frozen": 0.7428065876909332,
+      "relative_decodability": 0.4986830848265391,
+      "supervised_seeds": [
+        0.9868955757249929,
+        0.9919520041401811,
+        0.9824273722368047
+      ],
+      "frozen_seeds": [
+        0.7410760081314632,
+        0.7428065876909332,
+        0.7440235976816567
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_items",
+      "metric": "r2",
+      "supervised": 0.9936343431472778,
+      "frozen": 0.647125244140625,
+      "relative_decodability": 0.6512710119206369,
+      "supervised_seeds": [
+        0.9936343431472778,
+        0.9911987781524658,
+        0.9967997670173645
+      ],
+      "frozen_seeds": [
+        0.6677639484405518,
+        0.6454149484634399,
+        0.647125244140625
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_cursed",
+      "metric": "r2",
+      "supervised": 0.9638143181800842,
+      "frozen": 0.12282156944274902,
+      "relative_decodability": 0.12743281265489603,
+      "supervised_seeds": [
+        0.9604445099830627,
+        0.9848923683166504,
+        0.9638143181800842
+      ],
+      "frozen_seeds": [
+        0.12843143939971924,
+        0.12282156944274902,
+        0.11701899766921997
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_blessed",
+      "metric": "r2",
+      "supervised": 0.973966658115387,
+      "frozen": 0.5895997285842896,
+      "relative_decodability": 0.6053592529801354,
+      "supervised_seeds": [
+        0.973966658115387,
+        0.9594576358795166,
+        0.9758680462837219
+      ],
+      "frozen_seeds": [
+        0.5895997285842896,
+        0.5871665477752686,
+        0.5899370908737183
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_armor",
+      "metric": "r2",
+      "supervised": 0.988286018371582,
+      "frozen": 0.4360615611076355,
+      "relative_decodability": 0.44123012265836015,
+      "supervised_seeds": [
+        0.988286018371582,
+        0.9823558330535889,
+        0.9884620904922485
+      ],
+      "frozen_seeds": [
+        0.44833076000213623,
+        0.4205775260925293,
+        0.4360615611076355
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "quantity_sum",
+      "metric": "r2",
+      "supervised": 0.9735575914382935,
+      "frozen": 0.7597118616104126,
+      "relative_decodability": 0.780346091789029,
+      "supervised_seeds": [
+        0.9668294787406921,
+        0.9739219546318054,
+        0.9735575914382935
+      ],
+      "frozen_seeds": [
+        0.7601569294929504,
+        0.7597118616104126,
+        0.7550482749938965
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "has_blessed_armor",
+      "metric": "auc",
+      "supervised": 0.9869861955499011,
+      "frozen": 0.6677680182294607,
+      "relative_decodability": 0.34450261580827435,
+      "supervised_seeds": [
+        0.9869861955499011,
+        0.9845066015467548,
+        0.9966550917379395
+      ],
+      "frozen_seeds": [
+        0.6677680182294607,
+        0.6656895707514262,
+        0.6678460307709818
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "launcher_ammo_pair",
+      "metric": "auc",
+      "supervised": 0.993862853915409,
+      "frozen": 0.853958044332436,
+      "relative_decodability": 0.7167132363290954,
+      "supervised_seeds": [
+        0.9942780838416516,
+        0.9923482985972472,
+        0.993862853915409
+      ],
+      "frozen_seeds": [
+        0.853958044332436,
+        0.8556502347669322,
+        0.8531305281751685
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "max_known_enchant",
+      "metric": "r2",
+      "supervised": 0.8035563826560974,
+      "frozen": 0.6871873140335083,
+      "relative_decodability": 0.8551824475117233,
+      "supervised_seeds": [
+        0.7219456434249878,
+        0.8335856199264526,
+        0.8035563826560974
+      ],
+      "frozen_seeds": [
+        0.6882616877555847,
+        0.6871873140335083,
+        0.6663305759429932
+      ],
+      "test_n": 16377
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "best_uncursed_enchant",
+      "metric": "r2",
+      "supervised": 0.8257545828819275,
+      "frozen": 0.7273381948471069,
+      "relative_decodability": 0.8808164192182354,
+      "supervised_seeds": [
+        0.7344810962677002,
+        0.8471211791038513,
+        0.8257545828819275
+      ],
+      "frozen_seeds": [
+        0.7273381948471069,
+        0.7281166315078735,
+        0.7005094885826111
+      ],
+      "test_n": 16312
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "wield_enchant",
+      "metric": "r2",
+      "supervised": 0.9886594414710999,
+      "frozen": 0.9919801950454712,
+      "relative_decodability": 1.0033588447498465,
+      "supervised_seeds": [
+        0.9886594414710999,
+        0.9942055940628052,
+        0.987699031829834
+      ],
+      "frozen_seeds": [
+        0.9929727911949158,
+        0.9897326827049255,
+        0.9919801950454712
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "wield_cursed",
+      "metric": "auc",
+      "supervised": 0.9623919122810002,
+      "frozen": 1.0,
+      "relative_decodability": 1.081333792222873,
+      "supervised_seeds": [
+        0.9867439933719967,
+        0.9498040511483599,
+        0.9623919122810002
+      ],
+      "frozen_seeds": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "quiver_quantity",
+      "metric": "r2",
+      "supervised": 0.9939996600151062,
+      "frozen": 0.9982291460037231,
+      "relative_decodability": 1.0042550175405016,
+      "supervised_seeds": [
+        0.9925206899642944,
+        0.9959238171577454,
+        0.9939996600151062
+      ],
+      "frozen_seeds": [
+        0.9990907311439514,
+        0.9982291460037231,
+        0.9979203939437866
+      ],
+      "test_n": 12837
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "worn_armor_count",
+      "metric": "r2",
+      "supervised": 0.9740678668022156,
+      "frozen": 0.582581639289856,
+      "relative_decodability": 0.5980914258083715,
+      "supervised_seeds": [
+        0.9740678668022156,
+        0.976531445980072,
+        0.969131588935852
+      ],
+      "frozen_seeds": [
+        0.5847429037094116,
+        0.5803802013397217,
+        0.582581639289856
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "worn_max_enchant",
+      "metric": "r2",
+      "supervised": 0.7183892726898193,
+      "frozen": 0.2462274432182312,
+      "relative_decodability": 0.3427493318438587,
+      "supervised_seeds": [
+        0.7092164754867554,
+        0.7678213715553284,
+        0.7183892726898193
+      ],
+      "frozen_seeds": [
+        0.2756626009941101,
+        0.2462274432182312,
+        0.2291542887687683
+      ],
+      "test_n": 16239
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "worn_ring_count",
+      "metric": "r2",
+      "supervised": 0.2501010298728943,
+      "frozen": 0.8332507014274597,
+      "relative_decodability": 3.3316564184119204,
+      "supervised_seeds": [
+        0.18500488996505737,
+        0.2501010298728943,
+        0.5097923874855042
+      ],
+      "frozen_seeds": [
+        0.8219343423843384,
+        0.8332507014274597,
+        0.8361361622810364
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "sum",
+      "passthrough": true,
+      "task": "has_worn_cursed",
+      "metric": "auc",
+      "supervised": 0.9999913938390099,
+      "frozen": 0.9707150459741943,
+      "relative_decodability": 0.9414462964251697,
+      "supervised_seeds": [
+        1.0,
+        0.9999913938390099,
+        0.9999165325917375
+      ],
+      "frozen_seeds": [
+        0.9697521853884022,
+        0.971812887400778,
+        0.9707150459741943
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_items",
+      "metric": "r2",
+      "supervised": 0.9896676540374756,
+      "frozen": 0.6592843532562256,
+      "relative_decodability": 0.6661674255661392,
+      "supervised_seeds": [
+        0.9920944571495056,
+        0.9893320798873901,
+        0.9896676540374756
+      ],
+      "frozen_seeds": [
+        0.6633530855178833,
+        0.6592843532562256,
+        0.6524860858917236
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_cursed",
+      "metric": "r2",
+      "supervised": 0.8709580898284912,
+      "frozen": -0.022030115127563477,
+      "relative_decodability": -0.02529411619783179,
+      "supervised_seeds": [
+        0.8990316987037659,
+        0.8610031604766846,
+        0.8709580898284912
+      ],
+      "frozen_seeds": [
+        -0.023836374282836914,
+        -0.022030115127563477,
+        -0.01359713077545166
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_blessed",
+      "metric": "r2",
+      "supervised": 0.9380711317062378,
+      "frozen": 0.41618406772613525,
+      "relative_decodability": 0.4436593917661093,
+      "supervised_seeds": [
+        0.9380711317062378,
+        0.9414363503456116,
+        0.8939394950866699
+      ],
+      "frozen_seeds": [
+        0.41329026222229004,
+        0.4172699451446533,
+        0.41618406772613525
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_armor",
+      "metric": "r2",
+      "supervised": 0.9724858403205872,
+      "frozen": 0.5667576789855957,
+      "relative_decodability": 0.5827927312533001,
+      "supervised_seeds": [
+        0.9807676076889038,
+        0.9724858403205872,
+        0.9543522596359253
+      ],
+      "frozen_seeds": [
+        0.5670510530471802,
+        0.5666905045509338,
+        0.5667576789855957
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "quantity_sum",
+      "metric": "r2",
+      "supervised": 0.9528694152832031,
+      "frozen": 0.7139617204666138,
+      "relative_decodability": 0.7492755135334223,
+      "supervised_seeds": [
+        0.9554426074028015,
+        0.9528694152832031,
+        0.9393885135650635
+      ],
+      "frozen_seeds": [
+        0.7139617204666138,
+        0.7192497253417969,
+        0.712772011756897
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "has_blessed_armor",
+      "metric": "auc",
+      "supervised": 0.988380101449117,
+      "frozen": 0.6784928327652574,
+      "relative_decodability": 0.36547933102850644,
+      "supervised_seeds": [
+        0.9969705735040203,
+        0.9858692723715522,
+        0.988380101449117
+      ],
+      "frozen_seeds": [
+        0.6808200587189341,
+        0.6783064743421021,
+        0.6784928327652574
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "launcher_ammo_pair",
+      "metric": "auc",
+      "supervised": 0.9973367762020483,
+      "frozen": 0.8573817066425303,
+      "relative_decodability": 0.7185909503248564,
+      "supervised_seeds": [
+        0.9975266204149413,
+        0.9958660385110616,
+        0.9973367762020483
+      ],
+      "frozen_seeds": [
+        0.8571609777585006,
+        0.8581649949855841,
+        0.8573817066425303
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "max_known_enchant",
+      "metric": "r2",
+      "supervised": 0.8794012069702148,
+      "frozen": 0.4937284588813782,
+      "relative_decodability": 0.5614370948868855,
+      "supervised_seeds": [
+        0.8794012069702148,
+        0.9464707374572754,
+        0.8513766527175903
+      ],
+      "frozen_seeds": [
+        0.4937284588813782,
+        0.4963059425354004,
+        0.4891718626022339
+      ],
+      "test_n": 16377
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "best_uncursed_enchant",
+      "metric": "r2",
+      "supervised": 0.8933506011962891,
+      "frozen": 0.5086920261383057,
+      "relative_decodability": 0.5694203658195498,
+      "supervised_seeds": [
+        0.8933506011962891,
+        0.9538396000862122,
+        0.8585436344146729
+      ],
+      "frozen_seeds": [
+        0.5086920261383057,
+        0.5113028287887573,
+        0.505765438079834
+      ],
+      "test_n": 16312
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "wield_enchant",
+      "metric": "r2",
+      "supervised": 0.8997852206230164,
+      "frozen": 0.6451902389526367,
+      "relative_decodability": 0.7170491625833811,
+      "supervised_seeds": [
+        0.909760594367981,
+        0.8997852206230164,
+        0.8860012888908386
+      ],
+      "frozen_seeds": [
+        0.6456875801086426,
+        0.6352415084838867,
+        0.6451902389526367
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "wield_cursed",
+      "metric": "auc",
+      "supervised": 0.27863853814624856,
+      "frozen": 0.9973687215582611,
+      "relative_decodability": null,
+      "supervised_seeds": [
+        0.27863853814624856,
+        0.811140779470683,
+        0.12951818206114382
+      ],
+      "frozen_seeds": [
+        0.9974051658580082,
+        0.9973152699186321,
+        0.9973687215582611
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "quiver_quantity",
+      "metric": "r2",
+      "supervised": 0.9238792657852173,
+      "frozen": 0.6954907178878784,
+      "relative_decodability": 0.7527939457508787,
+      "supervised_seeds": [
+        0.9366892576217651,
+        0.9134204983711243,
+        0.9238792657852173
+      ],
+      "frozen_seeds": [
+        0.6954907178878784,
+        0.6946580410003662,
+        0.695894181728363
+      ],
+      "test_n": 12837
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "worn_armor_count",
+      "metric": "r2",
+      "supervised": 0.9252897500991821,
+      "frozen": 0.47212302684783936,
+      "relative_decodability": 0.5102434419026389,
+      "supervised_seeds": [
+        0.9486802816390991,
+        0.9252897500991821,
+        0.8751699924468994
+      ],
+      "frozen_seeds": [
+        0.47261637449264526,
+        0.4721052646636963,
+        0.47212302684783936
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "worn_max_enchant",
+      "metric": "r2",
+      "supervised": 0.8042348623275757,
+      "frozen": 0.17440593242645264,
+      "relative_decodability": 0.21685945312255658,
+      "supervised_seeds": [
+        0.8403770923614502,
+        0.8042348623275757,
+        0.7867305874824524
+      ],
+      "frozen_seeds": [
+        0.17416983842849731,
+        0.17681008577346802,
+        0.17440593242645264
+      ],
+      "test_n": 16239
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "worn_ring_count",
+      "metric": "r2",
+      "supervised": -0.019124150276184082,
+      "frozen": -0.005290865898132324,
+      "relative_decodability": null,
+      "supervised_seeds": [
+        -0.019124150276184082,
+        -0.028098702430725098,
+        0.00025284290313720703
+      ],
+      "frozen_seeds": [
+        -0.005290865898132324,
+        -0.007469058036804199,
+        -0.00514984130859375
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": false,
+      "task": "has_worn_cursed",
+      "metric": "auc",
+      "supervised": 0.9939420862190739,
+      "frozen": 0.740000402718921,
+      "relative_decodability": 0.4858877374795629,
+      "supervised_seeds": [
+        0.99993856271676,
+        0.990920006021842,
+        0.9939420862190739
+      ],
+      "frozen_seeds": [
+        0.7394055893433161,
+        0.740000402718921,
+        0.7402175332782539
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_items",
+      "metric": "r2",
+      "supervised": 0.9942899942398071,
+      "frozen": 0.6652173399925232,
+      "relative_decodability": 0.6690375482467977,
+      "supervised_seeds": [
+        0.9943267703056335,
+        0.9942899942398071,
+        0.992584228515625
+      ],
+      "frozen_seeds": [
+        0.6887686252593994,
+        0.6629011631011963,
+        0.6652173399925232
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_cursed",
+      "metric": "r2",
+      "supervised": 0.9606642127037048,
+      "frozen": 0.11110258102416992,
+      "relative_decodability": 0.11565183708830111,
+      "supervised_seeds": [
+        0.9827914237976074,
+        0.9493004083633423,
+        0.9606642127037048
+      ],
+      "frozen_seeds": [
+        0.11110258102416992,
+        0.07242107391357422,
+        0.11745494604110718
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_blessed",
+      "metric": "r2",
+      "supervised": 0.9612446427345276,
+      "frozen": 0.5985864400863647,
+      "relative_decodability": 0.6227201832652292,
+      "supervised_seeds": [
+        0.9748736023902893,
+        0.953934907913208,
+        0.9612446427345276
+      ],
+      "frozen_seeds": [
+        0.5987305641174316,
+        0.5962742567062378,
+        0.5985864400863647
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_armor",
+      "metric": "r2",
+      "supervised": 0.9856857657432556,
+      "frozen": 0.4487936496734619,
+      "relative_decodability": 0.455311079119672,
+      "supervised_seeds": [
+        0.9793506264686584,
+        0.9857434034347534,
+        0.9856857657432556
+      ],
+      "frozen_seeds": [
+        0.4539036154747009,
+        0.4487936496734619,
+        0.41547226905822754
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "quantity_sum",
+      "metric": "r2",
+      "supervised": 0.9664081335067749,
+      "frozen": 0.7663120031356812,
+      "relative_decodability": 0.7929486275689639,
+      "supervised_seeds": [
+        0.9816282987594604,
+        0.9577292799949646,
+        0.9664081335067749
+      ],
+      "frozen_seeds": [
+        0.7679435610771179,
+        0.7608540654182434,
+        0.7663120031356812
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "has_blessed_armor",
+      "metric": "auc",
+      "supervised": 0.9995425952734895,
+      "frozen": 0.6576106074813689,
+      "relative_decodability": 0.31550984635270246,
+      "supervised_seeds": [
+        0.9995425952734895,
+        0.9879545580014041,
+        0.9999992235065702
+      ],
+      "frozen_seeds": [
+        0.657674981291518,
+        0.6576106074813689,
+        0.6559418730043493
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "launcher_ammo_pair",
+      "metric": "auc",
+      "supervised": 0.9971703850362996,
+      "frozen": 0.8648460973405693,
+      "relative_decodability": 0.7338451933614891,
+      "supervised_seeds": [
+        0.9966978736965583,
+        0.99742400126936,
+        0.9971703850362996
+      ],
+      "frozen_seeds": [
+        0.8658768491111054,
+        0.8647661108680552,
+        0.8648460973405693
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "max_known_enchant",
+      "metric": "r2",
+      "supervised": 0.8790644407272339,
+      "frozen": 0.7016775012016296,
+      "relative_decodability": 0.7982094016010302,
+      "supervised_seeds": [
+        0.945026695728302,
+        0.8628194332122803,
+        0.8790644407272339
+      ],
+      "frozen_seeds": [
+        0.7127239108085632,
+        0.7016775012016296,
+        0.7015072107315063
+      ],
+      "test_n": 16377
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "best_uncursed_enchant",
+      "metric": "r2",
+      "supervised": 0.8955049514770508,
+      "frozen": 0.7461338043212891,
+      "relative_decodability": 0.8331989712514842,
+      "supervised_seeds": [
+        0.955544114112854,
+        0.8842352032661438,
+        0.8955049514770508
+      ],
+      "frozen_seeds": [
+        0.7519049644470215,
+        0.7384136915206909,
+        0.7461338043212891
+      ],
+      "test_n": 16312
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "wield_enchant",
+      "metric": "r2",
+      "supervised": 0.9832689762115479,
+      "frozen": 0.9913986325263977,
+      "relative_decodability": 1.0082679882224828,
+      "supervised_seeds": [
+        0.9832689762115479,
+        0.9816049933433533,
+        0.9842604398727417
+      ],
+      "frozen_seeds": [
+        0.9912720918655396,
+        0.9929747581481934,
+        0.9913986325263977
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "wield_cursed",
+      "metric": "auc",
+      "supervised": 0.8374074011083926,
+      "frozen": 1.0,
+      "relative_decodability": 1.4818880627914095,
+      "supervised_seeds": [
+        0.8374074011083926,
+        0.9403674071338501,
+        0.1643079105997031
+      ],
+      "frozen_seeds": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "test_n": 13308
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "quiver_quantity",
+      "metric": "r2",
+      "supervised": 0.9899428486824036,
+      "frozen": 0.9980670213699341,
+      "relative_decodability": 1.008206708799749,
+      "supervised_seeds": [
+        0.9791021347045898,
+        0.9899428486824036,
+        0.9917690753936768
+      ],
+      "frozen_seeds": [
+        0.9988470673561096,
+        0.9980670213699341,
+        0.9928226470947266
+      ],
+      "test_n": 12837
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "worn_armor_count",
+      "metric": "r2",
+      "supervised": 0.9572799205780029,
+      "frozen": 0.5821247100830078,
+      "relative_decodability": 0.6081029149044749,
+      "supervised_seeds": [
+        0.9661500453948975,
+        0.9527982473373413,
+        0.9572799205780029
+      ],
+      "frozen_seeds": [
+        0.5821247100830078,
+        0.5829344987869263,
+        0.5746175050735474
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "worn_max_enchant",
+      "metric": "r2",
+      "supervised": 0.8750271797180176,
+      "frozen": 0.3237749934196472,
+      "relative_decodability": 0.37001707024001873,
+      "supervised_seeds": [
+        0.9059808850288391,
+        0.8750271797180176,
+        0.8383582830429077
+      ],
+      "frozen_seeds": [
+        0.36010295152664185,
+        0.3237749934196472,
+        0.3147614598274231
+      ],
+      "test_n": 16239
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "worn_ring_count",
+      "metric": "r2",
+      "supervised": 0.0600014328956604,
+      "frozen": 0.8396159410476685,
+      "relative_decodability": null,
+      "supervised_seeds": [
+        0.0600014328956604,
+        0.3737295866012573,
+        0.03591710329055786
+      ],
+      "frozen_seeds": [
+        0.8218733072280884,
+        0.8396159410476685,
+        0.8410352468490601
+      ],
+      "test_n": 16384
+    },
+    {
+      "pool": "both",
+      "passthrough": true,
+      "task": "has_worn_cursed",
+      "metric": "auc",
+      "supervised": 0.9999843112567598,
+      "frozen": 0.9721282270221266,
+      "relative_decodability": 0.9442860833680679,
+      "supervised_seeds": [
+        1.0,
+        0.999557709209597,
+        0.9999843112567598
+      ],
+      "frozen_seeds": [
+        0.9703798998292275,
+        0.9721282270221266,
+        0.9744221601151134
+      ],
+      "test_n": 16384
+    }
+  ]
+}

@@ -1,0 +1,1611 @@
+{
+  "protocol": {
+    "source": "frozen representations; encoder never updated",
+    "sources": [
+      "rl_policy",
+      "supervised_encoder"
+    ],
+    "heads": [
+      "linear",
+      "mlp128_relu"
+    ],
+    "fit_seeds": [
+      1,
+      2,
+      3
+    ],
+    "epochs": 150,
+    "learning_rates": [
+      0.0003,
+      0.001
+    ],
+    "batch_size": 1024,
+    "early_stopping": "after 60 epochs, 30 epochs without validation improvement of 0.0001",
+    "data": {
+      "policy": "fixwt4b_s705",
+      "checkpoint_sha256": "6541c5212ae4aae45e3c419bec2bf150883c457188117743d546cfb1d62a2718",
+      "binary_sha256": "2859ef3f5455400b8ac8a633819f8c9d39184c3e64bbc5ee574db3b739ad364f",
+      "columns": 3718,
+      "slots": 55,
+      "sfeat": 24,
+      "slot_rep": 16,
+      "inventory_rep": 384,
+      "encoder_rep": 1024,
+      "sample_stride": 16,
+      "warmup_forward_calls": 256,
+      "splits": {
+        "train": {
+          "frames": 65536,
+          "seed": 101000000,
+          "sha256": "b1ca28b23bef7c8027be77d5fcd909d720c96b1d15dfe8eb532bbcd9334e2ede"
+        },
+        "validation": {
+          "frames": 16384,
+          "seed": 201000000,
+          "sha256": "f1ac1c61bccd1a16643a8b48b759f5c337e7165f51302591a7faeb80374e7638"
+        },
+        "test": {
+          "frames": 16384,
+          "seed": 301000000,
+          "sha256": "317ae5b595880c7b0b94c1cc5ce912ad9c739777e117d26c8305227358693c8d"
+        }
+      }
+    },
+    "tasks": [
+      "n_items",
+      "n_cursed",
+      "n_blessed",
+      "n_armor",
+      "quantity_sum",
+      "has_blessed_armor",
+      "launcher_ammo_pair",
+      "max_known_enchant",
+      "best_uncursed_enchant",
+      "wield_enchant",
+      "wield_cursed",
+      "quiver_quantity",
+      "worn_armor_count",
+      "worn_max_enchant",
+      "worn_ring_count",
+      "has_worn_cursed"
+    ]
+  },
+  "cells": [
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_items",
+      "linear": 0.6466171145439148,
+      "mlp128_relu": 0.6841819286346436
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_cursed",
+      "linear": 0.27802687883377075,
+      "mlp128_relu": 0.48620927333831787
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_blessed",
+      "linear": 0.690179705619812,
+      "mlp128_relu": 0.7079688310623169
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_armor",
+      "linear": 0.6270256638526917,
+      "mlp128_relu": 0.6653900146484375
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "quantity_sum",
+      "linear": 0.7875113487243652,
+      "mlp128_relu": 0.7850717306137085
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "has_blessed_armor",
+      "linear": 0.9284474329477885,
+      "mlp128_relu": 0.914853111990291
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "launcher_ammo_pair",
+      "linear": 0.9853163415524199,
+      "mlp128_relu": 0.9845148602077747
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "max_known_enchant",
+      "linear": 0.8288758397102356,
+      "mlp128_relu": 0.8620277643203735
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "best_uncursed_enchant",
+      "linear": 0.8803038597106934,
+      "mlp128_relu": 0.8864772915840149
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "wield_enchant",
+      "linear": 0.822814404964447,
+      "mlp128_relu": 0.8675594925880432
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "wield_cursed",
+      "linear": 0.6715834076392112,
+      "mlp128_relu": 0.3605823313175586
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "quiver_quantity",
+      "linear": 0.8571357727050781,
+      "mlp128_relu": 0.8811560869216919
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "worn_armor_count",
+      "linear": 0.8024464845657349,
+      "mlp128_relu": 0.8062273263931274
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "worn_max_enchant",
+      "linear": 0.43349689245224,
+      "mlp128_relu": 0.5458360910415649
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "worn_ring_count",
+      "linear": -0.09521818161010742,
+      "mlp128_relu": -0.018437623977661133
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": false,
+      "task": "has_worn_cursed",
+      "linear": 0.9039218893298757,
+      "mlp128_relu": 0.92905319711057
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_items",
+      "linear": 0.6959929466247559,
+      "mlp128_relu": 0.7221074104309082
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_cursed",
+      "linear": 0.5725590586662292,
+      "mlp128_relu": 0.6557639241218567
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_blessed",
+      "linear": 0.7437711954116821,
+      "mlp128_relu": 0.7608200907707214
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_armor",
+      "linear": 0.5647770166397095,
+      "mlp128_relu": 0.6518269777297974
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "quantity_sum",
+      "linear": 0.827924907207489,
+      "mlp128_relu": 0.8296037316322327
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "has_blessed_armor",
+      "linear": 0.9542525890044322,
+      "mlp128_relu": 0.9430808273552523
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "launcher_ammo_pair",
+      "linear": 0.9916928197096706,
+      "mlp128_relu": 0.9930326112207678
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "max_known_enchant",
+      "linear": 0.8679680824279785,
+      "mlp128_relu": 0.8672472238540649
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "best_uncursed_enchant",
+      "linear": 0.8989919424057007,
+      "mlp128_relu": 0.9027606844902039
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "wield_enchant",
+      "linear": 0.9991549849510193,
+      "mlp128_relu": 0.9848275780677795
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "wield_cursed",
+      "linear": 1.0,
+      "mlp128_relu": 1.0
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "quiver_quantity",
+      "linear": 0.9910708069801331,
+      "mlp128_relu": 0.987942636013031
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "worn_armor_count",
+      "linear": 0.8550549149513245,
+      "mlp128_relu": 0.8629029989242554
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "worn_max_enchant",
+      "linear": 0.678316593170166,
+      "mlp128_relu": 0.7219340801239014
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "worn_ring_count",
+      "linear": 0.4955684542655945,
+      "mlp128_relu": 0.4813457131385803
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "max",
+      "passthrough": true,
+      "task": "has_worn_cursed",
+      "linear": 0.9771447953232556,
+      "mlp128_relu": 0.9744978860962651
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_items",
+      "linear": 0.9948278069496155,
+      "mlp128_relu": 0.9845635294914246
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_cursed",
+      "linear": 0.9092059135437012,
+      "mlp128_relu": 0.9070106744766235
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_blessed",
+      "linear": 0.9354314208030701,
+      "mlp128_relu": 0.9356708526611328
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_armor",
+      "linear": 0.9729074239730835,
+      "mlp128_relu": 0.9685588479042053
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "quantity_sum",
+      "linear": 0.9471121430397034,
+      "mlp128_relu": 0.9466996788978577
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "has_blessed_armor",
+      "linear": 0.9666826457325374,
+      "mlp128_relu": 0.9506175226813731
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "launcher_ammo_pair",
+      "linear": 0.995076838648923,
+      "mlp128_relu": 0.9957678107796575
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "max_known_enchant",
+      "linear": 0.8162801265716553,
+      "mlp128_relu": 0.8299545645713806
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "best_uncursed_enchant",
+      "linear": 0.8403106331825256,
+      "mlp128_relu": 0.8400316834449768
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "wield_enchant",
+      "linear": 0.8751945495605469,
+      "mlp128_relu": 0.8979634046554565
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "wield_cursed",
+      "linear": 0.905895958813082,
+      "mlp128_relu": 0.6679268295645878
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "quiver_quantity",
+      "linear": 0.9257594347000122,
+      "mlp128_relu": 0.928620457649231
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "worn_armor_count",
+      "linear": 0.9385626912117004,
+      "mlp128_relu": 0.9286040663719177
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "worn_max_enchant",
+      "linear": 0.6873717904090881,
+      "mlp128_relu": 0.6986827850341797
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "worn_ring_count",
+      "linear": -0.04513847827911377,
+      "mlp128_relu": -0.024580955505371094
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "has_worn_cursed",
+      "linear": 0.9968508862781064,
+      "mlp128_relu": 0.9932630230569347
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_items",
+      "linear": 0.9964771270751953,
+      "mlp128_relu": 0.9853454232215881
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_cursed",
+      "linear": 0.9639448523521423,
+      "mlp128_relu": 0.9529221653938293
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_blessed",
+      "linear": 0.974700391292572,
+      "mlp128_relu": 0.969717800617218
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_armor",
+      "linear": 0.9860382080078125,
+      "mlp128_relu": 0.9828131198883057
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "quantity_sum",
+      "linear": 0.9752842783927917,
+      "mlp128_relu": 0.9674475193023682
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "has_blessed_armor",
+      "linear": 0.9981924986326202,
+      "mlp128_relu": 0.9938152548797101
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "launcher_ammo_pair",
+      "linear": 0.994740219862183,
+      "mlp128_relu": 0.993812521552916
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "max_known_enchant",
+      "linear": 0.7991273999214172,
+      "mlp128_relu": 0.8134331703186035
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "best_uncursed_enchant",
+      "linear": 0.826745331287384,
+      "mlp128_relu": 0.831476628780365
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "wield_enchant",
+      "linear": 0.9965148568153381,
+      "mlp128_relu": 0.989500880241394
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "wield_cursed",
+      "linear": 1.0,
+      "mlp128_relu": 1.0
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "quiver_quantity",
+      "linear": 0.9947539567947388,
+      "mlp128_relu": 0.9945716261863708
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "worn_armor_count",
+      "linear": 0.9785906672477722,
+      "mlp128_relu": 0.9730600118637085
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "worn_max_enchant",
+      "linear": 0.7150477170944214,
+      "mlp128_relu": 0.742533266544342
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "worn_ring_count",
+      "linear": 0.6730985641479492,
+      "mlp128_relu": 0.49882376194000244
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "has_worn_cursed",
+      "linear": 0.999995141019154,
+      "mlp128_relu": 0.9998361123409548
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_items",
+      "linear": 0.9976665377616882,
+      "mlp128_relu": 0.9734750986099243
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_cursed",
+      "linear": 0.8891421556472778,
+      "mlp128_relu": 0.8202779293060303
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_blessed",
+      "linear": 0.9396511912345886,
+      "mlp128_relu": 0.9096070528030396
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_armor",
+      "linear": 0.9750217795372009,
+      "mlp128_relu": 0.9426555633544922
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "quantity_sum",
+      "linear": 0.9601188898086548,
+      "mlp128_relu": 0.9386887550354004
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "has_blessed_armor",
+      "linear": 0.9982642616544399,
+      "mlp128_relu": 0.9888093019304027
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "launcher_ammo_pair",
+      "linear": 0.9969328867409887,
+      "mlp128_relu": 0.9970048625019267
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "max_known_enchant",
+      "linear": 0.8916724920272827,
+      "mlp128_relu": 0.8746979236602783
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "best_uncursed_enchant",
+      "linear": 0.8930736780166626,
+      "mlp128_relu": 0.8931083679199219
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "wield_enchant",
+      "linear": 0.8863328695297241,
+      "mlp128_relu": 0.922371506690979
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "wield_cursed",
+      "linear": 0.624791356383948,
+      "mlp128_relu": 0.22740028232184203
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "quiver_quantity",
+      "linear": 0.9318515062332153,
+      "mlp128_relu": 0.9383512139320374
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "worn_armor_count",
+      "linear": 0.9383643269538879,
+      "mlp128_relu": 0.9236388802528381
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "worn_max_enchant",
+      "linear": 0.8194359540939331,
+      "mlp128_relu": 0.8183188438415527
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "worn_ring_count",
+      "linear": -0.1983548402786255,
+      "mlp128_relu": -0.06422662734985352
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": false,
+      "task": "has_worn_cursed",
+      "linear": 0.9970989825458819,
+      "mlp128_relu": 0.9918039699355913
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_items",
+      "linear": 0.995127260684967,
+      "mlp128_relu": 0.9908127784729004
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_cursed",
+      "linear": 0.9403946399688721,
+      "mlp128_relu": 0.9458677768707275
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_blessed",
+      "linear": 0.9546153545379639,
+      "mlp128_relu": 0.9543883204460144
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_armor",
+      "linear": 0.9789896011352539,
+      "mlp128_relu": 0.977055549621582
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "quantity_sum",
+      "linear": 0.960677444934845,
+      "mlp128_relu": 0.9682853817939758
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "has_blessed_armor",
+      "linear": 0.9959503362817708,
+      "mlp128_relu": 0.9984372694002375
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "launcher_ammo_pair",
+      "linear": 0.9934717767671413,
+      "mlp128_relu": 0.9969079135889368
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "max_known_enchant",
+      "linear": 0.8622652292251587,
+      "mlp128_relu": 0.8715037107467651
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "best_uncursed_enchant",
+      "linear": 0.8827006220817566,
+      "mlp128_relu": 0.8907209634780884
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "wield_enchant",
+      "linear": 0.9721182584762573,
+      "mlp128_relu": 0.9877859354019165
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "wield_cursed",
+      "linear": 1.0,
+      "mlp128_relu": 1.0
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "quiver_quantity",
+      "linear": 0.9714717864990234,
+      "mlp128_relu": 0.9926645755767822
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "worn_armor_count",
+      "linear": 0.9578312635421753,
+      "mlp128_relu": 0.9583401083946228
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "worn_max_enchant",
+      "linear": 0.8883997797966003,
+      "mlp128_relu": 0.8992882370948792
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "worn_ring_count",
+      "linear": 0.5064704418182373,
+      "mlp128_relu": 0.374162495136261
+    },
+    {
+      "source": "supervised_encoder",
+      "pool": "both",
+      "passthrough": true,
+      "task": "has_worn_cursed",
+      "linear": 0.9998381300533401,
+      "mlp128_relu": 0.9999178502814585
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_items",
+      "linear": 0.36678653955459595,
+      "mlp128_relu": 0.4860636591911316
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_cursed",
+      "linear": -0.12702608108520508,
+      "mlp128_relu": -0.004947066307067871
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_blessed",
+      "linear": 0.3006407618522644,
+      "mlp128_relu": 0.42647987604141235
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "n_armor",
+      "linear": 0.4349370002746582,
+      "mlp128_relu": 0.46946483850479126
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "quantity_sum",
+      "linear": 0.5092370510101318,
+      "mlp128_relu": 0.5426369905471802
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "has_blessed_armor",
+      "linear": 0.6641558459384935,
+      "mlp128_relu": 0.6642358247617643
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "launcher_ammo_pair",
+      "linear": 0.8333918453079476,
+      "mlp128_relu": 0.8473748560364138
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "max_known_enchant",
+      "linear": 0.3791191577911377,
+      "mlp128_relu": 0.5251433849334717
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "best_uncursed_enchant",
+      "linear": 0.3774546980857849,
+      "mlp128_relu": 0.5465229749679565
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "wield_enchant",
+      "linear": 0.5489699840545654,
+      "mlp128_relu": 0.7276323437690735
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "wield_cursed",
+      "linear": 0.9840325374708142,
+      "mlp128_relu": 0.43354138979122275
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "quiver_quantity",
+      "linear": 0.6396016478538513,
+      "mlp128_relu": 0.7650998830795288
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "worn_armor_count",
+      "linear": 0.3288976550102234,
+      "mlp128_relu": 0.42154204845428467
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "worn_max_enchant",
+      "linear": 0.08119577169418335,
+      "mlp128_relu": 0.22618436813354492
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "worn_ring_count",
+      "linear": -0.001990795135498047,
+      "mlp128_relu": -0.023319125175476074
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": false,
+      "task": "has_worn_cursed",
+      "linear": 0.7467925990968555,
+      "mlp128_relu": 0.7242377864986875
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_items",
+      "linear": 0.4055863618850708,
+      "mlp128_relu": 0.35313689708709717
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_cursed",
+      "linear": 0.031953394412994385,
+      "mlp128_relu": -0.05437016487121582
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_blessed",
+      "linear": 0.5788929462432861,
+      "mlp128_relu": 0.6013422012329102
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "n_armor",
+      "linear": 0.15875178575515747,
+      "mlp128_relu": 0.547453761100769
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "quantity_sum",
+      "linear": 0.5618209838867188,
+      "mlp128_relu": 0.5001295804977417
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "has_blessed_armor",
+      "linear": 0.6557123565754015,
+      "mlp128_relu": 0.6745971276556201
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "launcher_ammo_pair",
+      "linear": 0.8646544434789768,
+      "mlp128_relu": 0.8960796204891611
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "max_known_enchant",
+      "linear": 0.6109576225280762,
+      "mlp128_relu": 0.6122277975082397
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "best_uncursed_enchant",
+      "linear": 0.6703193187713623,
+      "mlp128_relu": 0.6802544593811035
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "wield_enchant",
+      "linear": 0.9933034181594849,
+      "mlp128_relu": 0.951196551322937
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "wield_cursed",
+      "linear": 1.0,
+      "mlp128_relu": 1.0
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "quiver_quantity",
+      "linear": 0.9994175434112549,
+      "mlp128_relu": 0.9713040590286255
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "worn_armor_count",
+      "linear": 0.4244219660758972,
+      "mlp128_relu": 0.7184504270553589
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "worn_max_enchant",
+      "linear": 0.2950030565261841,
+      "mlp128_relu": 0.5283694863319397
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "worn_ring_count",
+      "linear": 0.8350481986999512,
+      "mlp128_relu": 0.7499396204948425
+    },
+    {
+      "source": "rl_policy",
+      "pool": "max",
+      "passthrough": true,
+      "task": "has_worn_cursed",
+      "linear": 0.9642686607924059,
+      "mlp128_relu": 0.9092526442738476
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_items",
+      "linear": 0.6638282537460327,
+      "mlp128_relu": 0.6899526119232178
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_cursed",
+      "linear": 0.012610018253326416,
+      "mlp128_relu": -0.005170583724975586
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_blessed",
+      "linear": 0.3787456154823303,
+      "mlp128_relu": 0.4093611240386963
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "n_armor",
+      "linear": 0.5733187198638916,
+      "mlp128_relu": 0.599490225315094
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "quantity_sum",
+      "linear": 0.6885732412338257,
+      "mlp128_relu": 0.7408968210220337
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "has_blessed_armor",
+      "linear": 0.6841711037839076,
+      "mlp128_relu": 0.6719943842993229
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "launcher_ammo_pair",
+      "linear": 0.8461962559671357,
+      "mlp128_relu": 0.8676301212213691
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "max_known_enchant",
+      "linear": 0.4527857303619385,
+      "mlp128_relu": 0.6002771854400635
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "best_uncursed_enchant",
+      "linear": 0.4730984568595886,
+      "mlp128_relu": 0.6343094110488892
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "wield_enchant",
+      "linear": 0.4651053547859192,
+      "mlp128_relu": 0.6776978969573975
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "wield_cursed",
+      "linear": 0.9988702267078406,
+      "mlp128_relu": 0.4294426208796682
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "quiver_quantity",
+      "linear": 0.6949487924575806,
+      "mlp128_relu": 0.759280264377594
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "worn_armor_count",
+      "linear": 0.4607330560684204,
+      "mlp128_relu": 0.4997531771659851
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "worn_max_enchant",
+      "linear": 0.16992896795272827,
+      "mlp128_relu": 0.26163673400878906
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "worn_ring_count",
+      "linear": -0.007234334945678711,
+      "mlp128_relu": -0.010503053665161133
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": false,
+      "task": "has_worn_cursed",
+      "linear": 0.7428062170906993,
+      "mlp128_relu": 0.7490355128909585
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_items",
+      "linear": 0.647125244140625,
+      "mlp128_relu": 0.6346181631088257
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_cursed",
+      "linear": 0.12282156944274902,
+      "mlp128_relu": 0.11370038986206055
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_blessed",
+      "linear": 0.5895997285842896,
+      "mlp128_relu": 0.6155025959014893
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "n_armor",
+      "linear": 0.4360615611076355,
+      "mlp128_relu": 0.635749101638794
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "quantity_sum",
+      "linear": 0.7597118616104126,
+      "mlp128_relu": 0.7345792055130005
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "has_blessed_armor",
+      "linear": 0.6677680182294607,
+      "mlp128_relu": 0.6836453300633107
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "launcher_ammo_pair",
+      "linear": 0.853958044332436,
+      "mlp128_relu": 0.905449595396331
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "max_known_enchant",
+      "linear": 0.6871873140335083,
+      "mlp128_relu": 0.7128176689147949
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "best_uncursed_enchant",
+      "linear": 0.7273381948471069,
+      "mlp128_relu": 0.7409718036651611
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "wield_enchant",
+      "linear": 0.9919801950454712,
+      "mlp128_relu": 0.9529922008514404
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "wield_cursed",
+      "linear": 1.0,
+      "mlp128_relu": 0.9999101040606239
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "quiver_quantity",
+      "linear": 0.9982291460037231,
+      "mlp128_relu": 0.9700121879577637
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "worn_armor_count",
+      "linear": 0.582581639289856,
+      "mlp128_relu": 0.7264583110809326
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "worn_max_enchant",
+      "linear": 0.2462274432182312,
+      "mlp128_relu": 0.5415744781494141
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "worn_ring_count",
+      "linear": 0.8332507014274597,
+      "mlp128_relu": 0.7248269319534302
+    },
+    {
+      "source": "rl_policy",
+      "pool": "sum",
+      "passthrough": true,
+      "task": "has_worn_cursed",
+      "linear": 0.9707150459741943,
+      "mlp128_relu": 0.9012897629344423
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_items",
+      "linear": 0.6592843532562256,
+      "mlp128_relu": 0.6906173229217529
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_cursed",
+      "linear": -0.022029876708984375,
+      "mlp128_relu": 0.052232563495635986
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_blessed",
+      "linear": 0.41618406772613525,
+      "mlp128_relu": 0.4553624987602234
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "n_armor",
+      "linear": 0.5667576789855957,
+      "mlp128_relu": 0.6019812822341919
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "quantity_sum",
+      "linear": 0.713961660861969,
+      "mlp128_relu": 0.7272040843963623
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "has_blessed_armor",
+      "linear": 0.6784918809346016,
+      "mlp128_relu": 0.6732501996089079
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "launcher_ammo_pair",
+      "linear": 0.8573820685722702,
+      "mlp128_relu": 0.8732235402577345
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "max_known_enchant",
+      "linear": 0.49372851848602295,
+      "mlp128_relu": 0.62013840675354
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "best_uncursed_enchant",
+      "linear": 0.5086920261383057,
+      "mlp128_relu": 0.6578556895256042
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "wield_enchant",
+      "linear": 0.6451902389526367,
+      "mlp128_relu": 0.7499343752861023
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "wield_cursed",
+      "linear": 0.9973687215582611,
+      "mlp128_relu": 0.4519943535631592
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "quiver_quantity",
+      "linear": 0.6954907178878784,
+      "mlp128_relu": 0.7727198004722595
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "worn_armor_count",
+      "linear": 0.4721229672431946,
+      "mlp128_relu": 0.5112096071243286
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "worn_max_enchant",
+      "linear": 0.17440593242645264,
+      "mlp128_relu": 0.29014086723327637
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "worn_ring_count",
+      "linear": -0.005290865898132324,
+      "mlp128_relu": -0.013415932655334473
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": false,
+      "task": "has_worn_cursed",
+      "linear": 0.7399997026962567,
+      "mlp128_relu": 0.7637341358393156
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_items",
+      "linear": 0.6652173399925232,
+      "mlp128_relu": 0.5521409511566162
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_cursed",
+      "linear": 0.11110258102416992,
+      "mlp128_relu": 0.07465779781341553
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_blessed",
+      "linear": 0.5985864400863647,
+      "mlp128_relu": 0.600592851638794
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "n_armor",
+      "linear": 0.4487936496734619,
+      "mlp128_relu": 0.6178350448608398
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "quantity_sum",
+      "linear": 0.7663120031356812,
+      "mlp128_relu": 0.7228636741638184
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "has_blessed_armor",
+      "linear": 0.6576106074813689,
+      "mlp128_relu": 0.6709443773209013
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "launcher_ammo_pair",
+      "linear": 0.8648460973405693,
+      "mlp128_relu": 0.8988311068863455
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "max_known_enchant",
+      "linear": 0.7016775012016296,
+      "mlp128_relu": 0.6969645023345947
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "best_uncursed_enchant",
+      "linear": 0.7461338043212891,
+      "mlp128_relu": 0.7343615293502808
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "wield_enchant",
+      "linear": 0.9913986325263977,
+      "mlp128_relu": 0.9509110450744629
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "wield_cursed",
+      "linear": 1.0,
+      "mlp128_relu": 1.0
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "quiver_quantity",
+      "linear": 0.9980670213699341,
+      "mlp128_relu": 0.9712473750114441
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "worn_armor_count",
+      "linear": 0.5821247100830078,
+      "mlp128_relu": 0.6785076856613159
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "worn_max_enchant",
+      "linear": 0.3237749934196472,
+      "mlp128_relu": 0.38097745180130005
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "worn_ring_count",
+      "linear": 0.8396159410476685,
+      "mlp128_relu": 0.7549647092819214
+    },
+    {
+      "source": "rl_policy",
+      "pool": "both",
+      "passthrough": true,
+      "task": "has_worn_cursed",
+      "linear": 0.9721282270221266,
+      "mlp128_relu": 0.9142673183960026
+    }
+  ]
+}

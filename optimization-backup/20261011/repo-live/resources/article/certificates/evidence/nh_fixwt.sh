@@ -1,0 +1,20 @@
+#!/bin/bash
+# leak-fixed engine (fast-nle f7d8749ab: public weight pricing) — claim recipe, from scratch: 2 x 1B, 2 x 2B, 2 x 4B.
+# One worker per GPU in $GPUS; each waits for the fixbuild to finish and for its GPU to be idle, then pops the next lane (longest first).
+W=/workspace/pufferlib_fix; D=/workspace/sweeps/nhfix; L=/workspace/sweeps/nh/long.log; Q=$D/queue; GPUS="0 1 2 3 5 7"
+mkdir -p $D/checkpoints $D/logs; cd $D; [ -d config ] || cp -r /workspace/sweeps/nh/config config; [ -e resources ] || ln -s $W/resources resources; export NETHACKDIR=$W/vendor/fast-nle/build/dat NH_NLE_OPTS=1; ulimit -n 65536
+ARGS="--base.env_name=nethack --base.profile=False --base.checkpoint_dir=checkpoints --base.log_dir=logs --base.checkpoint_interval=500 --base.eval_episodes=10000 --base.eval_agents=-1 --base.load_model_path=None --base.load_enemy_model_path=None --base.cudagraphs=1 --base.reset_every_horizon=0 --base.async=1 --vec.total_agents=512 --vec.num_buffers=4 --vec.num_threads=24 --vec.num_policies=1 --vec.hist_policy_hidden_size=0 --vec.hist_policy_num_layers=0 --vec.hist_policy_percent=0 --selfplay.enabled=0 --selfplay.max_size=16 --selfplay.seed=42 --selfplay.opp_timeout_steps=500_000_000 --selfplay.eval_pool_size=8 --selfplay.eval_games=0 --env.dr=0 --env.num_agents=1 --env.num_bots=0 --env.gold_coef=0.0530697852 --env.score_coef=0.00148907036 --env.exp_coef=0.0912783295 --env.descent_coef=1 --env.floor_coef=0.126026332 --env.xp_coef=1 --env.scout_coef=0.00686222408 --env.death_penalty=-0.472198129 --env.mask_search20=0 --env.mask_run=0 --env.multi_role=1 --policy.hidden_size=1024 --policy.num_layers=4.15206337 --train.gpus=1 --train.learning_rate=0.000724339974 --train.anneal_lr=1 --train.min_lr_ratio=0.0 --train.gamma=0.999207735 --train.gae_lambda=0.484387815 --train.replay_ratio=1.78021395 --train.clip_coef=0.324817508 --train.vf_coef=0.399207175 --train.vf_clip_coef=1.60136652 --train.max_grad_norm=0.100000001 --train.ent_coef=0.00656300783 --train.anneal_ent_coef=0 --train.min_ent_coef_ratio=0.1 --train.momentum=0.981004834 --train.minibatch_size=4096 --train.horizon=512 --train.vtrace=0 --train.vtrace_rho_clip=1.0 --train.vtrace_c_clip=1.0 --train.verb_eps=0.005 --train.verb_eps_anneal_start=0.4 --train.verb_eps_anneal_end=1.0"
+printf "fixwt4b_s705 4000000000 705\nfixwt4b_s706 4000000000 706\nfixwt2b_s703 2000000000 703\nfixwt2b_s704 2000000000 704\nfixwt1b_s701 1000000000 701\nfixwt1b_s702 1000000000 702\n" > $Q
+gpu_idle() { [ -z "$(nvidia-smi --query-compute-apps=pid --format=csv,noheader --id=$1 2>/dev/null)" ]; }
+worker() { g=$1
+  while true; do
+    until grep -q "DONE fixbuild" /workspace/sweeps/nh/fixbuild.log 2>/dev/null && [ -x $W/puffer ]; do sleep 30; done
+    until gpu_idle $g; do sleep 30; done
+    job=$(flock $Q.lock sh -c "head -1 $Q; sed -i 1d $Q"); [ -z "$job" ] && break
+    set -- $job; id=$1; steps=$2; seed=$3
+    echo "$(date +%T) gpu$g START $id $steps steps FIXWT CLAIM-CONFIG NH_NLE_OPTS=1 pufferlib_fix=$(git -C $W rev-parse --short HEAD) engine=$(git -C $W/vendor/fast-nle rev-parse --short HEAD) lib=$(md5sum $W/vendor/fast-nle/build/libnethack.so | cut -c1-12) puffer=$(md5sum $W/puffer | cut -c1-12)" >> $L
+    t0=$(date +%s); CUDA_VISIBLE_DEVICES=$g timeout 100000 $W/puffer train $ARGS --train.total_timesteps=$steps --base.seed=$seed --base.run_id=$id > $D/panel_$id.out 2> $D/panel_$id.err; rc=$?
+    if [ $rc -ne 0 ] && [ $(( $(date +%s) - t0 )) -lt 120 ]; then echo "$(date +%T) gpu$g ERROR $id died in <120s rc=$rc: $(tail -n 1 $D/panel_$id.err | cut -c1-120) -- job re-queued, worker gpu$g stopped" >> $L; flock $Q.lock sh -c "printf '%s\n' '$job' | cat - $Q > $Q.tmp && mv $Q.tmp $Q"; break; fi
+    echo "$(date +%T) gpu$g DONE $id rc=$rc last_ckpt=$(ls $D/checkpoints/nethack/$id/ 2>/dev/null | grep -E '^[0-9]+\.bin$' | sort | tail -1) panel_final=$(grep -a '^env/score' $D/logs/nethack/$id.ini 2>/dev/null | tail -1 | awk -F'[ ,]' '{print $NF}')" >> $L
+  done; }
+for g in $GPUS; do worker $g & sleep 3; done; wait; echo "$(date +%T) FIXWT_BATCH_DONE" >> $L

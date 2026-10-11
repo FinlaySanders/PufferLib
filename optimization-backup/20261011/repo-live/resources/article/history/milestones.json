@@ -1,0 +1,145 @@
+[
+  {
+    "date": "2026-07-03",
+    "score": 0,
+    "stage": "monk",
+    "label": "Project start",
+    "source": "evidence/project_start.txt",
+    "measurement": "User-confirmed start date; illustrative zero baseline",
+    "training_steps": 0,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-07-06",
+    "score": 406.9,
+    "stage": "monk",
+    "label": "Early sweep",
+    "source": "evidence/nethack-env-setup.md",
+    "measurement": "Historical campaign note reports score after 259M training; not re-certified",
+    "training_steps": 259000000,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-07-08",
+    "score": 1100,
+    "stage": "monk",
+    "label": "1100 score commit",
+    "source": "evidence/9ceeab2a.txt",
+    "measurement": "Approximate score in commit title; aggregation and evaluation protocol unspecified",
+    "training_steps": null,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-07-14",
+    "score": 3635.12,
+    "stage": "monk",
+    "label": "340M seed panel",
+    "source": "evidence/nethack-env-setup.md",
+    "measurement": "Average of five historical reported means; completed rerun replaces crashed seed; mostly rounded source values",
+    "training_steps": 340000000,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-07-31",
+    "score": 3604.8,
+    "stage": "monk",
+    "label": "5c port",
+    "source": "evidence/7919bbda.txt",
+    "measurement": "10K-game evaluation mean documented in commit",
+    "training_steps": 250000000,
+    "plot": false,
+    "exclusion_reason": "250M trainer-port validation, not a champion milestone"
+  },
+  {
+    "date": "2026-08-04",
+    "score": 7392.574142857143,
+    "stage": "monk",
+    "label": "1B seed panel",
+    "source": "evidence/certify_all.log",
+    "measurement": "Unweighted average of seven reported evaluation means",
+    "training_steps": 1000000000,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-08-13",
+    "score": 12863.855,
+    "stage": "monk",
+    "label": "Monk 1B",
+    "source": "evidence/new1b_s305.log",
+    "measurement": "Final reported panel mean; not a modern burn-in certificate",
+    "training_steps": 1000000000,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-08-14",
+    "score": 6608.454,
+    "stage": "challenge",
+    "label": "Random characters",
+    "source": "evidence/multi1b_s305.log",
+    "measurement": "Final reported panel mean; not a modern burn-in certificate",
+    "training_steps": 1000000000,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-08-15",
+    "score": 7034.814,
+    "stage": "challenge",
+    "label": "Identity embeddings",
+    "source": "evidence/idemb1b_s311.log",
+    "measurement": "Final reported panel mean; not a modern burn-in certificate",
+    "training_steps": 1000000000,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-09-07",
+    "score": 12957.553385416666,
+    "stage": "challenge",
+    "label": "1B seed panel",
+    "source": "evidence/drone_long.log",
+    "measurement": "Average of 3 reported inline final evaluation means",
+    "training_steps": 1000000000,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-09-08",
+    "score": 16702.211588541668,
+    "stage": "challenge",
+    "label": "2B seed panel",
+    "source": "evidence/drone_long.log",
+    "measurement": "Average of 3 reported inline final evaluation means",
+    "training_steps": 2000000000,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-09-09",
+    "score": 18155.12744140625,
+    "stage": "challenge",
+    "label": "4B seed panel",
+    "source": "evidence/drone_long.log",
+    "measurement": "Average of 4 reported inline final evaluation means",
+    "training_steps": 4000000000,
+    "plot": true,
+    "exclusion_reason": ""
+  },
+  {
+    "date": "2026-09-13",
+    "score": 19705.19109623016,
+    "stage": "python",
+    "label": "Fixed 4B Python",
+    "source": "../certificates/results.json",
+    "measurement": "Pooled 8,064-game Python certificate",
+    "training_steps": 4000000000,
+    "plot": true,
+    "exclusion_reason": ""
+  }
+]

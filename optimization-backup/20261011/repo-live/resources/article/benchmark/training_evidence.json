@@ -1,0 +1,34 @@
+{
+  "fixwt4b_s705": {
+    "panel_path": "/workspace/sweeps/nhfix/panel_fixwt4b_s705.out",
+    "last_panel_lines": [
+      "\u2502 Steps              4.0B      Env        2s 277  41%    value        1.433    \u2502",
+      "\u2502 Epoch             15257    Train        2s 401  43%    old_kl       0.001    \u2502",
+      "\u2502 Uptime    0d 19h 5m 40s      Model      2s 394  43%    kl           0.001    \u2502",
+      "\u2502 Steps              4.0B      Env           0ms   0%    value        1.434    \u2502",
+      "\u2502 Epoch             15258    Train        2s 223 100%    old_kl       0.000    \u2502",
+      "\u2502 Uptime    0d 19h 5m 42s      Model      2s 216  99%    kl           0.000    \u2502"
+    ]
+  },
+  "fixwt4b_s706": {
+    "panel_path": "/workspace/sweeps/nhfix/panel_fixwt4b_s706.out",
+    "last_panel_lines": [
+      "\u2502 Steps              4.0B      Env        6s 171  66%    value        1.711    \u2502",
+      "\u2502 Epoch             15257    Train        2s 292  24%    old_kl       0.000    \u2502",
+      "\u2502 Uptime    0d 18h 29m 54      Model      2s 286  24%    kl           0.000    \u2502",
+      "\u2502 Steps              4.0B      Env           0ms   0%    value        1.884    \u2502",
+      "\u2502 Epoch             15258    Train        2s 214 100%    old_kl       0.000    \u2502",
+      "\u2502 Uptime    0d 18h 29m 56      Model      2s 207  99%    kl           0.000    \u2502"
+    ]
+  },
+  "launch_log_lines": [
+    "17:33:48 gpu0 START fixwt4b_s705 4000000000 steps FIXWT CLAIM-CONFIG NH_NLE_OPTS=1 pufferlib_fix=8c479af7 engine=f7d8749ab lib=acd4252e2c4e puffer=33bb145ac317",
+    "17:33:48 gpu0 DONE fixwt4b_s705 rc=1 last_ckpt= panel_final=",
+    "17:33:48 gpu0 START fixwt4b_s706 4000000000 steps FIXWT CLAIM-CONFIG NH_NLE_OPTS=1 pufferlib_fix=8c479af7 engine=f7d8749ab lib=acd4252e2c4e puffer=33bb145ac317",
+    "17:33:48 gpu0 DONE fixwt4b_s706 rc=1 last_ckpt= panel_final=",
+    "17:35:47 gpu0 START fixwt4b_s705 4000000000 steps FIXWT CLAIM-CONFIG NH_NLE_OPTS=1 pufferlib_fix=8c479af7 engine=f7d8749ab lib=acd4252e2c4e puffer=33bb145ac317",
+    "18:32:43 gpu3 START fixwt4b_s706 4000000000 steps FIXWT CLAIM-CONFIG NH_NLE_OPTS=1 pufferlib_fix=8c479af7 engine=f7d8749ab lib=acd4252e2c4e puffer=33bb145ac317",
+    "12:41:41 gpu0 DONE fixwt4b_s705 rc=134 last_ckpt=0000003999793152.bin panel_final=",
+    "13:02:54 gpu3 DONE fixwt4b_s706 rc=134 last_ckpt=0000003999793152.bin panel_final="
+  ]
+}

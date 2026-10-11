@@ -1,0 +1,136 @@
+{
+  "tasks": [
+    "n_items",
+    "max_known_enchant",
+    "wield_enchant"
+  ],
+  "pools": [
+    "max",
+    "sum",
+    "both"
+  ],
+  "pass_order": [
+    false,
+    true
+  ],
+  "metric": "test R2",
+  "aggregation": "median of 3 fit seeds",
+  "values": [
+    [
+      [
+        0.6521028876304626,
+        0.7025026082992554
+      ],
+      [
+        0.9382922053337097,
+        0.9936343431472778
+      ],
+      [
+        0.9896676540374756,
+        0.9942899942398071
+      ]
+    ],
+    [
+      [
+        0.8263571262359619,
+        0.8680856823921204
+      ],
+      [
+        0.8134256601333618,
+        0.8035563826560974
+      ],
+      [
+        0.8794012069702148,
+        0.8790644407272339
+      ]
+    ],
+    [
+      [
+        0.82237309217453,
+        0.9743895530700684
+      ],
+      [
+        0.87101811170578,
+        0.9886594414710999
+      ],
+      [
+        0.8997852206230164,
+        0.9832689762115479
+      ]
+    ]
+  ],
+  "sources": [
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_both_pass0_s1.json",
+      "sha256": "95ddbc14a4ba5d37777bf36be5d9603b0d10e0013ce86141cab2ccbf4962ce1d"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_both_pass0_s2.json",
+      "sha256": "36279d15038206fe9da58d46f22f90da759f83ecc78b83bf1b895a5e4688c7fe"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_both_pass0_s3.json",
+      "sha256": "876fcc8ae518548611e0ef8e7a702eb8f680eca92bf153078eb3321ce2a9064f"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_both_pass1_s1.json",
+      "sha256": "f44b41894be2359a6123801e38b973dac0cfce9136b14f9ef69f72ba454b5236"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_both_pass1_s2.json",
+      "sha256": "2a946fc27e57e162e9874345e237325cc542d8678f165e7be9e875bd6d17bbc4"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_both_pass1_s3.json",
+      "sha256": "3dbb299fa54c383c87c83fdb367246e710d2777ba1286b0be1691d22419cea50"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_max_pass0_s1.json",
+      "sha256": "f141bbddc22cdf390b5abe978a1036e7d83a78a520870de33a8e21ba6c7b6c49"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_max_pass0_s2.json",
+      "sha256": "730e15a8a8f58b29cf01f5f6c67eef0be0a239777ff941909e1c1cda7e002c39"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_max_pass0_s3.json",
+      "sha256": "4af3ac3b8e7edcce3e06c86a7f5b777ec179848bae0e4f9cada611b58c88dd48"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_max_pass1_s1.json",
+      "sha256": "8fd31f058aaf088b014272c5732c6f595b45d024186f297790575742d0edc23d"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_max_pass1_s2.json",
+      "sha256": "a0d5cbf945d002f00e9392f2651e7c4eb6ec7288233e970b4b455a4753da7356"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_max_pass1_s3.json",
+      "sha256": "018e4d9ba01b37014f6b767464354e384b050115c14aed73f8b8b03069c4c40d"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_sum_pass0_s1.json",
+      "sha256": "df5645d6070612907e310c2ddb9195974c86e6d39b488d00f33ea516a59d701e"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_sum_pass0_s2.json",
+      "sha256": "9c5d9b4349707f1662f92d3d68f1de8d2c135efafddd25bf91c00e6db6da9f0e"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_sum_pass0_s3.json",
+      "sha256": "21c9ff88f166bea47a02fedfc886cb43351ba4791d5f379f899a9ed3bd4e82d4"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_sum_pass1_s1.json",
+      "sha256": "817ed4c5ad6c10e891b9ee0197f4ae92e8f8846f185800aaaacceffc66144e59"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_sum_pass1_s2.json",
+      "sha256": "7492b99cd23f1accdff969a72dc8c840341f8162b892c3c2a09151c9935a5791"
+    },
+    {
+      "path": "/puffertank/experiments/inventory-supervised-20260914/results/supervised_sum_pass1_s3.json",
+      "sha256": "41a4f79b596eb0346367c50d539ebce8f742cbf2637db93366012eca3d2322ef"
+    }
+  ]
+}

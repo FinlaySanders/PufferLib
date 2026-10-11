@@ -1,0 +1,147 @@
+{
+  "cohort": "depth-trained",
+  "steps": "2B",
+  "interface": "fork",
+  "seeds": [
+    801,
+    802,
+    803,
+    804,
+    805,
+    806,
+    807,
+    808
+  ],
+  "n": 80000,
+  "burnin_per_seed": 4000,
+  "sources": [
+    {
+      "seed": 801,
+      "path": "/workspace/experiments/nethack-depth-2b-20260914/depth2b_s801_eval.ep",
+      "sha256": "d106fc6ee5f91f5c5bd7b6bc43bda578aa32cc134267b060a6ab832a0d6b4a8b",
+      "kept": 10000
+    },
+    {
+      "seed": 802,
+      "path": "/workspace/experiments/nethack-depth-2b-20260914/depth2b_s802_eval.ep",
+      "sha256": "74c3736b32752bfe58bd83d7ff69da51e1bd8a3be0488164ea02b87f911e1b87",
+      "kept": 10000
+    },
+    {
+      "seed": 803,
+      "path": "/workspace/experiments/nethack-depth-2b-20260914/depth2b_s803_eval.ep",
+      "sha256": "73d83c95953e9ae7c59ee928c1bc08eae3c0f1b0094888f8ed9d19be3c749c60",
+      "kept": 10000
+    },
+    {
+      "seed": 804,
+      "path": "/workspace/experiments/nethack-depth-2b-20260914/depth2b_s804_eval.ep",
+      "sha256": "1540afc4b7af3f552b29a02eed9ddc48bea27f35d23f68604c35eddf84c5ffb8",
+      "kept": 10000
+    },
+    {
+      "seed": 805,
+      "path": "/workspace/experiments/nethack-depth-2b-20260914/depth2b_s805_eval.ep",
+      "sha256": "b217f9b42c7cc583bfec6a040cbdc5c94d97704c43607c45d204b2ab90a2202b",
+      "kept": 10000
+    },
+    {
+      "seed": 806,
+      "path": "/workspace/experiments/nethack-depth-2b-20260914/depth2b_s806_eval.ep",
+      "sha256": "7254d2edf192461d83c6ddee205abf01f235b3d6de4e9b9bde0553ac73a86faf",
+      "kept": 10000
+    },
+    {
+      "seed": 807,
+      "path": "/workspace/experiments/nethack-depth-2b-20260914/depth2b_s807_eval.ep",
+      "sha256": "22a4b9d64a73f1d8e5630787f16b045d090ab6ecfb1736538b5a582b1a20e20f",
+      "kept": 10000
+    },
+    {
+      "seed": 808,
+      "path": "/workspace/experiments/nethack-depth-2b-20260914/depth2b_s808_eval.ep",
+      "sha256": "228a9ed654c17abe35c34dbe030c81a1b8e2b29d52bbd276605e02fce61000af",
+      "kept": 10000
+    }
+  ],
+  "roles": [
+    {
+      "role": "Archeologist",
+      "n": 6268,
+      "mean": 21.059508615188257,
+      "median": 23.0
+    },
+    {
+      "role": "Barbarian",
+      "n": 5894,
+      "mean": 11.12215812690872,
+      "median": 10.0
+    },
+    {
+      "role": "Caveman",
+      "n": 6065,
+      "mean": 9.976257213520197,
+      "median": 10
+    },
+    {
+      "role": "Healer",
+      "n": 6295,
+      "mean": 9.645750595710881,
+      "median": 10
+    },
+    {
+      "role": "Knight",
+      "n": 6288,
+      "mean": 8.739821882951654,
+      "median": 9.0
+    },
+    {
+      "role": "Monk",
+      "n": 6521,
+      "mean": 12.217451311148597,
+      "median": 11
+    },
+    {
+      "role": "Priest",
+      "n": 6338,
+      "mean": 8.85184600820448,
+      "median": 9.0
+    },
+    {
+      "role": "Rogue",
+      "n": 5822,
+      "mean": 8.824802473376847,
+      "median": 8.0
+    },
+    {
+      "role": "Ranger",
+      "n": 5995,
+      "mean": 9.409341117597998,
+      "median": 9
+    },
+    {
+      "role": "Samurai",
+      "n": 6180,
+      "mean": 11.246116504854369,
+      "median": 11.0
+    },
+    {
+      "role": "Tourist",
+      "n": 6037,
+      "mean": 8.308431340069571,
+      "median": 8
+    },
+    {
+      "role": "Valkyrie",
+      "n": 5877,
+      "mean": 10.255402416198741,
+      "median": 10
+    },
+    {
+      "role": "Wizard",
+      "n": 6420,
+      "mean": 9.94454828660436,
+      "median": 10.0
+    }
+  ]
+}

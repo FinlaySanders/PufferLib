@@ -1,0 +1,14 @@
+date,score,stage,label,source,measurement,training_steps,plot,exclusion_reason
+2026-07-03,0,monk,Project start,evidence/project_start.txt,User-confirmed start date; illustrative zero baseline,0,True,
+2026-07-06,406.9,monk,Early sweep,evidence/nethack-env-setup.md,Historical campaign note reports score after 259M training; not re-certified,259000000,True,
+2026-07-08,1100,monk,1100 score commit,evidence/9ceeab2a.txt,Approximate score in commit title; aggregation and evaluation protocol unspecified,,True,
+2026-07-14,3635.12,monk,340M seed panel,evidence/nethack-env-setup.md,Average of five historical reported means; completed rerun replaces crashed seed; mostly rounded source values,340000000,True,
+2026-07-31,3604.8,monk,5c port,evidence/7919bbda.txt,10K-game evaluation mean documented in commit,250000000,False,"250M trainer-port validation, not a champion milestone"
+2026-08-04,7392.574142857143,monk,1B seed panel,evidence/certify_all.log,Unweighted average of seven reported evaluation means,1000000000,True,
+2026-08-13,12863.855,monk,Monk 1B,evidence/new1b_s305.log,Final reported panel mean; not a modern burn-in certificate,1000000000,True,
+2026-08-14,6608.454,challenge,Random characters,evidence/multi1b_s305.log,Final reported panel mean; not a modern burn-in certificate,1000000000,True,
+2026-08-15,7034.814,challenge,Identity embeddings,evidence/idemb1b_s311.log,Final reported panel mean; not a modern burn-in certificate,1000000000,True,
+2026-09-07,12957.553385416666,challenge,1B seed panel,evidence/drone_long.log,Average of 3 reported inline final evaluation means,1000000000,True,
+2026-09-08,16702.211588541668,challenge,2B seed panel,evidence/drone_long.log,Average of 3 reported inline final evaluation means,2000000000,True,
+2026-09-09,18155.12744140625,challenge,4B seed panel,evidence/drone_long.log,Average of 4 reported inline final evaluation means,4000000000,True,
+2026-09-13,19705.19109623016,python,Fixed 4B Python,../certificates/results.json,"Pooled 8,064-game Python certificate",4000000000,True,

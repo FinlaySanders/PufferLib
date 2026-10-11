@@ -1,0 +1,19 @@
+commit 7919bbda0502cfc055f6c579e96a054e72a7777d
+Author:     FinlaySanders <finlay_sanders@icloud.com>
+AuthorDate: Fri Jul 31 21:50:48 2026 +0000
+Commit:     FinlaySanders <finlay_sanders@icloud.com>
+CommitDate: Fri Jul 31 21:50:48 2026 +0000
+
+    nethack: port champion stack onto 5c
+    
+    Env: 19 heads (verb + 12 slot + 6 per-verb dirs), THROW target-ray dirmask,
+    Monk, floor-reward descent, instrumentation, per-verb consume map; mask 730.
+    Trainer: verb-eps mixture (default 0.005, anneal-start 0.4) in sampler +
+    PPO fwd/bwd; head-gating default-on. Encoder: champion dims (logits 730,
+    lin 71/pad 72). Config: champion env coefs, metric=score. Tests: gradcheck
+    harness (PASS, bit-identical errors vs 4.0 tree) + build script.
+    Refs: env fingerprint == 4.0 tree (5K/20K exact); 5c-base s310 250M
+    10K-eval 3604.8; 4.0 hypers diverge on carry (kl 1.8) - needs resweep.
+    
+    Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+    Claude-Session: https://claude.ai/code/session_013QC7gxysUPZkbqC5NsLk6H

@@ -1,0 +1,44 @@
+{
+  "source": "/workspace/experiments/nethack-depth-2b-20260914",
+  "cohort": "depth-trained",
+  "steps": "2B",
+  "interface": "fork",
+  "seeds": [
+    801,
+    802,
+    803,
+    804,
+    805,
+    806,
+    807,
+    808
+  ],
+  "evaluation_seed": 7,
+  "burnin_per_seed": 4000,
+  "kept_per_seed": 10000,
+  "columns": [
+    "score",
+    "how",
+    "time",
+    "noprog",
+    "role",
+    "race",
+    "gender",
+    "max_depth",
+    "last_turn",
+    "killer",
+    "killer_level",
+    "visited_medusa",
+    "visited_castle",
+    "medusa_depth",
+    "castle_depth"
+  ],
+  "sha256": {
+    "puffer": "96870ff3cb7c632312ff9803b7a4d81d0a066aa8b855b1bfe888703aedc8ff9e",
+    "lib/libnethack.so": "8131ae6f9fc201c87e2a1a34c500ef127c63fff98b5b3c1bcb120a66ba6eae47",
+    "source.patch": "51b97a1dbbf66ff2b9d5bdc9c13bf1556afc2949d65249ced2399961e84b877e",
+    "engine.patch": "05e63e8e7f555b3128d44b104ec90b723158b6c000786b2a1eb2306a8ca2ea48",
+    "config/nethack.ini": "d2b5364b610babc80f46df94acc73d213640bf52d2fb614b2a98b1ee18578ad1",
+    "config/default.ini": "b45fb46f546190625d3e1ff40d615361199ce1307e477818348e1c1b609dc128"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "workers": 96,
+  "episodes_per_worker": 42,
+  "nle": "/workspace/nle-stock/nle/__init__.py",
+  "gym": "0.23.0",
+  "environment": "gym.make(\"NetHackChallenge-v0\")",
+  "seeding": false,
+  "panic_on_errors": true,
+  "clock": "real wall clock",
+  "timeout_seconds": 720.0,
+  "failure_policy": "Retain agent exceptions and timeouts at last live score; no retries; upstream-style attempt accounting",
+  "autoascend_commit": "8527910bd85c4d851c18ad912aae606c92cd516a"
+}
