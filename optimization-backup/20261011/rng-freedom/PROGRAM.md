@@ -160,3 +160,27 @@ gain unless per-game state overflows L2 — none of these envs' does. The NetHac
 with 4 pipeline stages forces 128-agent forwards, affordable only when the env step dwarfs the forward. Making cohorts free for light envs needs
 the forward batch decoupled from the buffer (gather the active buffers' obs into one forward) — the dynamic-batching design the ledger rejected
 for NetHack because the env dominated there. Verdict: cohort default OFF; enable per env (NetHack-class), never as a sweep-wide default.
+
+## Actor forward anatomy, 15M model (17:45 UTC; fwd/ — nsys node traces, --base.async=0 so PPO and rollout alternate; fwd_split.py splits each
+## buffer cycle at its largest gap into forward proper vs env phase; fwd_util.py = GPU utilisation + launch structure)
+| shape | forward proper (median wall / busy) | kernels | env phase / cycle per buffer | rollout s/epoch | PPO s/epoch |
+| 16 × 128, cohort g4 s64 | 195 µs / 191 µs | 57 | 726 µs / 933 µs | 0.60 | 0.83 |
+| 4 × 512 | 327 µs / 324 µs | 58 | 6.4 ms / 6.7 ms | 0.89 | 0.83 |
+Linear fit: forward = 151 µs fixed + 0.34 µs/row → at 128 rows 77% of the forward is launch-floor cost (57 kernels × ~2.7 µs), not work.
+Launch structure per forward: 1 cudaGraphLaunch + 1 cudaLaunchKernel + 5 cudaMemcpyAsync + 5 cudaEventRecord + 1 cudaStreamSynchronize — the
+host side is already minimal; inside the graph the nodes run back-to-back (busy ≈ wall). GPU during rollout (c128): inference kernels busy 60%,
+one kernel at a time 43%, two 4%, none 51% — the four active buffers' forwards barely overlap, and the pool (726 µs per 128-game env phase) binds:
+rollout alone = 0.60 s/epoch ≈ 440K SPS at 15M/2048.
+CORRECTION to the 16:xx reading: the earlier "933 µs forward" and "12 µs gaps" were the buffer cycle; the September 1155 µs likewise. The
+production 263K at 15M/2048 is not forward latency: it is GPU sharing in async mode — rollout 0.60 → 1.00 s and PPO 0.83 → 0.98 s when they
+run concurrently, because 57 tiny dependent kernels per forward (2048 forwards per epoch) queue behind PPO's GEMMs at every node and PPO's
+GEMMs lose SMs to them. PUF_INFER_PRIORITY=1 is already on.
+LEVER (sized): fuse the forward from 57 kernels to ~10-12. Chains visible in the trace: prologue (cast_rew_term, cast, zero_term_state) → fold into
+the first encoder kernel; patch/terrain chain (eff_embed, decode, crop, loc3_gather, 2 GEMM, terr_feat, 2 GEMM) → 1-2; inventory chain
+(2 inv_decode, 2 inv_table, inv_sfeat_packed, inv_gather, entity_fused) → 1; message (msg_ids, msg_pool) → 1; two token encoders (lab_tok, GEMM,
+entity_fused, min_sgate) → 1 each; spell (spkey, entity_fused, sp_doorstep) → 1; idemb_warp; recurrent block 4 × (GEMM 12 µs + mingru_gate 3 µs) →
+one persistent M=128 kernel streaming 16 MB of weights (~20 µs at 900 GB/s) or 4 fused GEMM+gate; decoder (GEMM, 2 splitK, GEMM, ptr_rownorm,
+ptr3_cos, dec_assemble) + sampler → 2. Expected forward alone 195 → ~80-100 µs; the larger effect is contention: fewer, longer kernels queue
+less behind PPO and steal fewer SMs from it. Target: async epoch → max(rollout ≈ 0.65, PPO ≈ 0.85) → ~300-310K at 15M/2048 (+15-18%);
+15M/512 (champion) gains PPO relief only (same 2048 forwards/epoch), order +5-10%, unmeasured. Numerics change → determinism reference moves.
+Not a lever: forward batch size (512 rows = 327 µs: fixed cost dominates either way); host launch path (already one graph).
