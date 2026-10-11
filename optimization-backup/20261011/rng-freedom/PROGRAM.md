@@ -385,3 +385,13 @@ Transferable: per-level bitboards for every legality input + straight-line mask 
 scan (movers list), precomputed static layers. Not transferable: the rule set (15 interacting per-cell conditions with per-type and per-pair
 semantics vs one validity function), the entity count (27 monsters × 6.9 turns vs 9 mobs × 1 tick), and the tty observation contract (display +
 obs export ≈ 75K/step has no Craftax analogue). Realistic ceiling stays "a third", not 3.8 us.
+
+## RETRACTION (21:45 UTC): the "bitboard mfndpos → a third off the step" sizing above is not supported — it is mt8
+mt7 already carries 14 per-column bit planes (nonrock, occupied, bars, door, pool, lava, dbridge, altar, tree, garlic, boulder, scare, trap, gas) and
+prefilters candidates with them; mt8 built exactly the per-class "enterable" planes proposed above, lazily per turn, cached per class, verified
+exact — and instructions were FLAT (520.2 → 522.7K) with the clock −2..−3% (planes + column lines at the L2 edge). The per-cell work that remains
+after planes is the monster-specific part (scary, hero/image side effect, per-pair aggression/displacement, temple, info bits, onlineu, squeeze,
+trap-type vs mtrapseen, diagonal door/worm rules) and it is the bulk of the ~100 instr/cell. Planes cannot absorb it; only evaluating FEWER cells
+can, which is lz1 (needs RNG freedom) — the one lever mt4/mt8 could not use. Evidence-backed remainder for the monster turn: lz1 −7%, movers
+list −3%, dochugw double canspotmon −1%, per-move memoisation −2..3% ⇒ ≈ −12..14% of the step. A third is not available from the neighbour
+query; the step's remaining cost is the rule set evaluated 105 times, plus the tty observation contract (≈75K).
