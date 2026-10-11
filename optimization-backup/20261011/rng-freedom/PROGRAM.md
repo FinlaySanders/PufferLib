@@ -334,3 +334,10 @@ at either shape, more gives nothing at batch 262K; the 524K batch with mb 16384 
 minibatch cannot help (curves fall), but agents at constant batch do — 2048 → 4096 → 8192 = 323K → 354K → 405K, and 4096 × 128 at mb 8192 = 406K;
 ~405K is where the 5M env side with the cohort lands once PPO is small relative to the epoch. Shorter horizons at constant batch change the learning
 problem (BPTT window, GAE truncation) — a sweep/A-B question, not a free speedup. (3) Memory: 524K-step batches fit; 8192 × 128 does not.
+
+## Depth-1 alternation test (21:01 UTC; ablate_d1.json): one active buffer of 512 so inference and PPO alternate instead of overlapping
+15M/2048: ctrl 264,430 / 263,328 | 4×512 c1 s64 141,837 (−46%, rollout tail 0.88 s) | c1 s128 146,132. 5M/2048: ctrl 321,287 | c1 s64 192,281 (−40%).
+Pool idles during every forward and the GPU during every env phase; the PPO relief from 4× fewer forwards is far smaller than that. Overlap is
+essential; the identity (games in flight = rows per forward × groups in flight) has now been tested at every corner: depth 1 (this), depth 2 at
+1024 resident (−10%), depth 4 at 128 rows (the recipe), depth 8 (−3 to −4%). The recipe is the measured optimum on this box. Better architecture
+is GPU-side separation (second GPU / partition) on a bigger box; at 15M the champion's 512×512 shape with mb 8192-16384 needs no cohort at all.
