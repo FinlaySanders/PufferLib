@@ -349,3 +349,16 @@ Per epoch: 52,651 kernel launches, 1.06 s summed kernel time over 14 streams (wa
 muon_store_update 2,016 × 3.6 µs; gemmSN_NN 1,680 × 3 µs; launch-floor (<5 µs) kernels 15,964 launches = 47 ms. Levers: grouped/fused entity-MLP
 GEMMs, no-split-K for small GEMMs, Muon small-matrix fusion (tested null once at 15M/512 — re-check at mb 8192), scan chunking. Est. PPO wall
 0.83 → ~0.70 s (−15%) for a multi-day program → 15M/2048 ≈ 300K; the binding side at 15M, so unlike inference fusion the gain lands directly.
+
+## Linked-list census (21:20 UTC; per-line Ir and Bcm from callgrind.lines_mt7 / branch_mt7, 65,536 steps, mt7_g source)
+Lines that traverse list pointers (->nobj/->nmon/->ntrap/->nexthere/->nengr/->next, list heads fmon/fobj/invent/ftrap/minvent): 5.9K Ir/step = 1.1% of
+520K; 67 of 5,377 mispredicts/step = 1.3%. Largest: mthrowu.c:1123 minvent walk 1.4K, movemon fmon walk 0.9K+0.4K, mon.c:1256 minvent 0.8K,
+mon.c:768 fmon 0.7K, weapon.c:481 0.5K. Lists are already replaced by grids/summaries/bitmaps/the fobj index where it mattered.
+Where the instructions are instead (top self lines/step): dochugw canspotmon-before-move 6.5K; isok 5.7K; on_level 5.7K; is_pool/MOAT 4.0K+2.3K;
+dist2 3.9K+3.6K; nh_move_position_bit 3.8K+2.0K+1.9K; online2 3.5K; SSE fobj compare 3.1K; dmgtype 3.0K; nh_move_neighbours 2.9K+1.9K+1.7K;
+mcalcmove 2.8K+2.2K; move_pile summaries 2.3K+2.0K; RND 2.1K+2.0K+1.9K; mfndpos diagonal checks 2.1K. = thousands of calls to tiny inline helpers
+inside the per-monster, per-cell loops. Mispredicts: mfndpos per-cell conditionals (diagonal 157+143, candidates loop 119, poison gas 58,
+position bit 58), movemon movement test 117, scary_immune 98, mmove==0 51, isok 48. VERDICT: "no linked lists" is a ≤2% item; the cost is
+rule evaluation per monster-cell, 105 moves × ~3K instructions. The ambitious engine program that fits the data is a monster-turn v2 under the
+distributional contract: lz1 lazy selection (−7%), memoised per-monster per-turn facts incl. the dochugw double canspotmon (−2..3%), movers
+list (−3%), per-cell helper restructuring (isok/dist2/position-bit chains ≈ 25K/step → half) (−3..5%): ≈ −15..20%/step → 5M env side 405K → ~480-500K.
