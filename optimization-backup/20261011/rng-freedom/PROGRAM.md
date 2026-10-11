@@ -395,3 +395,14 @@ trap-type vs mtrapseen, diagonal door/worm rules) and it is the bulk of the ~100
 can, which is lz1 (needs RNG freedom) — the one lever mt4/mt8 could not use. Evidence-backed remainder for the monster turn: lz1 −7%, movers
 list −3%, dochugw double canspotmon −1%, per-move memoisation −2..3% ⇒ ≈ −12..14% of the step. A third is not available from the neighbour
 query; the step's remaining cost is the rule set evaluated 105 times, plus the tty observation contract (≈75K).
+
+## lz1 — lazy neighbour selection, first build (21:42-21:47 UTC; lz1/make_lz1.py from lz0; NH_LAZY=0 = original selection in the same binary)
+NH_LAZY=0 corpus replay: obs b79eb25d93ca6d29 turns 115413681 — the factored full path is bit-exact. Verify twin (NH_LAZY_VERIFY: full selection
+run in the shadow of every lazy decision with the core RNG snapshotted/restored) over the 16.8M-step corpus: 0 LAZY_MISMATCH, 0 panics — lazy
+choices are provably the original's for approach/flee and inside the accepted set for wander. BUT fallback share 51.8% (chose 349M, none 77M,
+fallback 457M) and the fallback re-ran the full query → net cost likely ≥ 0. Also: under replayed actions a diverging engine goes off-policy and the
+games die young (mean age 988 vs 30,332) — the fast protocol CANNOT time a non-bit-exact engine; the regime shifts to cheap young games.
+lz2 (make_lz2.py): fallback completes the already-evaluated cells into mfndpos's scan-order list (no second query; worst case ≈ original + sort),
+hero/image-adjacent and unicorn cases take the untouched full path before evaluating anything, reason counters (unicorn/hero/tracked/mdisp).
+Measurement for non-bit-exact engines from here on: frozen MATURE policy (PUF_PERF_START_WEIGHTS=fixwt4b_s705.bin, PUF_PERF_FREEZE) playing LIVE
+(PUF_LIVE_AFTER_WARM=1), 60 epochs at 512×512 with the window 40..59, engine cost read from POOL_WORKER us_per_step (SPS is GPU-bound at 15M).
