@@ -314,3 +314,23 @@ minibatch choice is the sweep's). Numerics-exact narrowing patch retained (narro
   M4_lanes4        258,307   +12,690   +5.2%  + Muon 4 lanes
   M5_gradoverlap   262,271    +3,964   +1.5%  + gradient overlap, 32 connections
   ctrl_b           262,839      +568   +0.2%  full stack control after
+
+## Scaling grid: agents and minibatch (20:12-20:40 UTC; ablate_scale.json, full stack + cohort recipe scaled per shape (buffers = agents/128, 4 active,
+## steps = min(64, horizon)), fast protocol; controls 264,453 / 262,345 at 15M/2048 mb8192)
+Agents at constant batch 262,144:
+| agents × horizon | 15M (mb 8192) | 5M (mb 4096) |
+| 512 × 512 | 264,682 | 323,753 |
+| 1024 × 256 | 264,692 | 317,039 |
+| 2048 × 128 | 263,102 | 323,273 |
+| 4096 × 64 | 261,291 | 353,995 |
+| 8192 × 32 | 260,373 | 404,703 |
+Minibatch at 2048 × 128: 15M 4096 237,107 | 8192 263,102 | 16384 260,859 | 32768 258,784 (PPO tail 1.13 → 0.89 → 0.77 → 0.71 s: past 8192 the
+contended rollout binds at ~265K). 5M 4096 323,273 | 8192 314,106 | 16384 306,816 | 32768 299,239 (rollout-bound throughout; larger mb slightly worse).
+Minibatch at the champion 512 × 512, 15M: 4096 227,336 | 8192 263,312 | 16384 268,650 | 32768 264,476 (+16% for the first doubling, then flat).
+Batch 524,288 = 4096 × 128 (11-epoch runs, 3-batch windows, ±2%): 15M mb 8192 263,252 | 16384 280,620 | 32768 275,720; 5M mb 8192 406,271 |
+16384 382,550 | 32768 374,432 (today's ladder: 5M 4096×128 mb 4096 = 350,011).
+READINGS: (1) 15M is PPO/interference-bound everywhere: the agent scan is flat 260-265K at constant batch; minibatch 4096 → 8192 is worth +11-16%
+at either shape, more gives nothing at batch 262K; the 524K batch with mb 16384 is the best 15M point seen (281K, +7%). (2) 5M is rollout-bound:
+minibatch cannot help (curves fall), but agents at constant batch do — 2048 → 4096 → 8192 = 323K → 354K → 405K, and 4096 × 128 at mb 8192 = 406K;
+~405K is where the 5M env side with the cohort lands once PPO is small relative to the epoch. Shorter horizons at constant batch change the learning
+problem (BPTT window, GAE truncation) — a sweep/A-B question, not a free speedup. (3) Memory: 524K-step batches fit; 8192 × 128 does not.
