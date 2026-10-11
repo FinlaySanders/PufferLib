@@ -100,3 +100,27 @@ Twin (-DNH_LAZY_VERIFY): after a non-fallback lazy choice, snapshot the core RNG
 variables, restore the RNG; appr ≠ 0 → assert identical (nix, niy, info); appr = 0 → assert the choice is in the accepted set with equal
 flags. LAZY_MISMATCH lines, not panics. Offline: 1e6-trial chi-square of the sampler on random masks. Then trainer ABBA vs mt7.
 What is given up: the golden/corpus hash gates no longer apply to lz1 and everything after it; T2-T4 of the contract replace them.
+
+## rc2 turn attribution (15:57 UTC; bit-exact: obs b79eb25d93ca6d29, turns 115413681)
+Turns by hero state at moves++: occupation 81.3% (counted search is an occupation in 3.6; eating ≈4% of it), running 6.8%, count-repeat 0.0011%, plain 12.0%.
+Corpus steps: SEARCH20 42.6%, RUN 19.5%, other 37.8%. Turns per SEARCH20 step ≈ 12.6; per RUN step ≈ 2.4; per other step ≈ 2.8.
+Cost model: instr/step = F + T·turns with F ≈ 120K (obs/display/hero), T ≈ 57K per turn (movemon inclusive 73% of 520K over 6.88 turns) → 512K at 6.88 turns/step (520K measured).
+No-macro, same game turn-for-turn (one decision per former macro turn): steps ×6.2, 1.11 turns/step, 183K instr/step → env side ×2.8 steps/s, ×0.45 game turns/s.
+GPU cap (ledger, 5M/2048): PPO 0.54 s per 262,144-step batch → 485K SPS whatever the env does; 5M/4096 the same ratio. Realised no-macro SPS ≤ 485K (+50% over 320K) unless the sweep buys a cheaper PPO (bigger minibatch).
+Matched wall-clock: macro agent 320K×6.88 = 2.2M game turns/s; no-macro ≤ 485K×1.11 = 0.54M → ≈4.1x less game time per hour, 1.5x more decisions.
+
+## Macro-removal throughput (user question 16:00 UTC: are RUN/SEARCH20 biasing the policy; would a no-macro agent be competitive at matched wall-clock after a re-sweep?)
+- First ABBA (ablate_nomacro.json, --env.mask_search20=1 --env.mask_run=1, 5M/2048 and 5M/4096): all eight runs within 1% of each other and
+  BATCH_PROOF cand==ctrl. NULL BY CONSTRUCTION: the fast protocol (--base.profile=1, loaded.bin) replays a recorded action stream, so the
+  action space cannot matter. The overrides were accepted (puf_ini_put exits on unknown keys). LANDMINE: any arm that changes which actions
+  get taken (masks, verb_eps, action-space edits) needs PUF_LIVE_AFTER_WARM=1 on every arm; the proof hashes then differ by design.
+- Second ABBA (ablate_nmlive.json, live sampling from the width-512 frozen random model on all four arms per regime): chain_nmlive.sh.
+  Young-policy regime: a near-uniform policy picks SEARCH20/RUN ~10% of steps and young levels rarely interrupt a search, so expect
+  turns/step ≈ 3 with macros vs ≈ 1.2 without → env side ×1.6, realised SPS capped by PPO (485K at 5M).
+RESULT (16:12 UTC, live sampling on all arms; BATCH_PROOF lines are not emitted in live mode, so the chain's "proof" line is vacuous):
+5M/2048: ctrl 260,828 / 260,879 | masks 251,842 / 252,193 → −3.4%. 5M/4096: ctrl 211,486 / 209,725 | masks 202,729 / 202,576 → −3.8%.
+Rollout tail 0.49 → 0.53 s, PPO tail 0.465 s both. Live mode itself runs 260K vs 320K replay (young random policy: short games, resets).
+READING: in the young regime a SEARCH20 step is 20 cheap turns on a near-empty level with no view change, so it is at most as expensive as the
+move/verb steps that replace it; removing the macros does not speed the env up there. The mature-regime estimate stands on the census
+(12.6 turns per SEARCH20 step, 55K instr per mature turn): 520K → ~183K instr/step, env side ×2.8, but PPO caps 5M at ~485K (+50%) and
+15M/2048 is bound by the actor forward per step (263K) so gains nothing. Game turns per hour: 0.25x (5M) to 0.16x (15M).
