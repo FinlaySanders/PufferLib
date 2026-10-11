@@ -140,3 +140,23 @@ READING: the cohort shape has two parts. 128-agent buffers cost every env that i
 again (less concurrency to hide launches: −30%, −21%) and helps only where the env step dominates and per-game state overflows L2: +2.5%
 craftax, +26% NetHack. So cohort = NetHack-class envs (≥50 µs CPU step, 100s of KB state, >512 agents) only; default off everywhere else,
 and the sweep-friendly form must be "agents per buffer = 128, 4 active" gated on the env, not a global default.
+
+## Cohorts at each env's NATIVE shape (17:12 UTC; envs/native_arms.sh; agents/horizon/minibatch untouched, 24 pinned pool workers on all arms)
+| env (native) | arm | buffers × agents | active | SPS |
+| breakout 4096 × h32 mb65536 | native | 1 × 4096 | 1 | 11.07M / 11.12M |
+| | chalf | 2 × 2048 | 1 | 8.86M (−20%) |
+| | cquarter | 4 × 1024 | 1 | 6.57M (−41%) |
+| | c128 | 32 × 128 | 4 | 3.89M (−65%) |
+| drone 8192 × h64 mb16384 | native | 8 × 1024 | 8 | 6.99M / 6.98M |
+| | chalf | 16 × 512 | 8 | 6.89M (−1.4%) |
+| | cquarter | 32 × 256 | 8 | 6.66M (−4.7%) |
+| | c128 | 64 × 128 | 4 | 4.31M (−38%) |
+| craftax 2048 × h256 mb32768 (train.gpus=1) | native | 4 × 512 | 4 | 761K / 759K |
+| | chalf | 8 × 256 | 4 | 661K (−13%) |
+| | c128 | 16 × 128 | 4 | 631K (−17%) |
+READING: env work per batch is identical across arms; the cost is forwards per batch ∝ 1/buffer size, and a forward's latency barely falls with
+fewer agents (launch/contention-bound). With the buffer size preserved the cohort is no slower (drone 16×512/8 active −1.4%) but has nothing to
+gain unless per-game state overflows L2 — none of these envs' does. The NetHack recipe (128/buffer, 4 active) exists because 512 resident games
+with 4 pipeline stages forces 128-agent forwards, affordable only when the env step dwarfs the forward. Making cohorts free for light envs needs
+the forward batch decoupled from the buffer (gather the active buffers' obs into one forward) — the dynamic-batching design the ledger rejected
+for NetHack because the env dominated there. Verdict: cohort default OFF; enable per env (NetHack-class), never as a sweep-wide default.
