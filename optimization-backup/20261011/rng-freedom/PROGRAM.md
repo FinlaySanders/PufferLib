@@ -362,3 +362,15 @@ position bit 58), movemon movement test 117, scary_immune 98, mmove==0 51, isok 
 rule evaluation per monster-cell, 105 moves × ~3K instructions. The ambitious engine program that fits the data is a monster-turn v2 under the
 distributional contract: lz1 lazy selection (−7%), memoised per-monster per-turn facts incl. the dochugw double canspotmon (−2..3%), movers
 list (−3%), per-cell helper restructuring (isok/dist2/position-bit chains ≈ 25K/step → half) (−3..5%): ≈ −15..20%/step → 5M env side 405K → ~480-500K.
+
+## Env step cost across envs (21:30 UTC; POOL_WORKER us_per_step, 24 pinned workers, 2048 agents, young policies)
+craftax 3.8 us (2.4-4.6) | breakout 1.6 us | drone 33.8 us | nethack mature 59-71 us (520K instr; 6.9 game turns, 105 monster moves, full 80×21
+vision/display + 4184-B obs per step). One NetHack monster move (~3K instr) costs about one whole craftax step. The gap is simulated content per
+step, not code style; craftax's trainer SPS (762K) is GPU-bound — its env side could do ~6M steps/s on 24 workers.
+"A third off the step" = monster move 3K → ~1.5-1.8K. Route: bitboard mfndpos — 9-bit neighbourhood legality from persistent per-level planes
+(static: passable-by-capability-class, pool, lava, door closed/locked, sanctuary, door-diagonal; dynamic: occupied (exists), trap-type planes ANDed
+with the monster's mtrapseen, engraving bitmap (exists), gas summary), rare conditions (worms, Juiblex, rogue, Sokoban, displacement, per-monster
+mm_aggression) on a slow path gated by a bit. Legal sets/flags are deterministic → verifiable per call with the existing mfndpos_reference twin
+→ can stay BIT-EXACT; RNG freedom (lz1) optional on top. Caveat from Phase 3: mt4 (per-query mask assembly) and mt8 (terrain planes) lost on the
+clock — planes pay only if they replace most of the per-cell checks and are maintained incrementally, not rebuilt per query.
+Sizing: mfndpos 86K → ~20K (−13%), selection/preamble memoisation −5%, movers list −3%, lz1 −7% ⇒ ≈ −25..30% of the step → 5M env ≈ 520-560K.
