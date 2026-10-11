@@ -124,3 +124,19 @@ READING: in the young regime a SEARCH20 step is 20 cheap turns on a near-empty l
 move/verb steps that replace it; removing the macros does not speed the env up there. The mature-regime estimate stands on the census
 (12.6 turns per SEARCH20 step, 55K instr per mature turn): 520K → ~183K instr/step, env side ×2.8, but PPO caps 5M at ~485K (+50%) and
 15M/2048 is bound by the actor forward per step (263K) so gains nothing. Game turns per hour: 0.25x (5M) to 0.16x (15M).
+
+## Do cohorts speed up other envs? (17:02 UTC; envs/ — trainer_cohort source with 5 envs dropped in; flags -DPUF_ENV_POOL -DPUF_PERF_LOAD
+## -DPUF_MUON_PARALLEL -DPUF_MUON_BATCH_NORM -DPUF_MUON_OUTPLACE; NetHack-only sites guarded: nh_refresh_tables, blstats ages, PUF_BYTE_OBS, head sampler)
+2048 agents × horizon 128 (batch 262,144), 32 epochs, window 11..30, 24 pinned pool workers, live sampling from the random init.
+| env | control 4×512 | 16×128 all active | 16×128 cohort g4 s64 | cohort vs control | cohort vs 16 active |
+| breakout | 13.47M / 12.52M | 5.95M | 4.10M / 4.25M | −68% | −30% |
+| drone | 6.16M / 6.15M | 5.69M | 4.56M / 4.41M | −27% | −21% |
+| craftax (train.gpus=1) | 762K / 762K | 609K | 623K / 626K | −18% | +2.5% |
+| nethack 5M (ledger) | 240K | — | 302K | +26% | — |
+Not measurable here: moba (host OOM-killed at startup every time, 70 GB anonymous memory held outside this container), chess (self-play,
+perf-load path asserts), nmmo3 (1024 agents per env, no 128-agent buffer possible).
+READING: the cohort shape has two parts. 128-agent buffers cost every env that is GPU-launch-bound (forward latency is the same for 128 and
+512 agents, so 4x the launches): −55% breakout, −8% drone, −20% craftax. The restriction to 4 active buffers then costs the launch-bound envs
+again (less concurrency to hide launches: −30%, −21%) and helps only where the env step dominates and per-game state overflows L2: +2.5%
+craftax, +26% NetHack. So cohort = NetHack-class envs (≥50 µs CPU step, 100s of KB state, >512 agents) only; default off everywhere else,
+and the sweep-friendly form must be "agents per buffer = 128, 4 active" gated on the env, not a global default.
