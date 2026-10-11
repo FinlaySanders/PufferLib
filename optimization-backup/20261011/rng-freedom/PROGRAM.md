@@ -406,3 +406,15 @@ lz2 (make_lz2.py): fallback completes the already-evaluated cells into mfndpos's
 hero/image-adjacent and unicorn cases take the untouched full path before evaluating anything, reason counters (unicorn/hero/tracked/mdisp).
 Measurement for non-bit-exact engines from here on: frozen MATURE policy (PUF_PERF_START_WEIGHTS=fixwt4b_s705.bin, PUF_PERF_FREEZE) playing LIVE
 (PUF_LIVE_AFTER_WARM=1), 60 epochs at 512×512 with the window 40..59, engine cost read from POOL_WORKER us_per_step (SPS is GPU-bound at 15M).
+
+## lz2 result — lazy neighbour selection CLOSED (21:57 UTC; mature champion policy fixwt4b_s705 playing LIVE, 512×512, epochs 40-59,
+## mean_turn 29,165, 379/512 games over 10K turns; engine cost = POOL_WORKER us_per_step over 480 worker-epochs per arm)
+lazy off 80.07 / 79.78 us per game step | lazy on 83.31 / 82.99 → +4% SLOWER. SPS unchanged (GPU-bound at 15M/512: 229.4 / 228.9 / 228.4 / 228.6K).
+Mature stats (lz2_verify, live): chose 545M, none 227M, listdone 551M, fullpath 0.9M → lazy-resolved 58%; fallbacks 93% "tracked cell first"
+(the monster's recent position is legal and as close to the goal as the best cell; the original's skip probability needs cnt), 7% hero adjacent.
+Twin: 0 mismatches on the corpus for both lz1 and lz2 (approach/flee choices identical to the original, wander in the accepted set, completed lists
+identical to mfndpos's); crash gates 0 panics. The code is right; the economics are not: sorting by goal distance + the per-query cache cost more
+than the ~4 cell evaluations saved on the 41% of queries that resolve early, and 2.7 legal cells per query leaves little to skip.
+Replay-mode ABBA (+13-16%) was regime drift (young games after divergence) — never time a non-bit-exact engine with replayed actions.
+VERDICT: RNG-stream freedom has now been spent on its only sized lever and returned nothing. Monster-turn items left are bit-exact and small:
+movers list (−3%), dochugw double canspotmon (−1%), per-move memoisation (−2..3%). The engine on this box is within ~5% of what the rules cost.
