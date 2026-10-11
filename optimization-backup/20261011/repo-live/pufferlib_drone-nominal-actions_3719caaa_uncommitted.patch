@@ -1,0 +1,173 @@
+diff --git a/ocean/drone/dronelib.h b/ocean/drone/dronelib.h
+index 5861a935..a0e6d15e 100644
+--- a/ocean/drone/dronelib.h
++++ b/ocean/drone/dronelib.h
+@@ -199,8 +199,12 @@ static inline bool out_of_bounds(Vec3 p, float scale) {
+ 
+ // params
+ 
+-static inline float rpm_hover(const Params* p) {
+-    return sqrtf((p->mass * p->gravity) / (4.0f * p->k_thrust));
++static inline float nominal_hover_rpm(void) {
++    return sqrtf((BASE_MASS * BASE_GRAVITY) / (4.0f * BASE_K_THRUST));
++}
++
++static inline float nominal_min_rpm(void) {
++    return clampf(2.0f * nominal_hover_rpm() - BASE_MAX_RPM, 0.0f, BASE_MAX_RPM);
+ }
+ 
+ static inline void init_drone(Drone* drone, unsigned int* rng, float dr) {
+@@ -225,7 +229,7 @@ static inline void init_drone(Drone* drone, unsigned int* rng, float dr) {
+     drone->params.inv_izz = 1.0f / drone->params.izz;
+     drone->params.inv_k_mot = 1.0f / drone->params.k_mot;
+ 
+-    float hover = rpm_hover(&drone->params);
++    float hover = nominal_hover_rpm();
+     for (int i = 0; i < 4; i++)
+         drone->state.rpms[i] = hover;
+ 
+@@ -280,4 +284,4 @@ void compute_drone_observations(Drone* agent, float* observations, bool is_race)
+ 
+     observations[idx++] = is_race ? 0.0f : 1.0f;
+     observations[idx++] = is_race ? 1.0f : 0.0f;
+-}
+\ No newline at end of file
++}
+diff --git a/ocean/drone/physics.h b/ocean/drone/physics.h
+index 0d4e130b..98ffbfc1 100644
+--- a/ocean/drone/physics.h
++++ b/ocean/drone/physics.h
+@@ -130,15 +130,6 @@ static inline void vclamp3(Vec3v* v, vf lo, vf hi) {
+     v->z = vclampf(v->z, lo, hi);
+ }
+ 
+-static inline vf vrpm_hover(const Paramsv* p) {
+-    return v_sqrt((p->mass * p->gravity) / (4.0f * p->k_thrust));
+-}
+-
+-static inline vf vrpm_min_for_centered_hover(const Paramsv* p) {
+-    vf min_rpm = 2.0f * vrpm_hover(p) - p->max_rpm;
+-    return v_min(v_max(min_rpm, (vf){0}), p->max_rpm);
+-}
+-
+ // dynamics
+ 
+ static inline void compute_derivatives(Statev* state, const Paramsv* params, const vf* target_rpms,
+@@ -349,11 +340,12 @@ static inline void physics_step(Physics* phys, float* actions) {
+             for (int k = 0; k < 4; k++) act[k][l] = a[k];
+         }
+ 
+-        vf min_rpm = vrpm_min_for_centered_hover(p);
++        // Keep the actuator mapping fixed while randomising the physics.
++        float min_rpm = nominal_min_rpm();
+         vf target_rpms[4];
+         for (int k = 0; k < 4; k++) {
+             vf u = (act[k] + 1.0f) * 0.5f;
+-            target_rpms[k] = min_rpm + u * (p->max_rpm - min_rpm);
++            target_rpms[k] = min_rpm + u * (BASE_MAX_RPM - min_rpm);
+         }
+ 
+         for (int sub = 0; sub < ACTION_SUBSTEPS; sub++) {
+diff --git a/ocean/drone/render.h b/ocean/drone/render.h
+index 245668a9..72b9574d 100644
+--- a/ocean/drone/render.h
++++ b/ocean/drone/render.h
+@@ -454,7 +454,8 @@ void DrawDronePrimitive(Client* client, Drone* agent, float* actions, Color body
+         Vector3 rotor_pos = {agent->state.pos.x + world_off.x, agent->state.pos.y + world_off.y,
+                              agent->state.pos.z + world_off.z};
+ 
+-        float rpm = (actions[j] + 1.0f) * 0.5f * agent->params.max_rpm;
++        float min_rpm = nominal_min_rpm();
++        float rpm = min_rpm + (actions[j] + 1.0f) * 0.5f * (BASE_MAX_RPM - min_rpm);
+         float intensity = 0.75f + 0.25f * (rpm / agent->params.max_rpm);
+ 
+         Color rotor_color = (Color){(unsigned char)(body_color.r * intensity),
+diff --git a/ocean/nethack/depth.ini b/ocean/nethack/depth.ini
+index 3e752367..bb7977d4 100644
+--- a/ocean/nethack/depth.ini
++++ b/ocean/nethack/depth.ini
+@@ -1,54 +1,58 @@
+-# Depth recipe: sweep-0306 winner (tail depth 11.0, async, RNN carry) with
+-# challenge multi-role. ~366M steps. SEARCH20 and RUN are masked.
++# Depth recipe used for the archived 2B runs and subsequent 4B retrain.
++# Challenge multi-role, SEARCH20 and RUN masked.
+ # Use: copy over config/nethack.ini, then ./build.sh nethack && ./puffer train
+-# NOTE horizon*num_buffers > total_agents: runs are single-draw (the async
+-# multi-stream cuBLAS nondeterminism); use num_buffers=1 for bit-repro.
+ [base]
+ env_name = nethack
+ reset_every_horizon = 0
+ async = 1
+ 
+ [vec]
+-total_agents = 512
++total_agents = 256
+ num_buffers = 4
+-num_threads = 32
++num_threads = 24
+ 
+ [env]
+-gold_coef = 0.00100000005
+-exp_coef = 0.00999999978
+-descent_coef = 1.0
+-floor_coef = 0.727649987
+-xp_coef = 0.33030045
+-scout_coef = 0.0165148061
+-death_penalty = -0.0327779055
++gold_coef = 0.0953414813
++exp_coef = 9.99999975e-05
++descent_coef = 0.807671428
++floor_coef = 0.463313729
++xp_coef = 0.0555660129
++scout_coef = 0.0192291923
++death_penalty = -0.580139101
+ mask_search20 = 1
+ mask_run = 1
+ multi_role = 1
++score_coef = 0
+ 
+ [policy]
+ hidden_size = 512
+ num_layers = 3
+ 
+ [train]
+-total_timesteps = 366129632
+-minibatch_size = 8192
+-horizon = 512
+-learning_rate = 0.00112607062
+-momentum = 0.98707521
++total_timesteps = 2000000000
++minibatch_size = 4096
++horizon = 256
++learning_rate = 0.000608655275
++momentum = 0.984448254
+ verb_eps = 0.005
+ verb_eps_anneal_start = 0.4
+ verb_eps_anneal_end = 1.0
+-gamma = 0.9966259
+-gae_lambda = 0.83733207
+-replay_ratio = 1.82700419
+-clip_coef = 0.245328903
+-vf_coef = 3.35665774
+-vf_clip_coef = 2.18958735
+-max_grad_norm = 1.28095329
+-ent_coef = 0.00987035036
++gamma = 0.998621047
++gae_lambda = 0.536597371
++replay_ratio = 1.91373289
++clip_coef = 0.175347924
++vf_coef = 1.45746601
++vf_clip_coef = 0.00999999978
++max_grad_norm = 1.23201728
++ent_coef = 0.00844300818
+ anneal_lr = 1
+ anneal_ent_coef = 0
+ min_lr_ratio = 0.0
+ min_ent_coef_ratio = 0.1
+ vtrace_rho_clip = 1.0
+ vtrace_c_clip = 1.0
++vtrace = 0
++gpus = 1
++
++[sweep]
++metric = max_depth

@@ -1,0 +1,13 @@
+# Frozen-policy armour coordination diagnostic
+
+Two trained 1B policies: additive discovery and replacement discovery. Three rollout seeds per policy, 8,000 policy decisions each. This is a diagnostic, not a score certificate. All counterfactuals preserve the original legal-action mask and start from the same pre-action recurrent state. Only the original observation is used for actual trajectory sampling. Counterfactual forwards consume no random numbers.
+
+Every 32 decisions, find a known-type worn armour item with known enchantment between -4 and +4, not known cursed, and an eligible carried armour item of the same category. Replace the carried item's observation with the worn item's type and appearance, quantity one, known uncursed, same erosion, unworn, and enchantment three points higher or lower. The original carried slot stays eligible. The environment's WEAR macro automatically removes same-slot armour before wearing the target, so a separate TAKEOFF decision is not required.
+
+Variants: known upgrade/downgrade; upgrade with unknown enchantment, unknown BUC, or both; upgrade item keys with downgrade pooled inventory and vice versa; upgrade/downgrade with zero recurrent memory. Report masked verb probability, conditional candidate probability and verb log odds. Unknown enchantment means the public unknown sentinel, not a change to the hidden game object.
+
+Pool interventions replace only the 128-D sum/max inventory summary before the shared projection. The candidate is not worn, so equipped-item bypasses are unchanged. Runtime assertions check that all verb logits match the corresponding donor pool, while direct item keys come from the recipient observation. Item probabilities also depend on the query from recurrent state, so they need not exactly follow the recipient keys.
+
+Quiet counterfactual subset: no condition bits, HP at least 80% of maximum, not hungry, no hostile bit among 16 monster tokens, current worn item known noncursed. This is an observation-based filter, not proof of safety. Natural context/action logging uses the same filter without requiring a particular worn item. Sampled WEAR actions are recorded, not verified successful equipment changes.
+
+Limitations: highly correlated states from a few trajectories; hypothetical observations retain the original history, messages, other inventory-derived stats, and legality mask. Zeroing memory is also out of distribution. A weak immediate response is not proof the model will never wear the upgrade. No causal claim about training performance or a required decoder redesign follows from this alone.

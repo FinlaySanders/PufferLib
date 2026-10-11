@@ -65,3 +65,11 @@ Recommended config for collection-bound regimes: num_buffers 16 (32 at 4096 agen
 Day result: 5M/2048 240K -> 320K, 5M/4096 350K, 15M/2048 263K. Engine stack: mt7 (fast-nle branch tip = mt7 + optional dv4).
 - `mask-ablations/`: consolidated results of the September/October mask, passthrough and zero-time-mask ablations
   (MASK_ABLATIONS_RESULTS.md) with each campaign's RESULTS.md, manifest, validation and per-run results.json, plus the 29 Sep audit.
+- `repo-live/`: research outputs that lived untracked in the live checkout — resources/article (draft, figures, certificates; logs and
+  binaries omitted), scripts/nle_stock (cert LEDGER.md / STATUS.md and drivers), WORK_STATUS.md, NETHACK_OPTIMIZATION_REPORT.md, status notes,
+  identify probe tests, and the uncommitted diff of the live tree.
+- `repo-worktrees/`: uncommitted diffs of every worktree, the pufferlib-5c commit 7919bbda that exists on no remote (git bundle), small untracked sets.
+- `experiment-reports/`: every *.md under /puffertank/experiments (754 files across 111 campaigns).
+- `box_archive/`: checkpoint and cert registers. `claude-memory/`: the assistant's project notes (continuity for a new box).
+Still host-disk only (~/puffertank/nethack-backup-20261011): checkpoints (480 MB live + 2.7 GB mask policies + 5c/sweep/aux), chat transcripts,
+raw results tarball, oracles (1.3 GB action corpus, goldens, reference hashes).

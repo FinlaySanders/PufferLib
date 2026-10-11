@@ -1,0 +1,1 @@
+Fixed 2B score policy s704, Knight, env 398 episode 2, eval seed 7. Final score 21,907, Castle at depth 28 first reached at action 3919; the policy does not clear Castle. The 16-field episode log matches the 10,002-game search exactly. Clip actions 3470–3950.

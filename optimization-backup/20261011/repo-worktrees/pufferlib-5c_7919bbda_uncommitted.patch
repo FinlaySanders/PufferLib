@@ -1,0 +1,287 @@
+diff --git a/config/nethack.ini b/config/nethack.ini
+index 791212d8..6126ace9 100644
+--- a/config/nethack.ini
++++ b/config/nethack.ini
+@@ -1,10 +1,13 @@
+ [base]
+ env_name = nethack
++# carry semantics. NOTE: the 4.0 train block below collapsed under carry
++# in the 2026-07-31 probe (kl ~1.8 by 100M; healthy with wipe) — lr likely
++# needs retuning for carry (upstream's carry block: comments in [train]).
+ reset_every_horizon = 0
+-async = 1
++async = 0
+ 
+ [vec]
+-total_agents = 256
++total_agents = 512
+ num_buffers = 4
+ #num_threads = 8
+ num_threads = 32
+@@ -31,25 +34,35 @@ status_coef = 0.01
+ hidden_size = 512
+ num_layers = 3
+ 
++# 4.0 champion train block (wipe-tuned; recert ref on the 4.0 tree 6403.19).
++# Upstream's carry-tuned set for reset_every_horizon=0 experiments was:
++#   horizon 512, minibatch 16384, lr 0.00175767997, gamma 0.993521929,
++#   lambda 0.611256123, replay 2.42882919, clip 0.478926629, vf 2.29309034,
++#   vf_clip 3.19970345, grad_norm 1.43588173, ent 0.0192690529,
++#   beta1 0.9694917707305044, beta2 0.9475724955192064, eps 0.0001,
++#   prio 0.931300879/0.885229468 (co-adapted to their max-depth reward)
+ [train]
+-#total_timesteps = 166275056
+-total_timesteps = 4_000_000_000
+-minibatch_size = 16384
+-horizon = 512
+-learning_rate = 0.00175767997
+-gamma = 0.993521929
+-gae_lambda = 0.611256123
+-replay_ratio = 2.42882919
+-clip_coef = 0.478926629
+-vf_coef = 2.29309034
+-vf_clip_coef = 3.19970345
+-max_grad_norm = 1.43588173
+-ent_coef = 0.0192690529
+-beta1 = 0.9694917707305044
+-beta2 = 0.9475724955192064
+-eps = 0.0001
+-prio_alpha = 0.931300879
+-prio_beta0 = 0.885229468
++total_timesteps = 247765094
++minibatch_size = 32768
++horizon = 64
++learning_rate = 0.011854702184553156
++# 5c muon reads train.momentum (NOT beta1); 4.0 fed beta1 as muon momentum
++momentum = 0.805399553172738
++gamma = 0.9973714278257158
++gae_lambda = 0.7339946788354172
++replay_ratio = 1.036717410123433
++clip_coef = 1.0
++vf_coef = 1.8486010633248169
++vf_clip_coef = 4.624607731543118
++max_grad_norm = 0.902165688849037
++ent_coef = 0.008389210353641681
++beta1 = 0.805399553172738
++beta2 = 0.999139492311758
++eps = 1e-14
++vtrace_rho_clip = 2.770648671516198
++vtrace_c_clip = 4.5026502564349595
++prio_alpha = 0.6754855924309153
++prio_beta0 = 0.8672463883417074
+ 
+ [sweep]
+ metric = score
+diff --git a/ocean/nethack/nethack.c b/ocean/nethack/nethack.c
+index 470eb937..a402c75d 100644
+--- a/ocean/nethack/nethack.c
++++ b/ocean/nethack/nethack.c
+@@ -461,7 +461,11 @@ static const char* demo_find_weights(void) {
+     const char* envw = getenv("NH_WEIGHTS");
+     if (envw && envw[0]) return envw;
+ 
++    // explicitly staged weights beat checkpoint auto-discovery (training
++    // smokes drop fresh-but-garbage checkpoints that would otherwise win)
+     static const char* resources = "resources/nethack/nethack_weights.bin";
++    { FILE* f = fopen(resources, "rb");
++      if (f) { fclose(f); return resources; } }
+     static char best_path[PATH_MAX];
+     best_path[0] = '\0';
+ 
+@@ -612,8 +616,12 @@ static void demo_step_once(NethackNet* net, Nethack* env, float* acts_f,
+         float d = env->log.max_depth - *ep_depth;
+         float x = env->log.max_xp_level - *ep_xp;
+         float g = env->log.game_time - *ep_gt;
+-        fprintf(stderr, "episode end: score=%.0f len=%.0f max_depth=%.0f xp=%.0f game_t=%.0f\n",
+-                env->log.score - *ep_score, env->log.episode_length - *ep_len, d, x, g);
++        fprintf(stderr, "episode end: score=%.0f len=%.0f max_depth=%.0f xp=%.0f game_t=%.0f "
++                "eats=%.1f floor_eats=%.1f pray_starve=%.1f wears=%.1f throws=%.1f\n",
++                env->log.score - *ep_score, env->log.episode_length - *ep_len, d, x, g,
++                env->log.verb_uses[NETHACK_ACT_EAT], env->log.floor_eats,
++                env->log.prayers_starving, env->log.verb_uses[NETHACK_ACT_WEAR],
++                env->log.verb_uses[NETHACK_ACT_THROW]);
+         *ep_score = env->log.score;
+         *ep_len = env->log.episode_length;
+         *ep_depth = env->log.max_depth;
+diff --git a/ocean/nethack/nethack.h b/ocean/nethack/nethack.h
+index a8bba49e..8b87ca57 100644
+--- a/ocean/nethack/nethack.h
++++ b/ocean/nethack/nethack.h
+@@ -212,6 +212,9 @@ static void nethack_compute_mask(Nethack* env) {
+     { static int wld_off = -1;
+       if (wld_off < 0) { const char* e = getenv("NETHACK_MASK_WIELD"); wld_off = (e && e[0] == '1'); }
+       if (wld_off) mask[NETHACK_ACT_WIELD] = 0; }
++    { static int zap_off = -1;
++      if (zap_off < 0) { const char* e = getenv("NETHACK_MASK_ZAP"); zap_off = (e && e[0] == '1'); }
++      if (zap_off) mask[NETHACK_ACT_ZAP] = 0; }
+     // THROW target gate: only legal with a non-pet monster on one of the 8
+     // rays within 8 tiles (v1: no obstruction test). Human-fair (screen info).
+     { static int thr_gate = -1;
+@@ -295,6 +298,22 @@ static void nethack_compute_mask(Nethack* env) {
+           }
+           if (!any) memset(tdirs, 1, NETHACK_NUM_DIRS);
+       } }
++    // ZAP target-ray dirmask (default on; NETHACK_ZAP_DIRMASK=0 disables):
++    // same accept-set and all-1 fallback as THROW's row. Score-null in the
++    // 250M paired A/B (zaps unadopted there — bottleneck is wand
++    // acquisition, not aim) but pre-positions honest aim for any future
++    // wand economy, mirroring THROW's mechanism.
++    { static int zdm = -1;
++      if (zdm < 0) { const char* e = getenv("NETHACK_ZAP_DIRMASK"); zdm = !(e && e[0] == '0'); }
++      if (zdm) {
++          unsigned char* zdirs = dirs + nethack_dir_head(NETHACK_ACT_ZAP) * NETHACK_NUM_DIRS;
++          int any = 0;
++          for (int d = 0; d < NETHACK_NUM_DIRS; d++) {
++              zdirs[d] = nethack_ray_target(env, NETHACK_DIR_DX[d], NETHACK_DIR_DY[d]) ? 1 : 0;
++              any |= zdirs[d];
++          }
++          if (!any) memset(zdirs, 1, NETHACK_NUM_DIRS);
++      } }
+ }
+ 
+ // observations
+diff --git a/resources/nethack/nethack_weights.bin b/resources/nethack/nethack_weights.bin
+index bc817425..3ee7d72a 100644
+Binary files a/resources/nethack/nethack_weights.bin and b/resources/nethack/nethack_weights.bin differ
+diff --git a/src/puffercpu.h b/src/puffercpu.h
+index 2fbf64f5..ab375b39 100644
+--- a/src/puffercpu.h
++++ b/src/puffercpu.h
+@@ -259,16 +259,21 @@ void _softmax_multidiscrete(float* input, float* output, int batch_size, int log
+         int in_adr = b * (atn_sum + 1);
+         for (int a = 0; a < num_actions; a++) {
+             int out_adr = b*num_actions + a;
+-            float logit_exp_sum = 0;
+             int num_action_types = logit_sizes[a];
++            // max-subtraction: confident policies exceed expf's ~88 overflow
++            // threshold; without this every overflowed head samples index 0
++            float max_logit = input[in_adr];
++            for (int i = 1; i < num_action_types; i++)
++                if (input[in_adr + i] > max_logit) max_logit = input[in_adr + i];
++            float logit_exp_sum = 0;
+             for (int i = 0; i < num_action_types; i++) {
+-                logit_exp_sum += expf(input[in_adr + i]);
++                logit_exp_sum += expf(input[in_adr + i] - max_logit);
+             }
+             float prob = rand() / (float)RAND_MAX;
+             float logit_prob = 0;
+             output[out_adr] = 0.0f;
+             for (int i = 0; i < num_action_types; i++) {
+-                logit_prob += expf(input[in_adr + i]) / logit_exp_sum;
++                logit_prob += expf(input[in_adr + i] - max_logit) / logit_exp_sum;
+                 if (prob < logit_prob) {
+                     output[out_adr] = (float)i;
+                     break;
+diff --git a/src/pufferl.cu b/src/pufferl.cu
+index 13e5aacc..bf661a01 100644
+--- a/src/pufferl.cu
++++ b/src/pufferl.cu
+@@ -1530,33 +1530,17 @@ void train_impl(PuffeRL* pufferl, RolloutBuf* src_arg) {
+     TrainGraph* graph = &pufferl->train_buf;
+     cudaEventRecord(pufferl->profile.events[TE_E], train_stream);
+ 
+-    // Advantage + prio CDF once per train; minibatches only re-sample indices.
+-    // 64 threads/block: better occupancy than 256 for this heavy-per-thread scan
+-    // (bench_puff_advantage launch sweep; breakout 4096×32 ~2× faster).
++    // Advantage + prio CDF recomputed PER MINIBATCH (4.0 semantics): with
++    // replay_ratio > 1, later passes over a segment see vtrace advantages
++    // corrected by the scattered-back ratios and re-bootstrapped from the
++    // scattered-back values — training against refreshed targets instead of
++    // the batch-start snapshot. (The once-per-train variant left the ratio
++    // buffer at its 1.0 fill, making vtrace a no-op and the post-update
++    // scatter of ratio/newvalue dead writes.)
+     constexpr int ADV_THREADS = 64;
+     int rows = (int)rollouts->values.shape[0];
+     int horizon = (int)rollouts->values.shape[1];
+-    int grid = (rows + ADV_THREADS - 1) / ADV_THREADS;
+-    cudaMemsetAsync(advantages->data, 0,
+-        numel(advantages->shape) * sizeof(precision_t), train_stream);
+-    profile_begin("compute_advantage", hypers->profile);
+-    puff_advantage<<<grid, ADV_THREADS, 0, train_stream>>>(
+-        rollouts->values.data, rollouts->rewards.data, rollouts->terminals.data,
+-        rollouts->ratio.data, advantages->data,
+-        hypers->gamma, hypers->gae_lambda,
+-        hypers->vtrace_rho_clip, hypers->vtrace_c_clip, rows, horizon);
+-    if (pufferl->num_frozen_banks > 0) {
+-        int apb = hypers->total_agents / hypers->num_buffers;
+-        int total = rows * horizon;
+-        zero_frozen_advantages_kernel<<<
+-            grid_size(total), BLOCK_SIZE, 0, train_stream>>>(
+-            advantages->data, apb, pufferl->vec->bank_layout[1], rows, horizon);
+-    }
+-    profile_end(hypers->profile);
+-
+-    profile_begin("compute_prio", hypers->profile);
+-    prio_build_cdf_cuda(*advantages, prio_alpha, pufferl->prio_bufs, train_stream);
+-    profile_end(hypers->profile);
++    int adv_grid = (rows + ADV_THREADS - 1) / ADV_THREADS;
+ 
+     long* train_rng_offset = pufferl->rng_offset + hypers->num_buffers;
+     int total_minibatches = hypers->replay_ratio * batch_size / hypers->minibatch_size;
+@@ -1578,7 +1562,25 @@ void train_impl(PuffeRL* pufferl, RolloutBuf* src_arg) {
+     for (int mb = 0; mb < total_minibatches; ++mb) {
+         cudaEventRecord(pufferl->profile.events[TE_MS], train_stream);
+ 
++        cudaMemsetAsync(advantages->data, 0,
++            numel(advantages->shape) * sizeof(precision_t), train_stream);
++        profile_begin("compute_advantage", hypers->profile);
++        puff_advantage<<<adv_grid, ADV_THREADS, 0, train_stream>>>(
++            rollouts->values.data, rollouts->rewards.data, rollouts->terminals.data,
++            rollouts->ratio.data, advantages->data,
++            hypers->gamma, hypers->gae_lambda,
++            hypers->vtrace_rho_clip, hypers->vtrace_c_clip, rows, horizon);
++        if (pufferl->num_frozen_banks > 0) {
++            int apb = hypers->total_agents / hypers->num_buffers;
++            int total = rows * horizon;
++            zero_frozen_advantages_kernel<<<
++                grid_size(total), BLOCK_SIZE, 0, train_stream>>>(
++                advantages->data, apb, pufferl->vec->bank_layout[1], rows, horizon);
++        }
++        profile_end(hypers->profile);
++
+         profile_begin("compute_prio", hypers->profile);
++        prio_build_cdf_cuda(*advantages, prio_alpha, pufferl->prio_bufs, train_stream);
+         prio_sample_cuda(anneal_beta, pufferl->prio_bufs, pufferl->seed,
+             train_rng_offset, train_stream);
+         profile_end(hypers->profile);
+@@ -3592,7 +3594,7 @@ int main(int argc, char** argv) {
+     setbuf(stdout, NULL);
+     setbuf(stderr, NULL);
+     if (argc < 3) {
+-        fprintf(stderr, "usage: %s train|eval|eval_bot|match|sweep ENV [section.key=value ...]\n", argv[0]);
++        fprintf(stderr, "usage: %s train|eval|eval_bot|match|render|sweep ENV [section.key=value ...]\n", argv[0]);
+         exit(1);
+     }
+ 
+@@ -3618,6 +3620,8 @@ int main(int argc, char** argv) {
+         run_eval(&ini, &ctx, EVAL_SCORE, 1);
+     } else if (strcmp(mode, "match") == 0) {
+         run_eval(&ini, &ctx, EVAL_MATCH, 1);
++    } else if (strcmp(mode, "render") == 0) {
++        run_eval(&ini, &ctx, EVAL_RENDER, 1);
+     } else {
+         fprintf(stderr, "unknown mode: %s\n", mode);
+         exit(1);
+diff --git a/tests/test_nethack_cuda.cu b/tests/test_nethack_cuda.cu
+index 8bfb7f20..74a8a470 100644
+--- a/tests/test_nethack_cuda.cu
++++ b/tests/test_nethack_cuda.cu
+@@ -156,6 +156,18 @@ void nh_dec_backward(void* glogits, void* gvalue, void* dinput, int B) {
+     cudaDeviceSynchronize();
+ }
+ 
++// decoder fed with an EXTERNAL hidden state (e.g. the demo's mingru output);
++// runs the encoder first so the decoder's inv keys (ea->inv_out) are fresh
++// for the same obs.
++void nh_dec_forward_hidden(void* out, void* obs, void* hidden_in, int B) {
++    Prec in = {.data = (precision_t*)obs, .shape = {B, NH_OBS_SIZE}};
++    g_enc.forward(g_w, g_a, in, 0);
++    Prec h = {.data = (precision_t*)hidden_in, .shape = {B, g_hidden}};
++    Prec r = g_dec.forward(g_dw, g_da, h, 0);
++    cudaMemcpy(out, r.data, (size_t)B * (NH_DEC_OD + 1) * sizeof(float), cudaMemcpyDeviceToDevice);
++    cudaDeviceSynchronize();
++}
++
+ void nh_dec_keygrad(void* dst, int B) {
+     cudaMemcpy(dst, g_da->keygrad.data, (size_t)B * NH_INV_FLAT * sizeof(float), cudaMemcpyDeviceToDevice);
+ }

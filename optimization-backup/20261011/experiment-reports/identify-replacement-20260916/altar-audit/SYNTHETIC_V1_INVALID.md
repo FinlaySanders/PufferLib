@@ -1,0 +1,1 @@
+Mode 1 and 2 synthetic-altar results in this directory are INVALID: the original test fixture changed levl.typ without updating the engine terrain cache used by dropx. Use controlled-v2 instead, which uses SET_TYP_XY. Mode 0 natural rollouts never call altar_make and are unaffected.

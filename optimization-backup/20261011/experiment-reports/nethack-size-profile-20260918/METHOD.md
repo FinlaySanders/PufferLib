@@ -1,0 +1,13 @@
+# Model-size workload comparison
+
+The fixed-policy baseline is about 15.55M parameters. Keep the four recurrent layers and the complete NetHack encoder/action interface, change hidden width to 64, 224, 512 and 1024 (approximately 1.11M, 1.98M, 5.10M and 15.55M parameters). Encoder modalities retain their internal sizes; this is recurrent/projection/decoder width scaling, not uniform scaling of every tensor.
+
+Record the fixed mature s705 policy's host action vectors for each of four rollout buffers over 40 batches (10,485,760 decisions). During size comparisons, every network still runs its full inference/sampling pipeline, but the recorded action vectors replace its host actions before stepping the real engine. The mature teacher is not run concurrently. The action files are memory-mapped and prefaulted before warm-up. All sizes have the same replay overhead.
+
+The replay drives identical live engine states, observations, rewards, resets and masks. Check whole-vector observation hashes at batches 31, 37 and 39 against the teacher recording. Run full forward/loss/backward and optimizer computations; updates and BF16 casts go to scratch weights. Require initial/final parameter files to match exactly. Smaller networks use random frozen weights; the 1024-wide network uses s705. This is a controlled compute profile, NOT valid on-policy learning or a claim that the small models attain the teacher's score. Stored sampled actions/log probabilities are those of each network; only actions executed by the CPU environment are overridden.
+
+Same settings across sizes: retained engine61/pool83, 24 shared workers plus four coordinators, 512 agents, four buffers, horizon 512, minibatch 4096, replay ratio 1.78021395, async PPO, CUDA graphs, RTX 4090. No modifications to production checkout or engine.
+
+Capture at fixed batch boundaries: start batch 32, stop before batch 38, after >8M warm-up decisions. Thus sizes see the same part of the games regardless of their speed. Lighter graph tracing for timings/CPU overlap; separate node tracing for actual kernel durations. Exclude the first and last 250ms of each capture. Kernel sums across overlapping streams are not wall fractions. Graph envelopes are not SM occupancy. Report profiling overhead rather than interpreting traced SPS as an uninstrumented throughput benchmark.
+
+Throughput cross-check: use batches 24–30 before the capture range begins, and compare their mean batch durations in the graph and node runs. These are warmed-up timings with tracing inactive (the profiler is attached). This avoids interpreting node-tracing overhead as a model-size effect. Report the two pass measurements and their average, not a claimed clean standalone benchmark.

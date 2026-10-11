@@ -1,0 +1,797 @@
+diff --git a/ocean/nethack/nethack.c b/ocean/nethack/nethack.c
+index f7b412d7..67d8a6eb 100644
+--- a/ocean/nethack/nethack.c
++++ b/ocean/nethack/nethack.c
+@@ -13,10 +13,6 @@
+ #include "glyph_map.h"
+ 
+ // NH_TTY=1: the map panel shows the game's real tty screen instead of the obs
+-static int demo_tty;
+-static unsigned char demo_tty_chars[NLE_TERM_LI * NLE_TERM_CO];
+-static signed char demo_tty_colors[NLE_TERM_LI * NLE_TERM_CO];
+-static unsigned char demo_tty_cursor[2];
+ static void demo_note_message(Nethack* env);
+ static void demo_view_setup(void) {
+     nethack_msg_tap = demo_note_message; // ring sees every engine step's topline
+@@ -1051,301 +1047,6 @@ static void demo_step_once(NethackNet* net, Nethack* env, float* acts_f,
+ }
+ 
+ // message history ring for the rich view
+-#define DEMO_MSG_RING 18
+-static char demo_msgs[DEMO_MSG_RING][96];
+-static int demo_msg_n = 0;
+-
+-static void demo_note_message(Nethack* env) {
+-    if (!env->message[0]) return;
+-    char buf[96];
+-    int j = 0;
+-    for (; j < 95 && env->message[j]; j++) buf[j] = (char)env->message[j];
+-    buf[j] = 0;
+-    if (demo_msg_n > 0) {
+-        char* prev = demo_msgs[(demo_msg_n - 1) % DEMO_MSG_RING];
+-        if (strcmp(prev, buf) == 0) return;
+-        // getline echo: the game repaints the topline per keystroke; an
+-        // extension of the previous message replaces it (lossless)
+-        size_t pl = strlen(prev);
+-        if (pl > 0 && j > (int)pl && strncmp(prev, buf, pl) == 0) {
+-            strcpy(prev, buf);
+-            return;
+-        }
+-    }
+-    strcpy(demo_msgs[demo_msg_n % DEMO_MSG_RING], buf);
+-    demo_msg_n++;
+-}
+-
+-// menucolor-style BUC tint
+-static const char* demo_inv_clr(Nethack* env, int i) {
+-    if (env->inv_oclasses[i] == 12) return "\x1b[33m"; // COIN_CLASS (objclass.h)
+-    int buc = env->inv_state[i * NLE_INV_STATE_FIELDS];
+-    return buc == 1 ? "\x1b[31m" : buc == 3 ? "\x1b[32m"
+-         : buc == 2 ? "\x1b[37m" : "\x1b[36m";
+-}
+-
+-// curses-look cell: walls -> box drawing, floors -> '·', engine colors -> ANSI
+-#define DEMO_CMAP_OFF 2359
+-#define DEMO_PET_LO 381
+-#define DEMO_PET_HI 762
+-static unsigned char demo_colors[NH_GRID]; // bound via nethack_color_sink
+-static const char* demo_wall_sym[12] = { // S_stone..S_trwall
+-    " ", "│", "─", "┌", "┐", "└", "┘",
+-    "┼", "┴", "┬", "┤", "├"};
+-static const int demo_ansi_clr[16] = // CLR_* 0..15 -> SGR fg
+-    {90, 31, 32, 33, 34, 35, 36, 37, 39, 91, 92, 93, 94, 95, 96, 97};
+-
+-static void demo_map_cell(Nethack* env, int r, int c, int hero) {
+-    // underfoot_glyphs hides the hero glyph; draw the @ explicitly
+-    if (hero) {
+-        printf("\x1b[7;1;97m@\x1b[0m");
+-        return;
+-    }
+-    int g = env->glyphs[r * NH_COLS + c];
+-    unsigned char ch = env->chars[r * NH_COLS + c];
+-    int cmap = g - DEMO_CMAP_OFF;
+-    if (cmap >= 1 && cmap <= 11) { // walls in PUFF_CYAN (connect4.h)
+-        printf("\x1b[38;2;0;187;187m%s\x1b[0m", demo_wall_sym[cmap]);
+-        return;
+-    }
+-    if (cmap == 19) { // S_room
+-        printf("\x1b[37m·\x1b[0m");
+-        return;
+-    }
+-    if (cmap == 20) { // S_darkroom
+-        printf("\x1b[2m·\x1b[0m");
+-        return;
+-    }
+-    if (!ch || ch == ' ') {
+-        putchar(' ');
+-        return;
+-    }
+-    int clr = demo_colors[r * NH_COLS + c] & 15;
+-    printf("\x1b[%s%dm%c\x1b[0m",
+-           (g >= DEMO_PET_LO && g < DEMO_PET_HI) ? "4;" : "",
+-           demo_ansi_clr[clr], ch);
+-}
+-
+-// tty map cell: authentic chars/colors from the game's own screen (rows 1..21)
+-static void demo_map_cell_tty(int r, int c) {
+-    unsigned char ch = demo_tty_chars[(r + 1) * NLE_TERM_CO + (c + 1)];
+-    int clr = demo_tty_colors[(r + 1) * NLE_TERM_CO + (c + 1)] & 15;
+-    if (!ch || ch == ' ') {
+-        putchar(' ');
+-        return;
+-    }
+-    printf("\x1b[%dm%c\x1b[0m", demo_ansi_clr[clr], ch);
+-}
+-
+-#define DEMO_INV_W 42 // inventory pane inner width
+-
+-// perm_invent pane: doname text grouped by class in game display order
+-static unsigned char demo_inv_strs[NLE_INVENTORY_SIZE * NLE_INVENTORY_STR_LENGTH];
+-static const int demo_inv_order[] =
+-    {12, 5, 2, 3, 7, 9, 10, 8, 4, 11, 6, 13, 14, 15, 16, 17, 1};
+-static const char* demo_class_name[18] = {0, "Illegal objects", "Weapons",
+-    "Armor", "Rings", "Amulets", "Tools", "Comestibles", "Potions", "Scrolls",
+-    "Spellbooks", "Wands", "Coins", "Gems/Stones", "Boulders/Statues",
+-    "Iron balls", "Chains", "Venoms"};
+-#define DEMO_PANE_MAX 64
+-
+-static int demo_inv_pane(Nethack* env, char lines[][DEMO_INV_W + 8],
+-                         const char* clrs[]) {
+-    int n = 0;
+-    for (int k = 0; k < (int)(sizeof(demo_inv_order)/sizeof(*demo_inv_order)); k++) {
+-        int cls = demo_inv_order[k], first = 1;
+-        for (int i = 0; i < NETHACK_INV_SLOTS && n < DEMO_PANE_MAX - 1; i++) {
+-            if (!env->inv_letters[i] || env->inv_oclasses[i] != cls) continue;
+-            if (first) {
+-                snprintf(lines[n], DEMO_INV_W + 8, "%s", demo_class_name[cls]);
+-                clrs[n++] = "\x1b[1m";
+-                first = 0;
+-            }
+-            snprintf(lines[n], DEMO_INV_W + 8, "%c) %s", env->inv_letters[i],
+-                     demo_inv_strs + i * NLE_INVENTORY_STR_LENGTH);
+-            clrs[n] = demo_inv_clr(env, i);
+-            n++;
+-        }
+-    }
+-    return n;
+-}
+-
+-static void demo_box_edge(const char* l, const char* r, const char* title, int inner) {
+-    printf("%s", l);
+-    int n = 0;
+-    if (title) n = printf("─ %s ", title) - 2; // rule char is 3 bytes, 1 column
+-    for (; n < inner; n++) printf("─");
+-    printf("%s", r);
+-}
+-
+-// right-column inventory box segment for composite row k (0 = top border)
+-static void demo_inv_row(int k, int last, int pn,
+-                         char plines[][DEMO_INV_W + 8], const char** pclrs) {
+-    if (k == 0) {
+-        printf(" ");
+-        demo_box_edge("┌", "┐\n", "Inventory", DEMO_INV_W);
+-        return;
+-    }
+-    if (k >= last) {
+-        printf(" ");
+-        demo_box_edge("└", "┘\n", NULL, DEMO_INV_W);
+-        return;
+-    }
+-    printf(" │ ");
+-    int i = k - 1, len = 0;
+-    if (i == last - 2 && pn > last - 1)
+-        len = printf("\x1b[2m... +%d more\x1b[0m", pn - (last - 2)) - 8;
+-    else if (i < pn)
+-        len = printf("%s%.*s\x1b[0m", pclrs[i], DEMO_INV_W - 2, plines[i])
+-            - (int)strlen(pclrs[i]) - 4;
+-    printf("%*s│\n", DEMO_INV_W - 1 - len, "");
+-}
+-
+-// one box row: bytes in buf, visible columns in vis; segments past the box
+-// width are clipped so the row never wraps
+-typedef struct { char buf[512]; int pos, vis; } DemoLine;
+-static void demo_line_add(DemoLine* l, const char* esc, const char* text) {
+-    int n = (int)strlen(text), room = NH_COLS + 1 - l->vis; // rows are NH_COLS+2 wide with both edges
+-    if (room <= 0 || n <= 0) return;
+-    if (n > room) n = room;
+-    l->pos += snprintf(l->buf + l->pos, sizeof(l->buf) - l->pos, "%s%.*s%s",
+-                       esc, n, text, esc[0] ? "\x1b[0m" : "");
+-    l->vis += n;
+-}
+-static void demo_line_flush(DemoLine* l) {
+-    printf("%s%*s│", l->buf, NH_COLS + 1 - l->vis, "");
+-}
+-
+-static void demo_render(Nethack* env, int rate_hz, long steps) {
+-    long* bl = env->blstats;
+-    printf("\x1b[H\x1b[2J");
+-    static char plines[DEMO_PANE_MAX][DEMO_INV_W + 8];
+-    static const char* pclrs[DEMO_PANE_MAX];
+-    int pn = demo_inv_pane(env, plines, pclrs);
+-    // left column: message box, map box, status box; inventory runs full height
+-    int last = 1 + DEMO_MSG_RING + 1 + 1 + NH_ROWS + 1 + 4 - 1;
+-    int k = 0;
+-    demo_box_edge("┌", "┐", NULL, NH_COLS);
+-    demo_inv_row(k++, last, pn, plines, pclrs);
+-    int shown = demo_msg_n < DEMO_MSG_RING ? demo_msg_n : DEMO_MSG_RING;
+-    for (int m = 0; m < DEMO_MSG_RING; m++) {
+-        printf("│ ");
+-        int len = 0;
+-        if (m >= DEMO_MSG_RING - shown) {
+-            int idx = (demo_msg_n - (DEMO_MSG_RING - m)) % DEMO_MSG_RING;
+-            len = printf("%s%.*s\x1b[0m", m == DEMO_MSG_RING - 1 ? "\x1b[1m" : "\x1b[2m",
+-                         NH_COLS - 2, demo_msgs[idx]) - 8;
+-        }
+-        printf("%*s│", NH_COLS - 1 - len, "");
+-        demo_inv_row(k++, last, pn, plines, pclrs);
+-    }
+-    demo_box_edge("└", "┘", NULL, NH_COLS);
+-    demo_inv_row(k++, last, pn, plines, pclrs);
+-    char title[32];
+-    snprintf(title, sizeof(title), "Dlvl:%ld", bl[NLE_BL_DEPTH]);
+-    demo_box_edge("┌", "┐", title, NH_COLS);
+-    demo_inv_row(k++, last, pn, plines, pclrs);
+-    for (int r = 0; r < NH_ROWS; r++) {
+-        printf("│");
+-        for (int c = 0; c < NH_COLS; c++) {
+-            if (demo_tty) demo_map_cell_tty(r, c);
+-            else demo_map_cell(env, r, c, c == bl[NLE_BL_X] && r == bl[NLE_BL_Y]);
+-        }
+-        printf("│");
+-        demo_inv_row(k++, last, pn, plines, pclrs);
+-    }
+-    demo_box_edge("└", "┘", NULL, NH_COLS);
+-    demo_inv_row(k++, last, pn, plines, pclrs);
+-    // status box: hitpointbar over the agent name, then the stat line
+-    demo_box_edge("┌", "┐", NULL, NH_COLS);
+-    demo_inv_row(k++, last, pn, plines, pclrs);
+-    long hp = bl[NLE_BL_HP], hpm = bl[NLE_BL_HPMAX] > 0 ? bl[NLE_BL_HPMAX] : 1;
+-    static const char* rolenm[13] = {"Archeologist", "Barbarian", "Caveman",
+-        "Healer", "Knight", "Monk", "Priest", "Rogue", "Ranger", "Samurai",
+-        "Tourist", "Valkyrie", "Wizard"};
+-    static const char* racenm[5] = {"human", "elven", "dwarven", "gnomish", "orcish"};
+-    static const char* alignnm[3] = {"lawful", "neutral", "chaotic"};
+-    int ir = 0, ic = 0, ig = 0, ia = 0;
+-    nle_identity(env->ctx, &ir, &ic, &ig, &ia);
+-    char name[40];
+-    int nl = snprintf(name, sizeof(name), "Agent the %s",
+-        (ir >= 0 && ir < 13) ? rolenm[ir] : "Puffer");
+-    int fill = (int)((hp * nl + hpm - 1) / hpm);
+-    if (fill > nl) fill = nl;
+-    int hpc = hp * 3 >= hpm * 2 ? 32 : hp * 3 >= hpm ? 33 : 31;
+-    // both status rows are clipped to the box width: a long spell list or
+-    // several conditions used to wrap onto the next terminal line
+-    DemoLine L = {"│", 3, 1};
+-    char esc[16], tmp[160];
+-    snprintf(esc, sizeof(esc), "\x1b[7;%dm", hpc);
+-    demo_line_add(&L, "", " [");
+-    snprintf(tmp, sizeof(tmp), "%.*s", fill, name);
+-    demo_line_add(&L, esc, tmp);
+-    snprintf(tmp, sizeof(tmp), "%s] ", name + fill);
+-    demo_line_add(&L, "", tmp);
+-    snprintf(tmp, sizeof(tmp), "%s %s %s",
+-             (ia >= 0 && ia < 3) ? alignnm[ia] : "?", ig == 1 ? "female" : "male",
+-             (ic >= 0 && ic < 5) ? racenm[ic] : "?");
+-    demo_line_add(&L, "\x1b[2m", tmp);
+-    snprintf(tmp, sizeof(tmp), " St:%ld Dx:%ld Co:%ld  Score:%ld",
+-             bl[NLE_BL_STR25], bl[NLE_BL_DEX], bl[NLE_BL_CON], bl[NLE_BL_SCORE]);
+-    demo_line_add(&L, "", tmp);
+-    demo_line_flush(&L);
+-    demo_inv_row(k++, last, pn, plines, pclrs);
+-    static const char* conds[10] = {"Stone", "Slime", "Strngl", "FoodPois",
+-        "TermIll", "Blind", "Deaf", "Stun", "Conf", "Hallu"};
+-    static const char* hungers[5] = {"Satiated", "", "Hungry", "Weak", "Fainting"};
+-    long hu = bl[NLE_BL_HUNGER];
+-    L = (DemoLine){"│", 3, 1};
+-    snprintf(tmp, sizeof(tmp), " Dlvl:%ld $:%ld HP:%ld(%ld) Pw:%ld(%ld) AC:%ld Xp:%ld/%ld T:%ld",
+-             bl[NLE_BL_DEPTH], bl[NLE_BL_GOLD], hp, bl[NLE_BL_HPMAX],
+-             bl[NLE_BL_ENE], bl[NLE_BL_ENEMAX], bl[NLE_BL_AC],
+-             bl[NLE_BL_XP], bl[NLE_BL_EXP], bl[NLE_BL_TIME]);
+-    demo_line_add(&L, "", tmp);
+-    if (hu >= 0 && hu < 5 && hungers[hu][0]) {
+-        demo_line_add(&L, "", " ");
+-        demo_line_add(&L, "\x1b[33m", hungers[hu]);
+-    }
+-    for (int b = 0; b < 10; b++) {
+-        if (!(bl[NLE_BL_CONDITION] & (1L << b))) continue;
+-        demo_line_add(&L, "", " ");
+-        demo_line_add(&L, "\x1b[31;1m", conds[b]);
+-    }
+-    // known spells: name Lv fail% (env->spell_* is refreshed each pack_obs);
+-    // shown only when the whole list fits after the conditions
+-    if (env->n_spells > 0) {
+-        static const struct { int id; const char* nm; } spnames[] = {
+-            {344, "sleep"}, {348, "healing"}, {377, "protection"},
+-            {340, "force bolt"}, {342, "magic missile"}, {361, "cure blindness"},
+-        };
+-        int n = snprintf(tmp, sizeof(tmp), "Sp:");
+-        for (int i = 0; i < env->n_spells && i < 2; i++) {
+-            const char* nm = NULL;
+-            for (unsigned s = 0; s < sizeof(spnames)/sizeof(spnames[0]); s++) {
+-                if (spnames[s].id != env->spell_ids[i]) continue;
+-                nm = spnames[s].nm;
+-                break;
+-            }
+-            n += snprintf(tmp + n, sizeof(tmp) - n, "%s%s(L%d %d%%)", i ? "," : "",
+-                          nm ? nm : "spell", env->spell_levs[i], env->spell_fails[i]);
+-        }
+-        if (L.vis + 2 + n <= NH_COLS + 1) {
+-            demo_line_add(&L, "", "  ");
+-            demo_line_add(&L, "\x1b[36m", tmp);
+-        }
+-    }
+-    demo_line_flush(&L);
+-    demo_inv_row(k++, last, pn, plines, pclrs);
+-    demo_box_edge("└", "┘", NULL, NH_COLS);
+-    demo_inv_row(k++, last, pn, plines, pclrs);
+-    if (rate_hz > 0) // auto-run (web): no interactive keys to advertise
+-        printf("\x1b[2mstep %ld  |  running %d Hz\x1b[0m\n", steps, rate_hz);
+-    else
+-        printf("\x1b[2msteps %ld  |  SPACE step/hold 5Hz  |  Shift+SPACE (or S) 20Hz  |  q quit\x1b[0m\n",
+-               steps);
+-    fflush(stdout);
+-}
+-
+ // Interactive: press space = 1 action; hold = 5/s; shift+space (or S) = 20/s.
+ static void run_demo_interactive(long max_steps) {
+     const char* wpath = demo_find_weights();
+@@ -1531,6 +1232,47 @@ static void run_demo_auto(long max_steps, int frame_ms) {
+ // ./nethack N 0              headless N steps
+ // ./nethack N MS             auto-run N steps at MS ms/frame
+ // NH_WEIGHTS=... NH_SEED=...
++// NH_REPLAY_DIR/ENV/EP/OFF/N: replay one recorded eval episode (NH_ACTLOG) through the same puf_step,
++// drawn by the in-step watch hook. Episode K's seed is the LCG advanced K times, so the skip is instant.
++static void run_replay(int frame_ms) {
++    const char* dir = getenv("NH_REPLAY_DIR");
++    unsigned envi = (unsigned)atol(getenv("NH_REPLAY_ENV")); long ep = atol(getenv("NH_REPLAY_EP"));
++    long off = atol(getenv("NH_REPLAY_OFF")), n = atol(getenv("NH_REPLAY_N"));
++    long skip = getenv("NH_SKIP") ? atol(getenv("NH_SKIP")) : 0;
++    char path[600]; snprintf(path, sizeof(path), "%s/env%u.act", dir, envi);
++    FILE* f = fopen(path, "rb");
++    if (!f || fseek(f, off, SEEK_SET) != 0) { fprintf(stderr, "replay: cannot open %s @%ld\n", path, off); exit(1); }
++    nethack_color_sink = demo_colors; nethack_invstr_sink = demo_inv_strs;
++    srand(1);
++    Nethack env; env_open(&env);
++    { // NH_REPLAY_BIND bitmask (default 7): 1 chars, 2 colors, 4 inv_strs -- to diagnose RNG-consuming observation fills
++        int b = getenv("NH_REPLAY_BIND") ? atoi(getenv("NH_REPLAY_BIND")) : 7;
++        nethack_want_chars = (b & 1) != 0; nethack_color_sink = (b & 2) ? demo_colors : NULL; nethack_invstr_sink = (b & 4) ? demo_inv_strs : NULL;
++    }
++    env.rng = envi; env.seed = 0xCAFEBEEFUL + envi; // the eval's chain: reset K times to reach episode K
++    for (long k = 0; k < ep; k++) nethack_do_reset(&env);
++    env.ep_ordinal = ep - 1;
++    nethack_watch_init();
++    nethack_watch_env = envi; nethack_watch_ms = frame_ms; nethack_watch_stop = 0;
++    fprintf(stderr, "replay: env %u episode %ld, %ld steps from %s@%ld\n", envi, ep, n, path, off);
++    float* act = env.agents[0].actions; long stepped = 0;
++    for (long t = 0; t < n; t++) {
++        unsigned char rec[3];
++        if (fread(rec, 1, 3, f) != 3) break;
++        memset(act, 0, 20 * sizeof(float));
++        int verb = rec[0], head = NETHACK_VERBS[verb].head, dh = nethack_dir_head(verb);
++        act[0] = (float)verb;
++        if (verb == NETHACK_ACT_CAST) act[19] = rec[1]; else if (head >= 0) act[1 + head] = rec[1];
++        if (dh >= 0) act[13 + dh] = rec[2];
++        nethack_watch_ep = ep; nethack_watch_quiet = !(frame_ms > 0 && t >= skip); // draw only past NH_SKIP
++        puf_step(&env); stepped = t + 1;
++        if (env.ep_ordinal >= ep) break; // the hook printed EPISODE OVER on the terminal step
++    }
++    fprintf(stderr, "replay: stepped %ld of %ld, episode %s\n", stepped, n, env.ep_ordinal >= ep ? "ended" : "DID NOT END");
++    fclose(f);
++    env_close(&env);
++}
++
+ int main(int argc, char** argv) {
+     long max_steps = (argc >= 2) ? atol(argv[1]) : 1000000;
+     int interactive = isatty(STDIN_FILENO);
+@@ -1541,6 +1283,7 @@ int main(int argc, char** argv) {
+     } else if (!interactive) {
+         frame_ms = 0; // piped/non-TTY default: headless auto-run
+     }
++    if (getenv("NH_REPLAY_DIR")) { run_replay(frame_ms); return 0; }
+     if (interactive) run_demo_interactive(max_steps);
+     else run_demo_auto(max_steps, frame_ms);
+     return 0;
+diff --git a/ocean/nethack/nethack.h b/ocean/nethack/nethack.h
+index 24767958..c8c022a6 100644
+--- a/ocean/nethack/nethack.h
++++ b/ocean/nethack/nethack.h
+@@ -12,6 +12,7 @@
+ #include <sys/stat.h>
+ #include <fcntl.h>
+ #include <unistd.h>
++#include <sys/stat.h>
+ #include <errno.h>
+ #include <dirent.h>
+ #include <signal.h>
+@@ -136,6 +137,8 @@ struct Env {
+ 
+     // cold: render-only, no-slot backing and reset-time state
+     unsigned char chars[NH_GRID]; // render only: bound when a renderer asks
++    long ep_ordinal; // episodes finished on this env (NH_EPLOG / NH_WATCH_EP)
++    FILE* actf; long act_off; // NH_ACTLOG: per-env action stream, byte offset of the current episode
+     short glyphs_local[NH_GRID]; // glyph backing when no observation slot is bound
+     nle_settings settings;
+     char vardir[1024];
+@@ -155,6 +158,22 @@ static unsigned char* nethack_tty_cursor_sink;
+ static const char* nethack_options_override; // demo-only; NULL = default options
+ 
+ static int nethack_want_chars; // renderers/demo bind the char grid; training leaves it unfilled
++// NH_WATCH_ENV=<env idx> NH_WATCH_EP=<1-based episode on that env>: draw that episode from inside the
++// headless eval (everything else runs at full speed); NH_WATCH_MS pacing; NH_WATCH_STOP exits after it
++static long nethack_watch_env = -1, nethack_watch_ep, nethack_watch_ms = 40, nethack_watch_stop;
++static const char* nethack_actlog_dir;
++static int nethack_watch_quiet; // replay while skipping: report the outcome, draw nothing // NH_ACTLOG=<dir>: record every step's (verb, slot, dir) per env for offline replay
++static void nethack_watch_init(void) {
++    static int done; if (done) return; done = 1; const char* v;
++    nethack_watch_env = (v = getenv("NH_WATCH_ENV")) ? atol(v) : -1;
++    nethack_watch_ep = (v = getenv("NH_WATCH_EP")) ? atol(v) : 0;
++    nethack_watch_ms = (v = getenv("NH_WATCH_MS")) ? atol(v) : 40;
++    nethack_watch_stop = getenv("NH_WATCH_STOP") != NULL;
++    nethack_actlog_dir = getenv("NH_ACTLOG");
++    if (nethack_actlog_dir) mkdir(nethack_actlog_dir, 0755);
++    if (nethack_watch_env >= 0 || getenv("NH_WANT_CHARS")) nethack_want_chars = 1;
++}
++static void nethack_watch_draw(Nethack* env, int done); // defined after the shared view below
+ // glyphs live in the agent's observation slot (the engine writes the grid where
+ // the trainer reads it); re-bound when the slot moves, carrying the current grid
+ static void nethack_bind_glyphs(Nethack* env) {
+@@ -780,6 +799,20 @@ static void nethack_add_log(Nethack* env, int how) { // how: nle how_done, -1 =
+         env->log.death_mon_level += (float)env->internal[NETHACK_INTERNAL_KILLER_MLEV];
+     if (how >= 0) env->log.death_ac += (float)env->stats.last_ac;
+     env->log.n += 1.0f;
++    env->ep_ordinal++;
++    { static FILE* eplog; static int eplog_init;
++      if (!eplog_init) { eplog_init = 1; const char* v = getenv("NH_EPLOG"); if (v) eplog = fopen(v, "a"); }
++      if (eplog) { fprintf(eplog, "%u %ld %ld %d %ld %d %d %d %d %ld %ld %ld\n", env->rng, env->ep_ordinal, (long)env->prev_score,
++                           how, (long)env->blstats[NLE_BL_TIME], env->role_idx, env->race_idx, env->gend_idx,
++                           env->stats.max_depth, (long)env->prev_time, (long)env->stats.length, env->act_off); fflush(eplog); } }
++    env->act_off += 3L * (long)env->stats.length;
++    if (env->actf) fflush(env->actf);
++    if (nethack_watch_env == (long)env->rng && env->ep_ordinal == nethack_watch_ep) {
++        printf("watched episode done: env %u ep %ld score %ld max_depth %d how %d\n", env->rng, env->ep_ordinal,
++               (long)env->prev_score, env->stats.max_depth, how);
++        fflush(stdout);
++        if (nethack_watch_stop) exit(0);
++    }
+ 
+ }
+ 
+@@ -1150,6 +1183,11 @@ void puf_step(Nethack* env) {
+     if (verb == NETHACK_ACT_CAST) slot = (int)env->agents[0].actions[19];
+     int dh = nethack_dir_head(verb);
+     int dirkey = NETHACK_DIR_KEYS[dh >= 0 ? (int)env->agents[0].actions[13 + dh] : 0];
++    if (nethack_actlog_dir) {
++        if (!env->actf) { char p[600]; snprintf(p, sizeof(p), "%s/env%u.act", nethack_actlog_dir, env->rng); env->actf = fopen(p, "wb"); }
++        if (env->actf) { unsigned char rec[3] = {(unsigned char)verb, (unsigned char)slot,
++                             (unsigned char)(dh >= 0 ? (int)env->agents[0].actions[13 + dh] : 0)}; fwrite(rec, 1, 3, env->actf); }
++    }
+ 
+     long time_before = env->blstats[NLE_BL_TIME];
+     long hx0 = env->blstats[NLE_BL_X], hy0 = env->blstats[NLE_BL_Y], hd0 = env->blstats[NLE_BL_DEPTH];
+@@ -1182,6 +1220,7 @@ void puf_step(Nethack* env) {
+ 
+     int done = env->obs.done || env->stats.length >= NETHACK_MAX_EPISODE_STEPS;
+     env->agents[0].terminals[0] = done ? 1.0f : 0.0f; // truncation reported as terminal too
++    if (nethack_watch_env == (long)env->rng && env->ep_ordinal + 1 == nethack_watch_ep) nethack_watch_draw(env, done);
+     if (done) {
+         nethack_add_log(env, env->obs.done ? env->obs.how_done : -1);
+         // eager same-thread reset: the terminal step returns the fresh obs
+@@ -1222,6 +1261,7 @@ void puf_render(Nethack* env) {
+ }
+ 
+ void puf_init(Env* env, Dict* kwargs) {
++    nethack_watch_init();
+     env->num_agents = 1;
+     env->agents[0].policy = 0;
+     init(env);
+@@ -1308,3 +1348,18 @@ const signed char* env_head_consume_map(int* n_verbs, int* n_atns) {
+     *n_atns = NUM_ATNS;
+     return map;
+ }
++
++#include "nethack_view.h"
++// Draw the watched episode with the demo's composite view. The colour / inventory-string sinks are
++// single shared buffers, so they are bound to this env only (never globally) once its episode starts.
++static void nethack_watch_draw(Nethack* env, int done) {
++    static int bound;
++    if (!bound) { bound = 1; env->obs.colors = demo_colors; env->obs.inv_strs = demo_inv_strs; demo_msg_n = 0; }
++    demo_note_message(env);
++    if (!nethack_watch_quiet)
++        demo_render(env, nethack_watch_ms > 0 ? (int)(1000 / nethack_watch_ms) : 1000, (long)env->stats.length);
++    if (done) printf("\x1b[1mEPISODE OVER  env %u ep %ld  final score %ld  max depth %d\x1b[0m\n",
++                     env->rng, env->ep_ordinal + 1, (long)env->prev_score, env->stats.max_depth);
++    fflush(stdout);
++    if (nethack_watch_ms > 0 && !nethack_watch_quiet) usleep(nethack_watch_ms * 1000);
++}
+diff --git a/ocean/nethack/nethack_view.h b/ocean/nethack/nethack_view.h
+new file mode 100644
+index 00000000..67338891
+--- /dev/null
++++ b/ocean/nethack/nethack_view.h
+@@ -0,0 +1,306 @@
++// Composite terminal view of a Nethack env (message ring, coloured map, inventory pane, status box).
++// Shared by the TTY demo (nethack.c) and the eval watch hook (nethack.h, NH_WATCH_ENV/NH_WATCH_EP).
++#ifndef NETHACK_VIEW_H
++#define NETHACK_VIEW_H
++
++static int demo_tty;
++static unsigned char demo_tty_chars[NLE_TERM_LI * NLE_TERM_CO];
++static signed char demo_tty_colors[NLE_TERM_LI * NLE_TERM_CO];
++static unsigned char demo_tty_cursor[2];
++
++#define DEMO_MSG_RING 18
++static char demo_msgs[DEMO_MSG_RING][96];
++static int demo_msg_n = 0;
++
++static void demo_note_message(Nethack* env) {
++    if (!env->message[0]) return;
++    char buf[96];
++    int j = 0;
++    for (; j < 95 && env->message[j]; j++) buf[j] = (char)env->message[j];
++    buf[j] = 0;
++    if (demo_msg_n > 0) {
++        char* prev = demo_msgs[(demo_msg_n - 1) % DEMO_MSG_RING];
++        if (strcmp(prev, buf) == 0) return;
++        // getline echo: the game repaints the topline per keystroke; an
++        // extension of the previous message replaces it (lossless)
++        size_t pl = strlen(prev);
++        if (pl > 0 && j > (int)pl && strncmp(prev, buf, pl) == 0) {
++            strcpy(prev, buf);
++            return;
++        }
++    }
++    strcpy(demo_msgs[demo_msg_n % DEMO_MSG_RING], buf);
++    demo_msg_n++;
++}
++
++// menucolor-style BUC tint
++static const char* demo_inv_clr(Nethack* env, int i) {
++    if (env->inv_oclasses[i] == 12) return "\x1b[33m"; // COIN_CLASS (objclass.h)
++    int buc = env->inv_state[i * NLE_INV_STATE_FIELDS];
++    return buc == 1 ? "\x1b[31m" : buc == 3 ? "\x1b[32m"
++         : buc == 2 ? "\x1b[37m" : "\x1b[36m";
++}
++
++// curses-look cell: walls -> box drawing, floors -> '·', engine colors -> ANSI
++#define DEMO_CMAP_OFF 2359
++#define DEMO_PET_LO 381
++#define DEMO_PET_HI 762
++static unsigned char demo_colors[NH_GRID]; // bound via nethack_color_sink
++static const char* demo_wall_sym[12] = { // S_stone..S_trwall
++    " ", "│", "─", "┌", "┐", "└", "┘",
++    "┼", "┴", "┬", "┤", "├"};
++static const int demo_ansi_clr[16] = // CLR_* 0..15 -> SGR fg
++    {90, 31, 32, 33, 34, 35, 36, 37, 39, 91, 92, 93, 94, 95, 96, 97};
++
++static void demo_map_cell(Nethack* env, int r, int c, int hero) {
++    // underfoot_glyphs hides the hero glyph; draw the @ explicitly
++    if (hero) {
++        printf("\x1b[7;1;97m@\x1b[0m");
++        return;
++    }
++    int g = env->glyphs[r * NH_COLS + c];
++    unsigned char ch = env->chars[r * NH_COLS + c];
++    int cmap = g - DEMO_CMAP_OFF;
++    if (cmap >= 1 && cmap <= 11) { // walls in PUFF_CYAN (connect4.h)
++        printf("\x1b[38;2;0;187;187m%s\x1b[0m", demo_wall_sym[cmap]);
++        return;
++    }
++    if (cmap == 19) { // S_room
++        printf("\x1b[37m·\x1b[0m");
++        return;
++    }
++    if (cmap == 20) { // S_darkroom
++        printf("\x1b[2m·\x1b[0m");
++        return;
++    }
++    if (!ch || ch == ' ') {
++        putchar(' ');
++        return;
++    }
++    int clr = demo_colors[r * NH_COLS + c] & 15;
++    printf("\x1b[%s%dm%c\x1b[0m",
++           (g >= DEMO_PET_LO && g < DEMO_PET_HI) ? "4;" : "",
++           demo_ansi_clr[clr], ch);
++}
++
++// tty map cell: authentic chars/colors from the game's own screen (rows 1..21)
++static void demo_map_cell_tty(int r, int c) {
++    unsigned char ch = demo_tty_chars[(r + 1) * NLE_TERM_CO + (c + 1)];
++    int clr = demo_tty_colors[(r + 1) * NLE_TERM_CO + (c + 1)] & 15;
++    if (!ch || ch == ' ') {
++        putchar(' ');
++        return;
++    }
++    printf("\x1b[%dm%c\x1b[0m", demo_ansi_clr[clr], ch);
++}
++
++#define DEMO_INV_W 42 // inventory pane inner width
++
++// perm_invent pane: doname text grouped by class in game display order
++static unsigned char demo_inv_strs[NLE_INVENTORY_SIZE * NLE_INVENTORY_STR_LENGTH];
++static const int demo_inv_order[] =
++    {12, 5, 2, 3, 7, 9, 10, 8, 4, 11, 6, 13, 14, 15, 16, 17, 1};
++static const char* demo_class_name[18] = {0, "Illegal objects", "Weapons",
++    "Armor", "Rings", "Amulets", "Tools", "Comestibles", "Potions", "Scrolls",
++    "Spellbooks", "Wands", "Coins", "Gems/Stones", "Boulders/Statues",
++    "Iron balls", "Chains", "Venoms"};
++#define DEMO_PANE_MAX 64
++
++static int demo_inv_pane(Nethack* env, char lines[][DEMO_INV_W + 8],
++                         const char* clrs[]) {
++    int n = 0;
++    for (int k = 0; k < (int)(sizeof(demo_inv_order)/sizeof(*demo_inv_order)); k++) {
++        int cls = demo_inv_order[k], first = 1;
++        for (int i = 0; i < NETHACK_INV_SLOTS && n < DEMO_PANE_MAX - 1; i++) {
++            if (!env->inv_letters[i] || env->inv_oclasses[i] != cls) continue;
++            if (first) {
++                snprintf(lines[n], DEMO_INV_W + 8, "%s", demo_class_name[cls]);
++                clrs[n++] = "\x1b[1m";
++                first = 0;
++            }
++            snprintf(lines[n], DEMO_INV_W + 8, "%c) %s", env->inv_letters[i],
++                     demo_inv_strs + i * NLE_INVENTORY_STR_LENGTH);
++            clrs[n] = demo_inv_clr(env, i);
++            n++;
++        }
++    }
++    return n;
++}
++
++static void demo_box_edge(const char* l, const char* r, const char* title, int inner) {
++    printf("%s", l);
++    int n = 0;
++    if (title) n = printf("─ %s ", title) - 2; // rule char is 3 bytes, 1 column
++    for (; n < inner; n++) printf("─");
++    printf("%s", r);
++}
++
++// right-column inventory box segment for composite row k (0 = top border)
++static void demo_inv_row(int k, int last, int pn,
++                         char plines[][DEMO_INV_W + 8], const char** pclrs) {
++    if (k == 0) {
++        printf(" ");
++        demo_box_edge("┌", "┐\n", "Inventory", DEMO_INV_W);
++        return;
++    }
++    if (k >= last) {
++        printf(" ");
++        demo_box_edge("└", "┘\n", NULL, DEMO_INV_W);
++        return;
++    }
++    printf(" │ ");
++    int i = k - 1, len = 0;
++    if (i == last - 2 && pn > last - 1)
++        len = printf("\x1b[2m... +%d more\x1b[0m", pn - (last - 2)) - 8;
++    else if (i < pn)
++        len = printf("%s%.*s\x1b[0m", pclrs[i], DEMO_INV_W - 2, plines[i])
++            - (int)strlen(pclrs[i]) - 4;
++    printf("%*s│\n", DEMO_INV_W - 1 - len, "");
++}
++
++// one box row: bytes in buf, visible columns in vis; segments past the box
++// width are clipped so the row never wraps
++typedef struct { char buf[512]; int pos, vis; } DemoLine;
++static void demo_line_add(DemoLine* l, const char* esc, const char* text) {
++    int n = (int)strlen(text), room = NH_COLS + 1 - l->vis; // rows are NH_COLS+2 wide with both edges
++    if (room <= 0 || n <= 0) return;
++    if (n > room) n = room;
++    l->pos += snprintf(l->buf + l->pos, sizeof(l->buf) - l->pos, "%s%.*s%s",
++                       esc, n, text, esc[0] ? "\x1b[0m" : "");
++    l->vis += n;
++}
++static void demo_line_flush(DemoLine* l) {
++    printf("%s%*s│", l->buf, NH_COLS + 1 - l->vis, "");
++}
++
++static void demo_render(Nethack* env, int rate_hz, long steps) {
++    long* bl = env->blstats;
++    printf("\x1b[H\x1b[2J");
++    static char plines[DEMO_PANE_MAX][DEMO_INV_W + 8];
++    static const char* pclrs[DEMO_PANE_MAX];
++    int pn = demo_inv_pane(env, plines, pclrs);
++    // left column: message box, map box, status box; inventory runs full height
++    int last = 1 + DEMO_MSG_RING + 1 + 1 + NH_ROWS + 1 + 4 - 1;
++    int k = 0;
++    demo_box_edge("┌", "┐", NULL, NH_COLS);
++    demo_inv_row(k++, last, pn, plines, pclrs);
++    int shown = demo_msg_n < DEMO_MSG_RING ? demo_msg_n : DEMO_MSG_RING;
++    for (int m = 0; m < DEMO_MSG_RING; m++) {
++        printf("│ ");
++        int len = 0;
++        if (m >= DEMO_MSG_RING - shown) {
++            int idx = (demo_msg_n - (DEMO_MSG_RING - m)) % DEMO_MSG_RING;
++            len = printf("%s%.*s\x1b[0m", m == DEMO_MSG_RING - 1 ? "\x1b[1m" : "\x1b[2m",
++                         NH_COLS - 2, demo_msgs[idx]) - 8;
++        }
++        printf("%*s│", NH_COLS - 1 - len, "");
++        demo_inv_row(k++, last, pn, plines, pclrs);
++    }
++    demo_box_edge("└", "┘", NULL, NH_COLS);
++    demo_inv_row(k++, last, pn, plines, pclrs);
++    char title[32];
++    snprintf(title, sizeof(title), "Dlvl:%ld", bl[NLE_BL_DEPTH]);
++    demo_box_edge("┌", "┐", title, NH_COLS);
++    demo_inv_row(k++, last, pn, plines, pclrs);
++    for (int r = 0; r < NH_ROWS; r++) {
++        printf("│");
++        for (int c = 0; c < NH_COLS; c++) {
++            if (demo_tty) demo_map_cell_tty(r, c);
++            else demo_map_cell(env, r, c, c == bl[NLE_BL_X] && r == bl[NLE_BL_Y]);
++        }
++        printf("│");
++        demo_inv_row(k++, last, pn, plines, pclrs);
++    }
++    demo_box_edge("└", "┘", NULL, NH_COLS);
++    demo_inv_row(k++, last, pn, plines, pclrs);
++    // status box: hitpointbar over the agent name, then the stat line
++    demo_box_edge("┌", "┐", NULL, NH_COLS);
++    demo_inv_row(k++, last, pn, plines, pclrs);
++    long hp = bl[NLE_BL_HP], hpm = bl[NLE_BL_HPMAX] > 0 ? bl[NLE_BL_HPMAX] : 1;
++    static const char* rolenm[13] = {"Archeologist", "Barbarian", "Caveman",
++        "Healer", "Knight", "Monk", "Priest", "Rogue", "Ranger", "Samurai",
++        "Tourist", "Valkyrie", "Wizard"};
++    static const char* racenm[5] = {"human", "elven", "dwarven", "gnomish", "orcish"};
++    static const char* alignnm[3] = {"lawful", "neutral", "chaotic"};
++    int ir = 0, ic = 0, ig = 0, ia = 0;
++    nle_identity(env->ctx, &ir, &ic, &ig, &ia);
++    char name[40];
++    int nl = snprintf(name, sizeof(name), "Agent the %s",
++        (ir >= 0 && ir < 13) ? rolenm[ir] : "Puffer");
++    int fill = (int)((hp * nl + hpm - 1) / hpm);
++    if (fill > nl) fill = nl;
++    int hpc = hp * 3 >= hpm * 2 ? 32 : hp * 3 >= hpm ? 33 : 31;
++    // both status rows are clipped to the box width: a long spell list or
++    // several conditions used to wrap onto the next terminal line
++    DemoLine L = {"│", 3, 1};
++    char esc[16], tmp[160];
++    snprintf(esc, sizeof(esc), "\x1b[7;%dm", hpc);
++    demo_line_add(&L, "", " [");
++    snprintf(tmp, sizeof(tmp), "%.*s", fill, name);
++    demo_line_add(&L, esc, tmp);
++    snprintf(tmp, sizeof(tmp), "%s] ", name + fill);
++    demo_line_add(&L, "", tmp);
++    snprintf(tmp, sizeof(tmp), "%s %s %s",
++             (ia >= 0 && ia < 3) ? alignnm[ia] : "?", ig == 1 ? "female" : "male",
++             (ic >= 0 && ic < 5) ? racenm[ic] : "?");
++    demo_line_add(&L, "\x1b[2m", tmp);
++    snprintf(tmp, sizeof(tmp), " St:%ld Dx:%ld Co:%ld  Score:%ld",
++             bl[NLE_BL_STR25], bl[NLE_BL_DEX], bl[NLE_BL_CON], bl[NLE_BL_SCORE]);
++    demo_line_add(&L, "", tmp);
++    demo_line_flush(&L);
++    demo_inv_row(k++, last, pn, plines, pclrs);
++    static const char* conds[10] = {"Stone", "Slime", "Strngl", "FoodPois",
++        "TermIll", "Blind", "Deaf", "Stun", "Conf", "Hallu"};
++    static const char* hungers[5] = {"Satiated", "", "Hungry", "Weak", "Fainting"};
++    long hu = bl[NLE_BL_HUNGER];
++    L = (DemoLine){"│", 3, 1};
++    snprintf(tmp, sizeof(tmp), " Dlvl:%ld $:%ld HP:%ld(%ld) Pw:%ld(%ld) AC:%ld Xp:%ld/%ld T:%ld",
++             bl[NLE_BL_DEPTH], bl[NLE_BL_GOLD], hp, bl[NLE_BL_HPMAX],
++             bl[NLE_BL_ENE], bl[NLE_BL_ENEMAX], bl[NLE_BL_AC],
++             bl[NLE_BL_XP], bl[NLE_BL_EXP], bl[NLE_BL_TIME]);
++    demo_line_add(&L, "", tmp);
++    if (hu >= 0 && hu < 5 && hungers[hu][0]) {
++        demo_line_add(&L, "", " ");
++        demo_line_add(&L, "\x1b[33m", hungers[hu]);
++    }
++    for (int b = 0; b < 10; b++) {
++        if (!(bl[NLE_BL_CONDITION] & (1L << b))) continue;
++        demo_line_add(&L, "", " ");
++        demo_line_add(&L, "\x1b[31;1m", conds[b]);
++    }
++    // known spells: name Lv fail% (env->spell_* is refreshed each pack_obs);
++    // shown only when the whole list fits after the conditions
++    if (env->n_spells > 0) {
++        static const struct { int id; const char* nm; } spnames[] = {
++            {344, "sleep"}, {348, "healing"}, {377, "protection"},
++            {340, "force bolt"}, {342, "magic missile"}, {361, "cure blindness"},
++        };
++        int n = snprintf(tmp, sizeof(tmp), "Sp:");
++        for (int i = 0; i < env->n_spells && i < 2; i++) {
++            const char* nm = NULL;
++            for (unsigned s = 0; s < sizeof(spnames)/sizeof(spnames[0]); s++) {
++                if (spnames[s].id != env->spell_ids[i]) continue;
++                nm = spnames[s].nm;
++                break;
++            }
++            n += snprintf(tmp + n, sizeof(tmp) - n, "%s%s(L%d %d%%)", i ? "," : "",
++                          nm ? nm : "spell", env->spell_levs[i], env->spell_fails[i]);
++        }
++        if (L.vis + 2 + n <= NH_COLS + 1) {
++            demo_line_add(&L, "", "  ");
++            demo_line_add(&L, "\x1b[36m", tmp);
++        }
++    }
++    demo_line_flush(&L);
++    demo_inv_row(k++, last, pn, plines, pclrs);
++    demo_box_edge("└", "┘", NULL, NH_COLS);
++    demo_inv_row(k++, last, pn, plines, pclrs);
++    if (rate_hz > 0) // auto-run (web): no interactive keys to advertise
++        printf("\x1b[2mstep %ld  |  running %d Hz\x1b[0m\n", steps, rate_hz);
++    else
++        printf("\x1b[2msteps %ld  |  SPACE step/hold 5Hz  |  Shift+SPACE (or S) 20Hz  |  q quit\x1b[0m\n",
++               steps);
++    fflush(stdout);
++}
++
++#endif

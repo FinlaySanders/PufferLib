@@ -1,0 +1,992 @@
+diff --git a/config/drone.ini b/config/drone.ini
+index d6278a79..0e28faeb 100644
+--- a/config/drone.ini
++++ b/config/drone.ini
+@@ -45,6 +45,24 @@ race_horizon = 2048
+ ring_reward = 1
+ race_alpha_dist = 0.947621644
+ 
++oob_penalty = 0.0
++bound_coef = 0.0
++race_exit_coef = 0.0
++race_lateral_coef = 1.0
++race_pass_radius = 0.0
++race_gate_timeout = 0.0
++race_min_speed = 0.0
++race_slow_coef = 0.0
++race_progress_shaping = 0.0
++race_dwell_coef = 0.0
++race_oob_scale = 2.0
++quat_canon = 0.0
++spawn_tumble = 0.0
++race_oob_dist = 0.0
++race_oob_terminate = 1.0
++race_ponr = 0.0
++perf_oob_weight = 0.0
++alpha_flip = 0.0
+ [policy]
+ hidden_size = 64
+ num_layers = 2
+diff --git a/ocean/drone/drone.c b/ocean/drone/drone.c
+index b3d7c60d..d1dadd96 100644
+--- a/ocean/drone/drone.c
++++ b/ocean/drone/drone.c
+@@ -237,7 +237,7 @@ static int run_gif_capture(DroneEnv* env, PufferNet* net, float* observations, f
+ void demo(int gif_mode, const char* gif_path) {
+     srand(time(NULL));
+ 
+-    // Match resources/drone/drone_weights.bin from PR #599 (obs=21, H=64, L=2)
++    // Match resources/drone/drone_weights.bin from PR #599 (obs=24, H=64, L=2)
+     Weights* weights = load_weights("resources/drone/drone_weights.bin");
+     if (!weights) {
+         fprintf(stderr, "failed to load resources/drone/drone_weights.bin\n");
+diff --git a/ocean/drone/drone.h b/ocean/drone/drone.h
+index cf5f3d6f..e5357111 100644
+--- a/ocean/drone/drone.h
++++ b/ocean/drone/drone.h
+@@ -20,8 +20,19 @@ typedef float obs_t;
+ 
+ // 5c API surface (pufferl / puffercpu)
+ #define OBS_SIZE DRONE_OBS_SIZE
++// -DDRONE_TASK_HEADS=1: the policy outputs two sets of four motor commands and
++// the env executes the hover set or the race set, i.e. per-task action heads
++// on a shared trunk without touching the trainer
++#ifndef DRONE_TASK_HEADS
++#define DRONE_TASK_HEADS 0
++#endif
++#if DRONE_TASK_HEADS
++#define NUM_ATNS 8
++#define ACT_SIZES {1, 1, 1, 1, 1, 1, 1, 1}
++#else
+ #define NUM_ATNS 4
+ #define ACT_SIZES {1, 1, 1, 1}
++#endif
+ #define MAX_DRONES 256
+ // Train is 100 Hz. Eval is 60 fps, so puffercpu emits 5 steps per 3 frames.
+ #define PUF_STEPS_PER_SEC 100
+@@ -49,7 +60,7 @@ typedef struct {
+     float n;
+     float perf;
+     float score;
+-    float keys[4];
++    float keys[8];
+ } TaskLog;
+ 
+ typedef struct Log Log;
+@@ -88,6 +99,17 @@ struct Env {
+ 
+     // Domain randomisation
+     float dr;
++    float oob_penalty; // subtracted from the race reward on the out-of-bounds step
++    float bound_coef; // per-step race penalty proportional to how far outside the drawn box
++    float race_exit_coef; // shaping potential's extra slope on a ring's exit side (0 = plain distance)
++    float race_lateral_coef; // shaping potential's weight on off-axis error (1 = plain distance)
++    float race_pass_radius; // >ring radius: graded passes, any forward crossing inside it advances the gate
++    int race_gate_timeout; // race episode ends if no ring is passed for this many steps (0 = off)
++    float race_min_speed; // keep-moving floor (m/s); below it the race reward loses race_slow_coef * shortfall per step
++    float race_slow_coef;
++    float* head_actions; // DRONE_TASK_HEADS scratch: the executed 4-per-drone commands
++    int race_progress_shaping; // 1: shape on projected progress along the segment to the gate instead of distance
++    float race_dwell_coef; // per-step penalty for sitting within 1 m of the current ring on its exit side
+ 
+     // Physics integrator (0=RK4, 1=RK2)
+     int integrator;
+@@ -102,10 +124,19 @@ struct Env {
+     float ring_reward;
+     float race_alpha_dist;
+     int race_horizon;
++    float race_oob_scale; // multiple of the drawn box at which a race episode ends (2 = original)
++    float perf_oob_weight; // > 0: race perf = laps - weight * died (uncapped laps); 0 = shipped capped lap fraction
++    float race_ponr; // 1 = end a race episode once the drone is inverted, diving faster than 8 m/s and below z=0 (unrecoverable)
++    float race_oob_dist; // if > 0, a race episode also ends when the drone is this far from its current ring (observable, like hover)
++    float race_oob_terminate; // 1 = crossing the death box ends the episode (original); 0 = no termination, oob_penalty once at the first crossing; -1 = no termination, oob_penalty every step outside
++    float alpha_flip; // per-step penalty while inverted: alpha_flip * max(0, -body_up)
++    float quat_canon; // 1 = observe the quaternion with w >= 0
++    float spawn_tumble; // fraction of spawns with a random attitude and spin, so recovery is trained
+ };
+ 
+ // Task sampling fractions (set in puf_init for puf_log episode_frac keys)
+ static float task_fracs[NUM_TASKS];
++static int g_max_rings;
+ 
+ // Forward decls used by tasks / render before includes
+ void reset_agent(DroneEnv* env, int idx);
+@@ -117,6 +148,7 @@ void close_client(Client* client);
+ void init(DroneEnv* env) {
+     assert(env->num_agents > 0 && env->num_agents <= MAX_DRONES);
+     env->drones = (Drone*)calloc(env->num_agents, sizeof(Drone));
++    env->head_actions = (float*)calloc((size_t)env->num_agents * 4, sizeof(float));
+     for (int i = 0; i < env->num_agents; i++)
+         env->drones[i].target = (Target*)calloc(1, sizeof(Target));
+ 
+@@ -141,6 +173,11 @@ void reset_agent(DroneEnv* env, int idx) {
+ 
+     init_drone(agent, &env->rng, env->dr);
+     task_reset(env, agent, idx);
++    if (env->spawn_tumble > 0.0f && rndf(0.0f, 1.0f, &env->rng) < env->spawn_tumble) {
++        float s = 0.5f * agent->params.max_omega;
++        agent->state.quat = rndquat(&env->rng);
++        agent->state.omega = (Vec3){rndf(-s, s, &env->rng), rndf(-s, s, &env->rng), rndf(-s, s, &env->rng)};
++    }
+     physics_set_drone((Physics*)env->physics, idx, &agent->params, &agent->state);
+     agent->prev_pos = agent->state.pos;
+ }
+@@ -172,11 +209,22 @@ static void drone_tick(DroneEnv* env) {
+     for (int i = 0; i < env->num_agents; i++)
+         env->drones[i].prev_pos = env->drones[i].state.pos;
+ 
++#if DRONE_TASK_HEADS
++    int head = env->task == TASK_RACE ? 4 : 0;
++    for (int i = 0; i < env->num_agents; i++)
++        for (int k = 0; k < 4; k++) env->head_actions[4 * i + k] = env->agents[i].actions[head + k];
++    physics_step((Physics*)env->physics, env->head_actions);
++#else
+     physics_step((Physics*)env->physics, drone_actions_base(env));
++#endif
+ 
+     for (int i = 0; i < env->num_agents; i++) {
+         Drone* agent = &env->drones[i];
++#if DRONE_TASK_HEADS
++        float* action = env->agents[i].actions + head;
++#else
+         float* action = env->agents[i].actions;
++#endif
+         agent->episode_length++;
+ 
+         agent->state = physics_get_state((Physics*)env->physics, i);
+@@ -189,6 +237,11 @@ static void drone_tick(DroneEnv* env) {
+         float reward = task_reward(env, agent, i, &cache);
+         reward -= env->alpha_vel * cache.vel;
+         reward -= env->alpha_omega * cache.omega;
++        if (env->alpha_flip != 0.0f) {
++            Quat q = agent->state.quat;
++            float up = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
++            if (up < 0.0f) reward += env->alpha_flip * up;
++        }
+ 
+         if (agent->episode_length > 1) {
+             float da = 0.0f;
+@@ -226,6 +279,7 @@ void puf_close(DroneEnv* env) {
+         for (int i = 0; i < env->num_agents; i++)
+             free(env->drones[i].target);
+         free(env->drones);
++        free(env->head_actions);
+         env->drones = NULL;
+     }
+     if (env->physics != NULL) {
+@@ -247,6 +301,11 @@ static void drone_fill_task_config(DroneEnv* env) {
+         cfg->ring_reward = env->ring_reward;
+         cfg->alpha_dist = env->race_alpha_dist;
+         cfg->horizon = env->race_horizon;
++        cfg->oob_scale = env->race_oob_scale;
++        cfg->oob_dist = env->race_oob_dist;
++        cfg->oob_terminate = (int)env->race_oob_terminate;
++        cfg->ponr = env->race_ponr;
++        cfg->perf_oob_weight = env->perf_oob_weight;
+         env->task_config = cfg;
+     } else {
+         HoverConfig* cfg = (HoverConfig*)calloc(1, sizeof(HoverConfig));
+@@ -259,6 +318,12 @@ static void drone_fill_task_config(DroneEnv* env) {
+     }
+ }
+ 
++// optional knobs: absent from the ini means the default (keeps older configs valid)
++static inline float drone_kw(Dict* kwargs, const char* key, float dflt) {
++    DictItem* it = dict_find(kwargs, key);
++    return it ? (float)it->value : dflt;
++}
++
+ static void drone_set_task(DroneEnv* env, TaskType task) {
+     if (env->task_config) task_close(env);
+     env->task = task;
+@@ -283,6 +348,16 @@ void puf_init(Env* env, Dict* kwargs) {
+     env->alpha_omega = dict_get(kwargs, "alpha_omega");
+     env->alpha_action = dict_get(kwargs, "alpha_action");
+     env->dr = dict_get(kwargs, "dr");
++    env->oob_penalty = drone_kw(kwargs, "oob_penalty", 0.0f);
++    env->bound_coef = drone_kw(kwargs, "bound_coef", 0.0f);
++    env->race_exit_coef = drone_kw(kwargs, "race_exit_coef", 0.0f);
++    env->race_lateral_coef = drone_kw(kwargs, "race_lateral_coef", 1.0f);
++    env->race_pass_radius = drone_kw(kwargs, "race_pass_radius", 0.0f);
++    env->race_gate_timeout = (int)drone_kw(kwargs, "race_gate_timeout", 0.0f);
++    env->race_min_speed = drone_kw(kwargs, "race_min_speed", 0.0f);
++    env->race_slow_coef = drone_kw(kwargs, "race_slow_coef", 0.0f);
++    env->race_progress_shaping = (int)drone_kw(kwargs, "race_progress_shaping", 0.0f);
++    env->race_dwell_coef = drone_kw(kwargs, "race_dwell_coef", 0.0f);
+     env->integrator = dict_get(kwargs, "use_rk2");
+ 
+     task_fracs[TASK_HOVER] = dict_get(kwargs, "hover_frac");
+@@ -313,9 +388,19 @@ void puf_init(Env* env, Dict* kwargs) {
+     env->sphere_radius = dict_get(kwargs, "sphere_radius");
+     env->hover_horizon = (int)dict_get(kwargs, "hover_horizon");
+     env->max_rings = (int)dict_get(kwargs, "max_rings");
++    g_max_rings = env->max_rings;
+     env->ring_reward = dict_get(kwargs, "ring_reward");
+     env->race_alpha_dist = dict_get(kwargs, "race_alpha_dist");
+     env->race_horizon = (int)dict_get(kwargs, "race_horizon");
++    env->race_oob_scale = drone_kw(kwargs, "race_oob_scale", 2.0f);
++    env->quat_canon = drone_kw(kwargs, "quat_canon", 0.0f);
++    drone_obs_quat_canon = (int)env->quat_canon;
++    env->spawn_tumble = drone_kw(kwargs, "spawn_tumble", 0.0f);
++    env->race_oob_dist = drone_kw(kwargs, "race_oob_dist", 0.0f);
++    env->race_oob_terminate = drone_kw(kwargs, "race_oob_terminate", 1.0f);
++    env->race_ponr = drone_kw(kwargs, "race_ponr", 0.0f);
++    env->perf_oob_weight = drone_kw(kwargs, "perf_oob_weight", 0.0f);
++    env->alpha_flip = drone_kw(kwargs, "alpha_flip", 0.0f);
+ 
+     drone_fill_task_config(env);
+ 
+@@ -344,6 +429,19 @@ void puf_log(Log* log, Dict* out) {
+     }
+     dict_set(out, "perf", active > 0 ? perf / active : 0.0f);
+     dict_set(out, "score", active > 0 ? score / active : 0.0f);
++    {   // demo objective: mean task perf with race as laps over two, charged for out-of-bounds
++        // (each percent of episodes ending OOB costs 0.1); logging only. Sweep with metric = demo, linear.
++        float dperf = 0.0f, oob = 0.0f;
++        for (int t = 0; t < NUM_TASKS; t++) {
++            float n = log->task[t].n;
++            if (n <= 0.0f) continue;
++            // race: laps over the two-lap episode ceiling so it shares hover's 0..1 range
++            dperf += (t == TASK_RACE && g_max_rings > 0) ? task_avg(log->task[t].keys[0], n) / (2.0f * (float)g_max_rings) : log->task[t].perf / n;
++        }
++        if (log->task[TASK_HOVER].n > 0.0f) oob += task_avg(log->task[TASK_HOVER].keys[3], log->task[TASK_HOVER].n);
++        if (log->task[TASK_RACE].n > 0.0f) oob += task_avg(log->task[TASK_RACE].keys[3], log->task[TASK_RACE].n);
++        dict_set(out, "demo", (active > 0 ? dperf / active : 0.0f) - 10.0f * oob);
++    }
+     dict_set(out, "episode_return", log->episode_return);
+     dict_set(out, "episode_length", log->episode_length);
+ 
+@@ -355,6 +453,7 @@ void puf_log(Log* log, Dict* out) {
+         dict_set(out, "hover/ema_vel", task_avg(h->keys[1], h->n));
+         dict_set(out, "hover/ema_omega", task_avg(h->keys[2], h->n));
+         dict_set(out, "hover/oob", task_avg(h->keys[3], h->n));
++        dict_set(out, "hover/oob_early", task_avg(h->keys[6], h->n));
+         dict_set(out, "hover/episode_frac", h->n);
+     }
+     if (log->task[TASK_RACE].n > 0.0f || (first && task_fracs[TASK_RACE] > 0.0f)) {
+@@ -365,6 +464,9 @@ void puf_log(Log* log, Dict* out) {
+         dict_set(out, "race/ring_collisions", task_avg(r->keys[1], r->n));
+         dict_set(out, "race/completed", task_avg(r->keys[2], r->n));
+         dict_set(out, "race/oob", task_avg(r->keys[3], r->n));
++        dict_set(out, "race/oob_early", task_avg(r->keys[6], r->n));
++        dict_set(out, "race/timeouts", task_avg(r->keys[4], r->n));
++        dict_set(out, "race/gates", task_avg(r->keys[5], r->n));
+         dict_set(out, "race/episode_frac", r->n);
+     }
+     if (log->task[TASK_SPHERE].n > 0.0f || (first && task_fracs[TASK_SPHERE] > 0.0f)) {
+diff --git a/ocean/drone/dronelib.h b/ocean/drone/dronelib.h
+index 4ae95805..fbcea0ba 100644
+--- a/ocean/drone/dronelib.h
++++ b/ocean/drone/dronelib.h
+@@ -42,7 +42,80 @@
+ #define RING_RADIUS 0.5f
+ #define V_TARGET 0.05f
+ 
+-#define DRONE_OBS_SIZE 21
++// target-offset encoding: tanh(scale * offset) per axis for each scale in
++// DRONE_TGT_SCALES (-DDRONE_TGT=<preset> selects one at build time)
++#ifndef DRONE_TGT
++#define DRONE_TGT 1
++#endif
++#if DRONE_TGT == 0
++#define DRONE_TGT_N 2
++#define DRONE_TGT_SCALES {0.1f, 10.0f}
++#elif DRONE_TGT == 1
++#define DRONE_TGT_N 3
++#define DRONE_TGT_SCALES {0.1f, 10.0f, 1.0f}
++#elif DRONE_TGT == 2
++#define DRONE_TGT_N 2
++#define DRONE_TGT_SCALES {0.1f, 3.0f}
++#elif DRONE_TGT == 3
++#define DRONE_TGT_N 5
++#define DRONE_TGT_SCALES {0.1f, 0.3f, 1.0f, 3.0f, 10.0f}
++#elif DRONE_TGT == 4
++#define DRONE_TGT_N 3
++#define DRONE_TGT_SCALES {0.2f, 1.0f, 5.0f}
++#elif DRONE_TGT == 5
++#define DRONE_TGT_N 2
++#define DRONE_TGT_SCALES {0.3f, 3.0f}
++#elif DRONE_TGT == 6
++#define DRONE_TGT_N 3
++#define DRONE_TGT_SCALES {0.05f, 0.5f, 5.0f}
++#endif
++// -DDRONE_POS_OBS=1 appends world-frame position / grid half-size (±1 at the
++// drawn box, ±2 at the race bound): the only way the policy can see the floor
++#ifndef DRONE_POS_OBS
++#define DRONE_POS_OBS 0
++#endif
++// -DDRONE_NEXT_OBS=1 appends the next target's body-frame offset (same scales)
++// and normal, so the policy can set up the exit line through the current ring
++#ifndef DRONE_NEXT_OBS
++#define DRONE_NEXT_OBS 0
++#endif
++// -DDRONE_FLOOR_OBS=1 appends the height, world z scaled by the race death box (2x the drawn box) and clamped to
++// [-1, 1]: -1 at the death floor, -0.5 at the drawn floor, 0 at the centre. An alive drone is always inside the death
++// box, so the clamp is a guard only. The quantity an unarrestable dive depends on and the only boundary ever exited.
++// -DDRONE_FLOOR_OBS=2 instead appends the same distance as a BODY-FRAME vector (3 floats): world down rotated into the
++// body frame times the distance to the death floor over the death-box height (0 at the floor, 1 at the death ceiling),
++// so "how far is the floor along my thrust axis" is a direct input, matching the body-frame convention of the ring offsets
++#ifndef DRONE_FLOOR_OBS
++#define DRONE_FLOOR_OBS 0
++#endif
++#define DRONE_FLOOR_N (DRONE_FLOOR_OBS == 2 ? 3 : DRONE_FLOOR_OBS)
++// -DDRONE_BOX_OBS=1 appends world x, y, z scaled and clamped the same way (three features)
++#ifndef DRONE_BOX_OBS
++#define DRONE_BOX_OBS 0
++#endif
++#define DRONE_BOX_FEAT(v, half) fminf(1.0f, fmaxf(-1.0f, (v) / (2.0f * (half))))
++// attitude observation: DRONE_ATT_ROTMAT = world down and world forward in the body frame (6, continuous,
++// sign-free); default = raw quaternion (4, q and -q are the same rotation)
++// The rotation-matrix attitude is the default (September 2026): the raw quaternion's double cover (q and -q) was the
++// cause of the catastrophic race tracks. -DDRONE_ATT_QUAT restores the quaternion for old checkpoints.
++#if !defined(DRONE_ATT_QUAT) && !defined(DRONE_ATT_GRAV) && !defined(DRONE_ATT_ROTMAT)
++#define DRONE_ATT_ROTMAT 1
++#endif
++#if defined(DRONE_ATT_ROTMAT)
++#define DRONE_ATT_N 6
++#elif defined(DRONE_ATT_GRAV)
++#define DRONE_ATT_N 3 // world down in the body frame only: gravity as the drone feels it
++#else
++#define DRONE_ATT_N 4
++#endif
++#define DRONE_OBS_BASE (11 + DRONE_ATT_N + 3 * DRONE_TGT_N + 3 * DRONE_POS_OBS + DRONE_FLOOR_N + 3 * DRONE_BOX_OBS + DRONE_NEXT_OBS * (3 * DRONE_TGT_N + 3))
++// -DDRONE_TASK_SPLIT_OBS=1: the observation is written twice, into a hover slot
++// and a race slot, the other slot zero, giving the linear encoder per-task
++// input weights (a task-gated first layer) with no trainer change
++#ifndef DRONE_TASK_SPLIT_OBS
++#define DRONE_TASK_SPLIT_OBS 0
++#endif
++#define DRONE_OBS_SIZE (DRONE_OBS_BASE * (1 + DRONE_TASK_SPLIT_OBS))
+ 
+ // Core Parameters
+ #define DT 0.002f // 500 Hz
+@@ -113,6 +186,7 @@ typedef struct {
+     Vec3 prev_pos;
+     float prev_action[4];
+     Target* target;
++    Target next; // the ring after the current one (race); equals *target elsewhere
+ 
+     float episode_return;
+     int episode_length;
+@@ -127,8 +201,20 @@ static inline float clampf(float v, float min, float max) {
+     return v;
+ }
+ 
++// env-owned generator (glibc's rand_r) so native, CUDA and web builds draw the same stream
++#define DRONE_RAND_MAX 2147483647
++static inline int drone_rand(unsigned int* rng) {
++    unsigned int next = *rng;
++    int result;
++    next = next * 1103515245u + 12345u; result = (int)((next / 65536u) % 2048u);
++    next = next * 1103515245u + 12345u; result <<= 10; result ^= (int)((next / 65536u) % 1024u);
++    next = next * 1103515245u + 12345u; result <<= 10; result ^= (int)((next / 65536u) % 1024u);
++    *rng = next;
++    return result;
++}
++
+ static inline float rndf(float a, float b, unsigned int* rng) {
+-    return a + ((float)rand_r(rng) / (float)RAND_MAX) * (b - a);
++    return a + ((float)drone_rand(rng) / (float)DRONE_RAND_MAX) * (b - a);
+ }
+ 
+ static inline Vec3 add3(Vec3 a, Vec3 b) { return (Vec3){a.x + b.x, a.y + b.y, a.z + b.z}; }
+@@ -177,7 +263,11 @@ static inline Target rndring(unsigned int* rng, float radius) {
+     Target ring = (Target){0};
+     ring.pos.x = rndf(-GRID_X + 2 * radius, GRID_X - 2 * radius, rng);
+     ring.pos.y = rndf(-GRID_Y + 2 * radius, GRID_Y - 2 * radius, rng);
++#ifdef RING_Z_MIN
++    ring.pos.z = rndf(RING_Z_MIN, GRID_Z - 2 * radius, rng); // keep rings clear of the floor band
++#else
+     ring.pos.z = rndf(-GRID_Z + 2 * radius, GRID_Z - 2 * radius, rng);
++#endif
+     ring.orientation = rndquat(rng);
+     ring.normal = quat_rotate(ring.orientation, (Vec3){0.0f, 0.0f, 1.0f});
+     ring.radius = radius;
+@@ -238,9 +328,17 @@ static inline void init_drone(Drone* drone, unsigned int* rng, float dr) {
+ 
+ // observations
+ 
++// quat_canon: observe q with w >= 0 (q and -q are the same rotation); set from the env config
++static int drone_obs_quat_canon = 0;
++
+ void compute_drone_observations(Drone* agent, float* observations, bool is_race) {
+     int idx = 0;
++#if DRONE_TASK_SPLIT_OBS
++    memset(observations, 0, sizeof(float) * DRONE_OBS_SIZE);
++    if (is_race) observations += DRONE_OBS_BASE;
++#endif
+     Quat q = agent->state.quat;
++    if (drone_obs_quat_canon && q.w < 0.0f) q = (Quat){-q.w, -q.x, -q.y, -q.z}; // same rotation, canonical sign
+     Quat q_inv = quat_inverse(q);
+     Vec3 vel_body = quat_rotate(q_inv, agent->state.vel);
+     Vec3 to_target = quat_rotate(q_inv, sub3(agent->target->pos, agent->state.pos));
+@@ -254,20 +352,32 @@ void compute_drone_observations(Drone* agent, float* observations, bool is_race)
+     observations[idx++] = agent->state.omega.y / agent->params.max_omega;
+     observations[idx++] = agent->state.omega.z / agent->params.max_omega;
+ 
++#if defined(DRONE_ATT_ROTMAT) || defined(DRONE_ATT_GRAV)
++    Vec3 down_body = quat_rotate(q_inv, (Vec3){0.0f, 0.0f, -1.0f});
++    observations[idx++] = down_body.x;
++    observations[idx++] = down_body.y;
++    observations[idx++] = down_body.z;
++#endif
++#if defined(DRONE_ATT_ROTMAT)
++    Vec3 fwd_body = quat_rotate(q_inv, (Vec3){1.0f, 0.0f, 0.0f});
++    observations[idx++] = fwd_body.x;
++    observations[idx++] = fwd_body.y;
++    observations[idx++] = fwd_body.z;
++#elif !defined(DRONE_ATT_GRAV)
+     observations[idx++] = q.w;
+     observations[idx++] = q.x;
+     observations[idx++] = q.y;
+     observations[idx++] = q.z;
++#endif
+ 
+-    // this is body frame so we have to be careful about scaling
+-    // because distances are relative to the drone orientation
+-    observations[idx++] = tanhf(to_target.x * 0.1f);
+-    observations[idx++] = tanhf(to_target.y * 0.1f);
+-    observations[idx++] = tanhf(to_target.z * 0.1f);
+-
+-    observations[idx++] = tanhf(to_target.x * 10.0f);
+-    observations[idx++] = tanhf(to_target.y * 10.0f);
+-    observations[idx++] = tanhf(to_target.z * 10.0f);
++    // body frame, so distances are relative to the drone orientation; several
++    // tanh scales so both cm-level hover error and m-level approach are readable
++    static const float tgt_scales[DRONE_TGT_N] = DRONE_TGT_SCALES;
++    for (int k = 0; k < DRONE_TGT_N; k++) {
++        observations[idx++] = tanhf(to_target.x * tgt_scales[k]);
++        observations[idx++] = tanhf(to_target.y * tgt_scales[k]);
++        observations[idx++] = tanhf(to_target.z * tgt_scales[k]);
++    }
+ 
+     Vec3 normal_body = quat_rotate(q_inv, agent->target->normal);
+     observations[idx++] = normal_body.x;
+@@ -276,4 +386,37 @@ void compute_drone_observations(Drone* agent, float* observations, bool is_race)
+ 
+     observations[idx++] = is_race ? 0.0f : 1.0f;
+     observations[idx++] = is_race ? 1.0f : 0.0f;
++#if DRONE_NEXT_OBS
++    Vec3 to_next = quat_rotate(q_inv, sub3(agent->next.pos, agent->state.pos));
++    for (int k = 0; k < DRONE_TGT_N; k++) {
++        observations[idx++] = tanhf(to_next.x * tgt_scales[k]);
++        observations[idx++] = tanhf(to_next.y * tgt_scales[k]);
++        observations[idx++] = tanhf(to_next.z * tgt_scales[k]);
++    }
++    Vec3 next_normal_body = quat_rotate(q_inv, agent->next.normal);
++    observations[idx++] = next_normal_body.x;
++    observations[idx++] = next_normal_body.y;
++    observations[idx++] = next_normal_body.z;
++#endif
++#if DRONE_POS_OBS
++    observations[idx++] = agent->state.pos.x / GRID_X;
++    observations[idx++] = agent->state.pos.y / GRID_Y;
++    observations[idx++] = agent->state.pos.z / GRID_Z;
++#endif
++#if DRONE_FLOOR_OBS == 2
++    {
++        float d = fminf(1.0f, fmaxf(0.0f, (agent->state.pos.z + 2.0f * GRID_Z) / (4.0f * GRID_Z)));
++        Vec3 fb = quat_rotate(q_inv, (Vec3){0.0f, 0.0f, -1.0f});
++        observations[idx++] = fb.x * d;
++        observations[idx++] = fb.y * d;
++        observations[idx++] = fb.z * d;
++    }
++#elif DRONE_FLOOR_OBS
++    observations[idx++] = DRONE_BOX_FEAT(agent->state.pos.z, GRID_Z);
++#endif
++#if DRONE_BOX_OBS
++    observations[idx++] = DRONE_BOX_FEAT(agent->state.pos.x, GRID_X);
++    observations[idx++] = DRONE_BOX_FEAT(agent->state.pos.y, GRID_Y);
++    observations[idx++] = DRONE_BOX_FEAT(agent->state.pos.z, GRID_Z);
++#endif
+ }
+\ No newline at end of file
+diff --git a/ocean/drone/render.h b/ocean/drone/render.h
+index 7253cfff..dc07ca98 100644
+--- a/ocean/drone/render.h
++++ b/ocean/drone/render.h
+@@ -474,7 +474,7 @@ static void render_task(DroneEnv* env, Client* client) {
+     RaceConfig* cfg = (RaceConfig*)env->task_config;
+     RaceState* state = (RaceState*)env->task_state;
+     for (int i = 0; i < cfg->max_rings; i++)
+-        DrawRing3D(state->ring_buffer[i], 0.1f, GREEN, BLUE);
++        DrawRing3D(race_rings(state, cfg, client->selected_drone)[i], 0.1f, GREEN, BLUE);
+ }
+ 
+ void puf_render(DroneEnv* env) {
+diff --git a/ocean/drone/task_hover.h b/ocean/drone/task_hover.h
+index b9ef75db..fe2ffc12 100644
+--- a/ocean/drone/task_hover.h
++++ b/ocean/drone/task_hover.h
+@@ -2,9 +2,15 @@
+ 
+ // types
+ 
++#ifndef HOVER_SCORE_DIST_SCALE
+ #define HOVER_SCORE_DIST_SCALE 0.01f
++#endif
++#ifndef HOVER_SCORE_VEL_SCALE
+ #define HOVER_SCORE_VEL_SCALE 0.01f
++#endif
++#ifndef HOVER_SCORE_OMEGA_SCALE
+ #define HOVER_SCORE_OMEGA_SCALE 0.01f
++#endif
+ 
+ typedef struct {
+     float target_dist;
+@@ -73,6 +79,7 @@ static void hover_reset_to(DroneEnv* env, Drone* agent, int idx, Vec3 target, fl
+     agent->target->pos = target;
+     agent->target->vel = (Vec3){0.0f, 0.0f, 0.0f};
+     agent->target->normal = (Vec3){0.0f, 0.0f, 0.0f};
++    agent->next = *agent->target;
+ 
+     Vec3 p = add3(target, random_ball_offset(&env->rng, spawn_dist));
+     agent->state.pos = (Vec3){
+@@ -150,6 +157,7 @@ static float hover_reward(DroneEnv* env, Drone* agent, int idx, StepCache* cache
+     float score = hover_score(cache->dist, cache->vel, cache->omega);
+     float reward = cfg->alpha_hover * score;
+     reward += cfg->alpha_dist * (cache->prev_dist - cache->dist);
++    if (cache->dist > cfg->target_dist + 1.0f) reward -= env->oob_penalty; // sphere exit ends the episode
+ 
+     state->score[idx] += score;
+     state->perf[idx] = 0.98f * state->perf[idx] + 0.02f * score;
+@@ -175,4 +183,5 @@ static void hover_log(DroneEnv* env, Drone* agent, int idx, Log* log, StepCache*
+     t->keys[1] += state->ema_vel[idx];
+     t->keys[2] += state->ema_omega[idx];
+     t->keys[3] += cache->dist > (cfg->target_dist + 1.0f) ? 1.0f : 0.0f;
++    t->keys[6] += cache->dist > (cfg->target_dist + 1.0f) ? 1.0f - (float)agent->episode_length / (float)cfg->horizon : 0.0f;
+ }
+diff --git a/ocean/drone/task_race.h b/ocean/drone/task_race.h
+index 49b2fbdf..b2e03043 100644
+--- a/ocean/drone/task_race.h
++++ b/ocean/drone/task_race.h
+@@ -6,6 +6,7 @@
+ #define RACE_RING_MAX_DIST 8.0f
+ #define RACE_RING_SEPARATION (3.0f * RING_RADIUS)
+ #define RACE_MAX_PLACE_ATTEMPTS 100
++#define RACE_MAX_TRACK_ATTEMPTS 16
+ 
+ // types
+ 
+@@ -14,24 +15,40 @@ typedef struct {
+     float ring_reward;
+     float alpha_dist;
+     int horizon;
++    float oob_scale;
++    float oob_dist;
++    float ponr;
++    float perf_oob_weight;
++    int oob_terminate; // race_oob_terminate
+ } RaceConfig;
+ 
+ typedef struct {
+-    Target* ring_buffer;
++    Target* ring_buffer; // num_agents * max_rings: one track per drone
++    int track_fixed; // PUF_FIXED_TRACK: track generated once
+     int* ring_idx;
+     int* rings_passed;
+     float* collisions;
++    int* since_pass; // steps since the last ring pass (gate timeout)
++    int* gates; // gates advanced (clean passes + graded passes)
++    int* crossed; // the episode crossed the death box at least once (logged as oob when termination is off)
+ } RaceState;
+ 
++static inline Target* race_rings(RaceState* state, RaceConfig* cfg, int idx) {
++    return state->ring_buffer + idx * cfg->max_rings;
++}
++
+ // lifecycle
+ 
+ static void race_init(DroneEnv* env) {
+     RaceConfig* cfg = (RaceConfig*)env->task_config;
+     RaceState* state = (RaceState*)calloc(1, sizeof(RaceState));
+-    state->ring_buffer = (Target*)calloc(cfg->max_rings, sizeof(Target));
++    state->ring_buffer = (Target*)calloc((size_t)env->num_agents * cfg->max_rings, sizeof(Target));
+     state->ring_idx = (int*)calloc(env->num_agents, sizeof(int));
+     state->rings_passed = (int*)calloc(env->num_agents, sizeof(int));
+     state->collisions = (float*)calloc(env->num_agents, sizeof(float));
++    state->since_pass = (int*)calloc(env->num_agents, sizeof(int));
++    state->crossed = (int*)calloc(env->num_agents, sizeof(int));
++    state->gates = (int*)calloc(env->num_agents, sizeof(int));
+     env->task_state = state;
+ }
+ 
+@@ -42,6 +59,9 @@ static void race_close(DroneEnv* env) {
+         free(state->ring_idx);
+         free(state->rings_passed);
+         free(state->collisions);
++        free(state->since_pass);
++        free(state->crossed);
++        free(state->gates);
+         free(state);
+     }
+     free(env->task_config);
+@@ -60,8 +80,10 @@ static inline bool in_gap_band(Vec3 a, Vec3 b) {
+     return d >= RACE_RING_MIN_DIST && d <= RACE_RING_MAX_DIST;
+ }
+ 
++// reach > 0: keep the ring within reach of ring 0 so the loop can still close in
++// the segments that remain (each segment covers at most RACE_RING_MAX_DIST)
+ static inline Target gen_next_ring(unsigned int* rng, const Target* rings, int count,
+-                                   const Target* close) {
++                                   const Target* close, float reach) {
+     const Target* prev = &rings[count - 1];
+     Target best = rndring(rng, RING_RADIUS);
+     bool have_fallback = false;
+@@ -69,13 +91,61 @@ static inline Target gen_next_ring(unsigned int* rng, const Target* rings, int c
+         Target ring = rndring(rng, RING_RADIUS);
+         if (!in_gap_band(ring.pos, prev->pos)) continue;
+         if (ring_overlaps(rings, count, ring.pos)) continue;
+-        if (!have_fallback) { best = ring; have_fallback = true; }
++        if (!have_fallback) { best = ring; have_fallback = true; } // band-valid fallback
++        if (reach > 0.0f && norm3(sub3(ring.pos, rings[0].pos)) > reach) continue;
+         if (close != NULL && !in_gap_band(ring.pos, close->pos)) continue;
+         return ring;
+     }
+     return best;
+ }
+ 
++static inline Vec3 cross3(Vec3 a, Vec3 b) {
++    return (Vec3){a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
++}
++
++static inline bool ring_in_arena(Vec3 p, float radius) {
++    float m = 2.0f * radius;
++#ifdef RING_Z_MIN
++    float zlo = RING_Z_MIN;
++#else
++    float zlo = -GRID_Z + m;
++#endif
++    return p.x >= -GRID_X + m && p.x <= GRID_X - m && p.y >= -GRID_Y + m && p.y <= GRID_Y - m
++        && p.z >= zlo && p.z <= GRID_Z - m;
++}
++
++// closing ring: sample the set of points within the gap band of BOTH the previous
++// ring and ring 0 directly (a circle at equal distance r from the two), instead of
++// hoping a uniform arena sample lands in it. Fails when the two are too far apart.
++static inline bool gen_close_ring(unsigned int* rng, const Target* rings, int count, Target* out) {
++    Vec3 a = rings[count - 1].pos, b = rings[0].pos;
++    Vec3 ab = sub3(b, a);
++    float d = norm3(ab);
++    if (d > 2.0f * RACE_RING_MAX_DIST || d < 1e-4f) return false;
++    Vec3 u = scalmul3(ab, 1.0f / d);
++    Vec3 ref = fabsf(u.z) < 0.9f ? (Vec3){0.0f, 0.0f, 1.0f} : (Vec3){1.0f, 0.0f, 0.0f};
++    Vec3 v = cross3(u, ref); v = scalmul3(v, 1.0f / norm3(v));
++    Vec3 w = cross3(u, v);
++    Vec3 mid = add3(a, scalmul3(ab, 0.5f));
++    float rmin = fmaxf(RACE_RING_MIN_DIST, 0.5f * d);
++    for (int attempt = 0; attempt < RACE_MAX_PLACE_ATTEMPTS; attempt++) {
++        float r = rndf(rmin, RACE_RING_MAX_DIST, rng);
++        float rho = sqrtf(fmaxf(r * r - 0.25f * d * d, 0.0f));
++        float th = rndf(0.0f, 2.0f * M_PI, rng);
++        Vec3 p = add3(mid, add3(scalmul3(v, rho * cosf(th)), scalmul3(w, rho * sinf(th))));
++        if (!ring_in_arena(p, RING_RADIUS)) continue;
++        if (ring_overlaps(rings, count, p)) continue;
++        Target ring = (Target){0};
++        ring.pos = p;
++        ring.orientation = rndquat(rng);
++        ring.normal = quat_rotate(ring.orientation, (Vec3){0.0f, 0.0f, 1.0f});
++        ring.radius = RING_RADIUS;
++        *out = ring;
++        return true;
++    }
++    return false;
++}
++
+ static inline Vec3 path_normal(const Target* rings, int n, int i) {
+     if (n < 2) return (Vec3){0.0f, 0.0f, 1.0f};
+     Vec3 dir = sub3(rings[(i + 1) % n].pos, rings[(i - 1 + n) % n].pos);
+@@ -110,39 +180,81 @@ static inline int check_ring(Vec3 pos, Vec3 prev_pos, Target* ring) {
+         Vec3 intersection = add3(prev_pos, scalmul3(dir, t));
+         float d = norm3(sub3(intersection, ring->pos));
+ 
+-        // margins scale with radius
++        // margins scale with radius; RACE_FULL_RADIUS_PASS scores any crossing
++        // inside the ring as a pass and only the outer band as a collision
+         float margin = 0.1f * ring->radius;
++#ifdef RACE_FULL_RADIUS_PASS
++        if (d < ring->radius && valid_dir) return 1;
++#else
+         if (d < (ring->radius - margin) && valid_dir) return 1;
++#endif
+         if (d < ring->radius + margin) return -1;
+     }
+     return 0;
+ }
+ 
+-// callbacks
+-
+-static void race_env_reset(DroneEnv* env) {
+-    RaceConfig* cfg = (RaceConfig*)env->task_config;
+-    RaceState* state = (RaceState*)env->task_state;
++// shaping potential: distance to the ring with lateral (off-axis) error weighted
++// by lateral_coef so the approach lines up with the ring axis before the plane
++// (lateral_coef 1, exit_coef 0 = plain Euclidean distance, the original reward)
++static inline float race_phi(const Target* ring, Vec3 p, float exit_coef, float lateral_coef) {
++    Vec3 rel = sub3(p, ring->pos);
++    float s = dot3(rel, ring->normal);
++    float lat2 = fmaxf(dot3(rel, rel) - s * s, 0.0f);
++    return sqrtf(s * s + lateral_coef * lateral_coef * lat2) + exit_coef * fmaxf(0.0f, s);
++}
+ 
+-    state->ring_buffer[0] = rndring(&env->rng, RING_RADIUS);
+-    for (int i = 1; i < cfg->max_rings; i++) {
+-        const Target* close = (i == cfg->max_rings - 1) ? &state->ring_buffer[0] : NULL;
+-        state->ring_buffer[i] = gen_next_ring(&env->rng, state->ring_buffer, i, close);
++static inline bool race_oob(RaceConfig* cfg, Drone* agent, StepCache* cache) {
++    if (cfg->ponr > 0.0f) { // kinematic point of no return: even full upright thrust cannot stop the
++        // descent before the floor boundary (vz^2 > 2 * a_max * height_left); race_ponr scales the
++        // required braking (1 = exact physics, >1 = fires later)
++        float vz = agent->state.vel.z;
++        if (vz < 0.0f) {
++            const Params* p = &agent->params;
++            float a_max = 4.0f * p->k_thrust * p->max_rpm * p->max_rpm * p->inv_mass - p->gravity;
++            float h = agent->state.pos.z + cfg->oob_scale * GRID_Z;
++            if (h <= 0.0f || vz * vz > cfg->ponr * 2.0f * a_max * h) return true;
++        }
+     }
++    return out_of_bounds(agent->state.pos, cfg->oob_scale) || (cfg->oob_dist > 0.0f && cache->dist > cfg->oob_dist);
++}
+ 
+-    center_rings(state->ring_buffer, cfg->max_rings);
++// callbacks
+ 
+-    for (int i = 0; i < cfg->max_rings; i++) {
+-        state->ring_buffer[i].normal = path_normal(state->ring_buffer, cfg->max_rings, i);
++static void race_gen_track(unsigned int* rng, Target* rings, int n) {
++    // every segment, the closing one included, stays inside the gap band; a track
++    // whose closing ring cannot be placed is regenerated (rare with the reach rule)
++    bool closed = false;
++    for (int attempt = 0; attempt < RACE_MAX_TRACK_ATTEMPTS && !closed; attempt++) {
++        rings[0] = rndring(rng, RING_RADIUS);
++        for (int i = 1; i < n - 1; i++)
++            rings[i] = gen_next_ring(rng, rings, i, NULL, 0.95f * (float)(n - i) * RACE_RING_MAX_DIST);
++        closed = gen_close_ring(rng, rings, n - 1, &rings[n - 1]);
+     }
++    if (!closed) rings[n - 1] = gen_next_ring(rng, rings, n - 1, &rings[0], 0.0f);
++    center_rings(rings, n);
++    for (int i = 0; i < n; i++) rings[i].normal = path_normal(rings, n, i);
+ }
+ 
+ static void race_reset(DroneEnv* env, Drone* agent, int idx) {
+     RaceConfig* cfg = (RaceConfig*)env->task_config;
+     RaceState* state = (RaceState*)env->task_state;
++    Target* rings = race_rings(state, cfg, idx);
++#ifdef PUF_FIXED_TRACK
++    // diagnostic census mode: one track per env (generated once), every drone flies it
++    if (!state->track_fixed) { race_gen_track(&env->rng, race_rings(state, cfg, 0), cfg->max_rings); state->track_fixed = 1;
++#ifdef PUF_OOB_LOG
++        Target* t0 = race_rings(state, cfg, 0); printf("TRACK");
++        for (int i = 0; i < cfg->max_rings; i++) printf(" %.3f,%.3f,%.3f,%.3f,%.3f,%.3f", t0[i].pos.x, t0[i].pos.y, t0[i].pos.z, t0[i].normal.x, t0[i].normal.y, t0[i].normal.z);
++        printf("\n");
++#endif
++    }
++    if (idx != 0) memcpy(rings, race_rings(state, cfg, 0), cfg->max_rings * sizeof(Target));
++#else
++    race_gen_track(&env->rng, rings, cfg->max_rings);
++#endif
+ 
+-    int g = (int)(rand_r(&env->rng) % cfg->max_rings);
+-    Target* gate = &state->ring_buffer[g];
++    int g = (int)(drone_rand(&env->rng) % cfg->max_rings);
++    Target* gate = &rings[g];
+ 
+     float back = rndf(1.0f, 3.0f, &env->rng);
+     Vec3 pos = sub3(gate->pos, scalmul3(gate->normal, back));
+@@ -157,23 +269,107 @@ static void race_reset(DroneEnv* env, Drone* agent, int idx) {
+     state->ring_idx[idx] = g;
+     state->rings_passed[idx] = 0;
+     state->collisions[idx] = 0.0f;
++    state->since_pass[idx] = 0;
++    state->crossed[idx] = 0;
++    state->gates[idx] = 0;
+     *agent->target = *gate;
++    agent->next = rings[(g + 1) % cfg->max_rings];
+ }
+ 
++#ifdef PUF_OOB_LOG
++static int oob_negw[8192], oob_ruleA[8192], oob_ruleB[8192], oob_ruleC[8192], oob_ruleD[8192]; static float oob_maxtilt[8192], oob_maxomega[8192];
++#endif
+ static float race_reward(DroneEnv* env, Drone* agent, int idx, StepCache* cache) {
++#ifdef PUF_STEP_LOG
++    { static int log_gate = -2; if (log_gate == -2) { const char* g = getenv("PUF_LOG_GATE"); log_gate = g ? atoi(g) : -1; }
++      RaceState* st_ = (RaceState*)env->task_state; int r = st_->ring_idx[idx];
++      if (log_gate >= 0 && (r == log_gate || r == (log_gate + ((RaceConfig*)env->task_config)->max_rings - 1) % ((RaceConfig*)env->task_config)->max_rings)) {
++        Quat q = agent->state.quat; float up = 1.0f - 2.0f * (q.x * q.x + q.y * q.y); float* a = env->agents[idx].actions;
++        Vec3 rel = sub3(agent->target->pos, agent->state.pos);
++        printf("STEP idx=%d len=%.0f ring=%d z=%.2f vz=%.2f speed=%.2f up=%.2f omega=%.1f tdz=%.2f tdist=%.2f a0=%.2f a1=%.2f a2=%.2f a3=%.2f\n", idx, (double)agent->episode_length, r,
++            agent->state.pos.z, agent->state.vel.z, norm3(agent->state.vel), up, norm3(agent->state.omega), rel.z, norm3(rel), a[0], a[1], a[2], a[3]);
++      } }
++#endif
++#ifdef PUF_OOB_LOG
++    { Quat q = agent->state.quat; float up = 1.0f - 2.0f * (q.x * q.x + q.y * q.y); float om = norm3(agent->state.omega);
++      if (agent->episode_length <= 1) { oob_negw[idx] = 0; oob_maxtilt[idx] = 0.0f; oob_maxomega[idx] = 0.0f; }
++      if (q.w < 0.0f) oob_negw[idx]++; if (1.0f - up > oob_maxtilt[idx]) oob_maxtilt[idx] = 1.0f - up; if (om > oob_maxomega[idx]) oob_maxomega[idx] = om;
++      { float vz = agent->state.vel.z, z = agent->state.pos.z; // candidate point-of-no-return rules, counted per episode
++        if (agent->episode_length <= 1) { oob_ruleA[idx] = oob_ruleB[idx] = oob_ruleC[idx] = oob_ruleD[idx] = 0; }
++        if (up < -0.5f && vz < -12.0f && z < -2.0f) oob_ruleA[idx]++;
++        if (up < -0.3f && vz < -10.0f && z < 0.0f && om > 15.0f) oob_ruleB[idx]++;
++        if (up < 0.0f && vz < -12.0f && z < -3.0f && om > 20.0f) oob_ruleC[idx]++;
++        if (up < -0.7f && vz < -10.0f && z < -2.0f) oob_ruleD[idx]++; } }
++#endif
+     RaceConfig* cfg = (RaceConfig*)env->task_config;
+     RaceState* state = (RaceState*)env->task_state;
++    Target* rings = race_rings(state, cfg, idx);
++
++    // potential-based shaping: distance to the ring, plus an uphill term on the
++    // exit side so a drone that got past the ring without passing it is pulled
++    // back round (race_exit_coef 0 = plain distance, the original behaviour)
++    Target* ring = &rings[state->ring_idx[idx]];
++    float reward;
++    if (env->race_progress_shaping) {
++        // progress along the straight segment from the previous gate to this one,
++        // clipped to the segment: no credit for overshooting, no charge for backing out
++        Target* prev = &rings[(state->ring_idx[idx] + cfg->max_rings - 1) % cfg->max_rings];
++        Vec3 seg = sub3(ring->pos, prev->pos); float len = norm3(seg);
++        Vec3 u = len > 1e-6f ? scalmul3(seg, 1.0f / len) : ring->normal;
++        float p_now = clampf(dot3(sub3(agent->state.pos, prev->pos), u), 0.0f, len);
++        float p_prev = clampf(dot3(sub3(agent->prev_pos, prev->pos), u), 0.0f, len);
++        reward = cfg->alpha_dist * (p_now - p_prev);
++    } else {
++        float lc = env->race_lateral_coef > 0.0f ? env->race_lateral_coef : 1.0f;
++        reward = cfg->alpha_dist * (race_phi(ring, agent->prev_pos, env->race_exit_coef, lc)
++                                    - race_phi(ring, agent->state.pos, env->race_exit_coef, lc));
++    }
++    if (env->race_slow_coef != 0.0f) {
++        float shortfall = env->race_min_speed - cache->vel;
++        if (shortfall > 0.0f) reward -= env->race_slow_coef * shortfall;
++    }
+ 
+-    float reward = cfg->alpha_dist * (cache->prev_dist - cache->dist);
+-
+-    int result = check_ring(agent->state.pos, agent->prev_pos, &state->ring_buffer[state->ring_idx[idx]]);
+-    if (result == 1) {
+-        state->rings_passed[idx]++;
++    int result = check_ring(agent->state.pos, agent->prev_pos, ring);
++    float credit = result == 1 ? 1.0f : 0.0f;
++    if (env->race_pass_radius > ring->radius) {
++        // graded pass: any forward crossing of the plane inside race_pass_radius
++        // advances the gate; credit falls linearly from 1 at the hoop edge to 0
++        // at race_pass_radius, so a wide crossing still moves the race on
++        float prev_dot = dot3(sub3(agent->prev_pos, ring->pos), ring->normal);
++        float new_dot = dot3(sub3(agent->state.pos, ring->pos), ring->normal);
++        if (result != 1 && prev_dot < 0.0f && new_dot > 0.0f) {
++            Vec3 dir = sub3(agent->state.pos, agent->prev_pos);
++            float denom = dot3(ring->normal, dir);
++            if (fabsf(denom) > 1e-9f) {
++                Vec3 hit = add3(agent->prev_pos, scalmul3(dir, -prev_dot / denom));
++                float d = norm3(sub3(hit, ring->pos));
++                if (d < env->race_pass_radius)
++                    credit = fmaxf(0.05f, 1.0f - (d - ring->radius) / (env->race_pass_radius - ring->radius));
++            }
++        }
++    }
++    if (credit > 0.0f) {
++        if (result == 1) state->rings_passed[idx]++;
++        state->gates[idx]++;
++        state->since_pass[idx] = 0;
+         state->ring_idx[idx] = (state->ring_idx[idx] + 1) % cfg->max_rings;
+-        *agent->target = state->ring_buffer[state->ring_idx[idx]];
+-        reward += cfg->ring_reward;
+-    } else if (result == -1) {
+-        state->collisions[idx] += 1.0f;
++        *agent->target = rings[state->ring_idx[idx]];
++        agent->next = rings[(state->ring_idx[idx] + 1) % cfg->max_rings];
++        reward += cfg->ring_reward * credit;
++    }
++    if (result == -1) state->collisions[idx] += 1.0f;
++    if (env->race_dwell_coef != 0.0f) {
++        Target* ring = &rings[state->ring_idx[idx]];
++        Vec3 rel = sub3(agent->state.pos, ring->pos);
++        if (dot3(rel, ring->normal) > 0.0f && norm3(rel) < 1.0f) reward -= env->race_dwell_coef;
++    }
++    { bool oob = race_oob(cfg, agent, cache);
++      if (oob && (cfg->oob_terminate != 0 || !state->crossed[idx])) reward -= env->oob_penalty; // terminate: on the death step; 0: once at the first crossing; -1: every step outside
++      if (oob) state->crossed[idx] = 1; }
++    if (env->bound_coef != 0.0f) {
++        Vec3 p = agent->state.pos;
++        float over = fmaxf(fmaxf(fabsf(p.x) / GRID_X, fabsf(p.y) / GRID_Y), fabsf(p.z) / GRID_Z) - 1.0f;
++        if (over > 0.0f) reward -= env->bound_coef * over;
+     }
+ 
+     return reward;
+@@ -181,7 +377,11 @@ static float race_reward(DroneEnv* env, Drone* agent, int idx, StepCache* cache)
+ 
+ static bool race_done(DroneEnv* env, Drone* agent, int idx, StepCache* cache) {
+     RaceConfig* cfg = (RaceConfig*)env->task_config;
+-    return out_of_bounds(agent->state.pos, RACE_OOB_SCALE) || agent->episode_length >= cfg->horizon;
++    RaceState* state = (RaceState*)env->task_state;
++    // gate timeout: like a checkpoint timer in a real race, the run ends if the
++    // next ring is not reached within race_gate_timeout steps (0 = off)
++    bool timed_out = env->race_gate_timeout > 0 && ++state->since_pass[idx] >= env->race_gate_timeout;
++    return (cfg->oob_terminate == 1 && race_oob(cfg, agent, cache)) || timed_out || agent->episode_length >= cfg->horizon;
+ }
+ 
+ static void race_log(DroneEnv* env, Drone* agent, int idx, Log* log, StepCache* cache) {
+@@ -189,10 +389,22 @@ static void race_log(DroneEnv* env, Drone* agent, int idx, Log* log, StepCache*
+     RaceState* state = (RaceState*)env->task_state;
+     TaskLog* t = &log->task[TASK_RACE];
+     t->n += 1.0f;
+-    t->perf += fminf((float)state->rings_passed[idx] / (float)cfg->max_rings, 1.0f);
++    if (cfg->perf_oob_weight > 0.0f) // sweep metric: laps flown minus a death cost
++        t->perf += (float)state->rings_passed[idx] / (float)cfg->max_rings - cfg->perf_oob_weight * ((state->crossed[idx] || race_oob(cfg, agent, cache)) ? 1.0f : 0.0f);
++    else
++        t->perf += fminf((float)state->rings_passed[idx] / (float)cfg->max_rings, 1.0f);
+     t->score += (float)state->rings_passed[idx];
+     t->keys[0] += (float)state->rings_passed[idx];
+     t->keys[1] += state->collisions[idx];
+     t->keys[2] += state->rings_passed[idx] >= cfg->max_rings ? 1.0f : 0.0f;
+-    t->keys[3] += out_of_bounds(agent->state.pos, RACE_OOB_SCALE) ? 1.0f : 0.0f;
++    t->keys[3] += (state->crossed[idx] || race_oob(cfg, agent, cache)) ? 1.0f : 0.0f; // died, or ever crossed when termination is off
++    t->keys[4] += (env->race_gate_timeout > 0 && state->since_pass[idx] >= env->race_gate_timeout) ? 1.0f : 0.0f;
++    t->keys[5] += (float)state->gates[idx];
++    t->keys[6] += (state->crossed[idx] || race_oob(cfg, agent, cache)) ? 1.0f - (float)agent->episode_length / (float)cfg->horizon : 0.0f;
++#ifdef PUF_OOB_LOG
++    { Quat q = agent->state.quat; float up = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
++      printf("EPEND idx=%d oob=%d negw=%d ring=%d passed=%d len=%.0f z=%.2f vz=%.2f speed=%.2f omega=%.2f up=%.2f maxtilt=%.2f maxomega=%.1f rA=%d rB=%d rC=%d rD=%d\n", idx,
++          race_oob(cfg, agent, cache) ? 1 : 0, oob_negw[idx], state->ring_idx[idx], state->rings_passed[idx], (double)agent->episode_length,
++          agent->state.pos.z, agent->state.vel.z, norm3(agent->state.vel), norm3(agent->state.omega), up, oob_maxtilt[idx], oob_maxomega[idx], oob_ruleA[idx], oob_ruleB[idx], oob_ruleC[idx], oob_ruleD[idx]); }
++#endif
+ }
+diff --git a/ocean/drone/tasklib.h b/ocean/drone/tasklib.h
+index 946540ee..e2363b17 100644
+--- a/ocean/drone/tasklib.h
++++ b/ocean/drone/tasklib.h
+@@ -35,10 +35,7 @@ void task_close(DroneEnv* env) {
+ }
+ 
+ void task_env_reset(DroneEnv* env) {
+-    switch (env->task) {
+-        case TASK_RACE: race_env_reset(env); break;
+-        default: break;
+-    }
++    (void)env; // race tracks are generated per drone in race_reset
+ }
+ 
+ void task_reset(DroneEnv* env, Drone* agent, int idx) {
+diff --git a/src/puffercpu.c b/src/puffercpu.c
+index c794a25e..12a1e364 100644
+--- a/src/puffercpu.c
++++ b/src/puffercpu.c
+@@ -798,7 +798,7 @@ int main(int argc, char** argv) {
+ #endif
+ 
+     Env env = {0};
+-    env.rng = 0;
++    env.rng = getenv("PUF_SEED") ? (unsigned)atoi(getenv("PUF_SEED")) : 0; // diagnostic: per-run seed
+     puf_init(&env, env_sec);
+ 
+     // Heap, not VLAs: multiagent envs (snake=256, obs=968) overflow the
+@@ -983,6 +983,12 @@ int main(int argc, char** argv) {
+             DictItem* si = dict_find(&out, "score");
+             if (pi) perf = (float)pi->value;
+             if (si) score = (float)si->value;
++            { // diagnostic: per-task race keys for the per-track census
++                DictItem* a = dict_find(&out, "race/oob"); DictItem* b = dict_find(&out, "race/rings_passed"); DictItem* c = dict_find(&out, "race/completed");
++                DictItem* e = dict_find(&out, "episode_return"); printf("CPU_EVAL_RACE oob=%.6f rings=%.4f completed=%.4f return=%.4f\n", a ? a->value : -1.0, b ? b->value : -1.0, c ? c->value : -1.0, e ? e->value : -999.0);
++                DictItem* ho = dict_find(&out, "hover/oob"); DictItem* hp = dict_find(&out, "hover/perf"); DictItem* hd = dict_find(&out, "hover/ema_dist"); DictItem* hv = dict_find(&out, "hover/ema_vel");
++                printf("CPU_EVAL_HOVER oob=%.6f perf=%.4f dist=%.4f vel=%.4f\n", ho ? ho->value : -1.0, hp ? hp->value : -1.0, hd ? hd->value : -1.0, hv ? hv->value : -1.0);
++            }
+             dict_clear(&out);
+         }
+         printf("CPU_EVAL env=%s file_floats=%d need=%d match=%d untrained=%d n=%.0f perf=%.6f score=%.6f steps=%d agents=%d\n",

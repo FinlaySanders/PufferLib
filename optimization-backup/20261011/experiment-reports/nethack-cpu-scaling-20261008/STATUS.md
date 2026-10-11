@@ -1,0 +1,1 @@
+Complete. CPU replay +11.1%; full 5.10M mature pipeline +8.9% in repeated comparisons, +9.4% with final common fixes. Larger batches do not improve SPS. All validation gates passed; production checkout unchanged. See REPORT.md.
