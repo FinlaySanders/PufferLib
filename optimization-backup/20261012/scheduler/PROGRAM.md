@@ -1,0 +1,129 @@
+# NetHack rollout scheduler — L2 residency without losing load balance (opened 2026-10-12 12:30 UTC, user: "find this")
+
+## Question
+Is there a rollout scheduler that keeps each worker's games L2-resident (the +43..70% per-core prize measured by the 2026-10-11
+cohort matrix) AND balances P/E cores and per-game variance (the 13-25% of wall that static ownership lost), under a realistic
+inference-latency model? Falsifiable: wall SPS vs a latency-matched emulation of today's trainer pool, same engine, same recorded actions,
+identical final-observation hash.
+
+## Premise (measured, do not re-derive)
+- Hot set per decision ~60 KiB of lines (compact-state traces); 16 games/worker ≈ 1 MB fits the effective L2, 64/worker does not; the
+  per-step cost knee is L2 and plateaus from 64/worker (engine-scaling Stage 0). Burst16 (one game hot) = 76 µs/step vs 99.6 (16/worker)
+  vs 128 (64/worker) at 32 workers.
+- Cohort matrix (static ownership, 32 workers, 2048 games): A1 burst +70% per core, A2 ping-pong at 300-1000 µs latency +38..43% per core,
+  A4 (today's 4-buffer pipeline) +11%; static ownership lost 13-25% of wall to P/E imbalance.
+- Today's trainer (cohort ini keys 16x128 g4 s64 + 24 pinned workers) already holds a 512-agent resident group = 21 games/worker, i.e. the
+  A4 regime; its pool is saturated (91% busy, 97% of busy-capacity). Weighted static P/E ownership was tried and lost (−41%); plain local-first
+  lane preference was null at 2048 (never tested at 512). The 15M/512 trainer regime is GPU-bound on this box, so a CPU-side win shows at
+  5M, at 2048+ games, and on a GPU-rich box — not in the champion's SPS here.
+
+## Design under test (replay_sched.c)
+Cohort = fixed set of C games. Ownership table; a worker alternates up to A of its cohorts (ping-pong) inside a horizon segment of SEG ticks
+(barrier at the segment end = batch assembly). Inference: dynamic batching — a cohort finishing a tick at e has actions at
+ceil_to_window(e, W) + F (optionally serialized over S streams). Balance: a worker whose cohorts are done for the segment steals the
+most-behind idle cohort of the holder with the most remaining work and borrows it; if the victim owns ≥ MIGRATE more cohorts than the thief,
+ownership moves permanently (so ownership drifts toward faster cores and settles rather than ping-ponging). Hot set per worker = A×C games;
+latency hidden when (A−1)·C·t_step ≥ W+F. Pinned one per physical core (24: P 0,2..14 / E 16..31), like the trainer.
+Control (replay_pool.c) = the experiment trainer's env_pool.h (stealing, pinning, 4 helper submitters on P-core siblings), 4 buffers of
+128 agents per resident group of 512 taking 64-tick turns, per-buffer round trip F after each buffer tick (W=0: each buffer launches its own
+forward). At 512 games this IS the champion's rollout; at 2048 it is the recommended cohort-knob config.
+Realistic latencies: 5M-like W=200/F=350 µs; 15M-like W=400/F=800 µs (Stage 4 forward timings under PPO contention). W=400 keeps today's
+launch rate; the GPU-side cost of more/smaller forwards is NOT modeled — a 2x launch rate lost 3-5% in the trainer (depth-8 screen).
+
+## Correctness
+Smoke (128 games, 4 workers, 64+64 ticks): pool with/without latency and sched at (C,A,steal,migrate,streams) ∈ 6 variants all hash
+240e6a6071c57b09. Screen arms must reproduce the pool control's hash at 512 and at 2048 (2048/32-worker lineage hash b97835c62aaf388f was
+mt7 + harness_cohort header; tile_signed_pgo is bit-exact with mt7, so the 2048 hash should still be b97835c62aaf388f — a difference is a finding).
+
+## Screen (screen.sh, queued behind the champion campaign + s3002 rerun; ~40 min; screens/summary.txt)
+24 workers pinned, warm 8192, measured 2048 ticks (4096 at 512). Per N ∈ {512, 2048}: pool F=0/350/800 (+4x512 layout at 2048);
+sched bounds (C16 A1 F0 steal/static, C4 A1 F0); 5M-like (C,A) ∈ {4,3 4,4 8,2 8,3 16,2} + static / pweight 1.25 / 2 streams / no-migrate at C8A3;
+15M-like (C,A) ∈ {4,5 8,3 8,4 16,2 16,3} + 2 streams at C8A4; pool F=350 repeat for spread.
+## Decision rule
+A realistic arm (5M-like or 15M-like latency, STEAL=1) beats the latency-matched pool control by ≥ 10% wall at 2048 AND wall/busy ≥ 0.95
+→ the scheduler is found: write the trainer design handoff (ring of cohort slots + dynamic batching + sticky stealing; trainer infra = patch only)
+with the measured surface, then a GPU-side forward-rate check. Otherwise: report the realizable residency bound vs today's pool and close.
+
+## Pass 1 RESULT (2026-10-12 13:36 UTC; screens/summary.txt; replay_sched build de270abf; 24 pinned workers; every arm hash-identical to the pool: 512 f6b51710d43700db, 2048 b97835c62aaf388f — tile_signed_pgo reproduces the mt7 lineage hash)
+Pool controls (today's trainer rollout, cohort-knob layout): 512: F0 359K / F350 340K / F800 296K; 2048: 353K / 329K / 291K; the pre-cohort 4x512 layout at 2048 = 251K (−24%, matches the trainer's +26% cohort-knob gain).
+| arm | 512 wall (vs matched ctrl) | 2048 wall (vs matched ctrl) | per-core (busy) | wall/busy | note |
+|---|---|---|---|---|---|
+| bound C4 A1 steal (no latency) | 389K (+8.2%) | 400K (+13.2%) | 430K / 420K | 0.90 / 0.95 | balance SOLVED: static ownership 0.79 / 0.88 |
+| best 5M-like (W200/F350) | C8A3 326K (−4.0%) | C4A4 331K (+0.7%) | 387K / 393K | 0.84 | idle 0.65-1.2 s of ~13 s |
+| best 15M-like (W400/F800) | C8A4 263K (−11%) | C8A4 275K (−5.6%) | 393K / 338K | 0.67 / 0.81 | idle 2-4 s: latency not hidden |
+Readings: (1) borrow/split stealing closes the P/E imbalance (wall/busy 0.95 at 2048), so the residency scheduler is no longer limited by balance.
+(2) Under realistic latency it ties (5M-like) or loses (15M-like): residency and latency hiding compete for the same resource (games in flight per
+core); hiding 350 µs needs ~10 games of other work in flight, 800 µs ~22 → the hot set must be ≥ today's 21, and any late return idles the core.
+(3) STREAMS arms (−86..−97%) are a MODEL BUG in pass 1 (F charged per cohort per stream, not per window) — fixed in pass 2 (one forward per window).
+(4) pweight / migrate knobs: null (migrations 0-14). (5) The remaining harness artefact is nanosleep slack (~27 µs per cohort tick ≈ half the idle) — fixed in pass 2.
+Decision-rule status: NOT met. Pass 2 (precise waits, lazy hot set, per-window forwards, 150 µs lean-forward arm) running; pass 3 (borrow-when-idle hybrid) queued.
+
+## Pass 2 RESULT (2026-10-12 14:05 UTC; screens2/summary.txt; replay_sched2: timer slack 1 us + spin, lazy hot-set growth, per-window forwards; all hashes identical)
+2048 games (pool F350 335.7K, F800 291.9K): best 5M-like = C4 lazy W100 346.8K (+3.3%), C2 lazy +2.5%, C4 lazy +1.5%; 15M-like C4 lazy 302.1K (+3.5%);
+fast (W100/F150) C4 lazy 369.1K (no matched pool control in this pass; pass 4 adds pool F150); bound C4A1 401.2K. wall/busy 0.87-0.90 for the lazy arms, idle 0.85-1.5 s.
+512 games (pool F350 342.9K, F800 297.8K): all lazy/fixed arms −1..−24%; fast C4 lazy 329.5K (< pool F350); bound C4A1 386.7K.
+Readings: (1) precise waits + lazy ≈ +2-3% over pass 1 — within the pool's ~2% spread at 2048, still losing at 512. (2) STREAMS=1 collapses (−95%): a single
+stream cannot serve a 350 us forward every 200 us window — a real constraint of per-window batching (forward <= window or >= 2 streams); STREAMS=2 ≈ unbounded.
+(3) ROOT CAUSE of the residual idle found: a cohort activated mid-segment (lazy growth or per-slot refill after one finishes) must still complete all 64 ticks,
+so it runs ALONE at the segment end paying the full round trip per tick; lazy growth manufactures one such straggler per idle event. Even the 150 us-forward arm
+at 512 idled 11% for this reason while running +19% per core. Fix = group-synchronous refill (SCHED_GROUPFILL, pass 4) + borrow-when-idle (pass 3).
+Decision-rule status: NOT met (+3% < 10%).
+
+## Pass 3 RESULT — borrow-when-idle hybrid (2026-10-12 14:25 UTC; screens3/summary.txt; replay_sched3; all hashes identical) — DECISION RULE MET at 2048
+| 2048 games | pool | hybrid (lazy, borrow if wait > 30 us) | wall/busy | borrowed ticks |
+|---|---|---|---|---|
+| 5M-like W200/F350 | 333.5K | C2 370.8K (+11.2%), C4 359.5K (+7.8%), C8 339.1K (+1.7%) | 0.97 / 0.96 / 0.95 | 4.7% / 4.4% / 5.9% |
+| 15M-like W400/F800 | 292.9K | C2 333.8K (+14.0%), C4 322.6K (+10.1%), C8 293.8K (+0.3%) | 0.95 / 0.95 / 0.92 | 6.2% / 7.1% / 8.0% |
+Fixed A with eager borrowing (threshold 0): 20-42% of ticks borrowed, gains only +0.5..+8% — eager borrowing erodes residency; the threshold (30-100 us) is
+what keeps borrowing to the idle gaps. b100 ≈ b30.
+512 games (pool F350 341.9K, F800 302.3K): mixed — C2 lazy b30: −10.8% at F350 / +10.8% at F800; C8 lazy b30 +1.3% / −7.8%; C4A2 b0 +2.0%; ceiling (no latency) is only +8%.
+MECHANISM (what enables the win): ownership gives residency (own 2-4 games stepped 93-95% of the time, hot set fits L2); borrowing fills the latency gaps
+with ~5-7% cold ticks instead of idle; tail stealing/splitting fixes P/E imbalance at 3-5% instead of 13-25%. Small cohorts are essential (C8 loses the gain).
+Status: single runs (pool spread ~2%); pass 4 (group-synchronous refill, fixed A x small C, matched F150 control) running for the repeat + the straggler fix.
+
+## Pass 4 RESULT — repeat + group refill + fixed A (2026-10-12 14:57 UTC; screens4/summary.txt; replay_sched4 (refill bug fixed 14:27, pass restarted); all hashes identical)
+REPEAT of the pass-3 winners (lazy growth, borrow if wait > 30 us), 2048 games (pool F350 327.9K / 333.5K repeat = 1.7% spread; F800 290.7K; F150 345.8K):
+C2: +13.9% at F350, +15.2% at F800 (pass 3: +11.2 / +14.0); C4: +10.3% / +11.5% (pass 3: +7.8 / +10.1). wall/busy 0.95-0.97, borrowed 4-7%.
+Lean forward (W100/F150) vs the matched pool F150: C2 lazy 390.0K = +12.8%; C4A2 gf 363.7K = +5.2%.
+512 games (pool F350 338.6K, F800 297.5K, F150 346.9K): C2 lazy b30 −10.8% at F350 (pass 3 −10.8%), +12.3% at F800 (+10.8%); C4 −10.5% / +4.6%;
+fast C2 lazy 365.0K = +5.2% vs F150.
+Fixed in-flight count + group-synchronous refill + b30 (C ∈ {1,2,4}, A ∈ {2,3,4}): borrow 22-75% of ticks, −60%..+9% — over-borrowing; the hot set must grow
+lazily from demand, not be set. Group refill without borrowing: C4A3 −1.0% at 2048 (pass 2: −2.3%) → the mid-segment straggler was a minor leak, not the main one.
+DECISION RULE MET TWICE at 2048 (≥ +10%, wall/busy ≥ 0.95). Open: the 512/F350 loss (short waits < 30 us neither borrowed nor avoided) → pass 5
+(threshold scan 0/5/10/30/60 us, threshold-free FIT rule with self-measured cold factor, C=1).
+
+## Pass 5 RESULT — knobs (2026-10-12 15:32 UTC; screens5/summary.txt; replay_sched4 (threshold) + replay_sched5 (FIT); all hashes identical)
+Borrow threshold 0/5/10/30/60 us: NO EFFECT — 2048: +10.7..+11.4% at F350, +13.2..+14.2% at F800; 512: −11% at F350, +12% at F800 for every value.
+→ the knob goes: borrow whenever none of your own is ready. The 512/F350 loss is therefore not short waits; it is the 64-tick segment tail (pass 6).
+Threshold-free FIT rule (borrow only a ready cohort whose EWMA cost x self-measured cold factor (≈1.3-1.4) fits the wait): 2048: C1 +11.4% / +12.2%,
+C2 +10.7% / +12.9%, C4 +6.1% / +8.3%; 512: C1 −8.4% / +7.2%, C2 −12.2% / +6.0% — matches plain borrowing at F350, gives up 2-6 points at F800 (it refuses
+borrows that would overrun the wait; at long latency those borrows were paying). Single-game cohorts (C1) ≥ pairs everywhere → cohort size knob goes too.
+Window = today's launch rate (W400 + F350): C2 +8.7% at 2048 (vs +11% at W200). Lean forward (W100/F150) vs matched pool F150: C2 fit +10.5% at 2048.
+CURRENT KNOB-FREE DESIGN: per-game ownership, lazy active-set growth, borrow-when-idle (plain or FIT), tail steal/split, segment = batch horizon (pass 6).
+
+## Pass 6 RESULT — segment length (2026-10-12 15:58 UTC; screens6/summary.txt; replay_sched5; all hashes identical)
+512 games (pool F350 340.5K, F800 296.2K), C2 lazy b30: seg64 −10.6% / +13.1% → seg512 (champion horizon) −8.8% / +16.6% → seg4096 (no barrier) −2.9% / +19.7%.
+C1 fit: −7.9% / +8.4% → −9.3% / +10.2% → −5.2% / +17.7%. The barrier tail was real at 512 (each 64-tick barrier aligns every core's remaining games in
+flight with nothing to borrow) but even barrier-free the 350 us case stays −3%: per-core +12% (382K busy vs 340K) eaten by 3.5% idle + ~9% imbalance/overhead
+(busy spread 5.37-5.59 s, wall 6.35 s). At 512 the pool is already near L2-resident and its 4-deep pipeline hides 350 us (−6% vs F0), so the prize is small.
+2048 games (pool F350 333.4K, F800 290.4K): segment length NEUTRAL — seg64 / seg128 / seg2048: C2 b30 +11.2 / +11.4 / +11.8% at F350; +14.0 / +15.3 / +10.2% at
+F800; C1 fit +11.4 / +12.5 / +10.9% at F350. Use the batch horizon as the segment; nothing to tune.
+SUMMARY SURFACE (2048, knob-free C1/C2, hashes identical, reproduced): +11-14% at F350, +10-15% at F800, +10-13% at F150; 512: +17-20% at F800 with the
+horizon barrier, −3..−9% at F350 (tie at best). Pass 7 running: window = forward (W350/F350, W800/F800) and the big-forward window (W1400/F330 → 512-row forwards).
+
+## Pass 7 RESULT — window vs forward size (2026-10-12 15:44 UTC; screens7/summary.txt; replay_sched5, C1 lazy borrow-when-idle, seg128, 2048 games; hashes identical)
+pool F350 329.7K / 335.5K (1.8% spread), F800 288.2K, 4x512 layout F330 251.5K.
+W = F (one stream keeps up, forwards = today's size/rate): W350/F350 364.8K (+10.7%); W800/F800 305.0K (+5.9%). W200/F350 374.5K (+13.6%, 2x launch rate).
+Big-forward windows (the 11-Oct GPU lever "fewer forwards"): W700/F330 (256-row) 347.3K (+5.3% rollout; GPU side would add ~2-3%); W1400/F330 (512-row)
+305.0K (−7.5% rollout; the measured PPO gain from 4x fewer forwards was ~+5% → net ≈ −3%). STREAMS=1 at W1400 identical (one stream suffices).
+READING: set the window equal to the forward time. The rollout side then gives +10.7% (5M-like) / +5.9% (15M-like) at 2048 with GPU traffic unchanged;
+longer windows to fatten forwards cost more residency than PPO gains. The 15M number is smaller because the 800 us round trip forces ~16 games hot per core.
+
+## Pass 8 RESULT — event-driven readiness (2026-10-12 15:58 UTC; screens8/summary.txt; replay_sched6; hashes identical)
+512 games, champion horizon (seg512), C1: ev0 vs ev1 identical within noise — W350/F350 −6.7 / −6.4%; W200/F350 −5.0 / −6.9%; W800/F800 −2.3 / −3.4%; idle 0.8-0.9 s
+in both. C2 at W350/F350 ev1: −2.2% (idle 0.27 s). → the 512 idle is NOT sleep latency or scan cost: nothing is ready anywhere. Population-size effect
+(Little's law): 24 cores x (550 us round trip / 65 us step) ≈ 300 games must be in flight; at 512 each core owns 21, activates them all, then has nothing
+new to add when a readiness gap arrives; at 2048 a dry core starts another of its 85 own games (immediately steppable). The pool's 4x128 pipeline is
+exactly balanced for 512/24/350 us (−6% vs F0). SELECTION RULE = mechanism: per-core ownership pays at ≳ 40 games per core (2048/24 = 85 ✓, 1024/24 = 43 borderline, 512/24 = 21 ✗).
+2048 games (seg128): ev1 slightly better — W350/F350 +11.0% (ev0 +9.4%), W800/F800 +6.1% (ev0 +4.7%), idle 0.11 vs 0.35 s. Keep event-driven readiness.
+HARNESS CAMPAIGN CLOSED 16:00 UTC. Final: REPORT.md.
