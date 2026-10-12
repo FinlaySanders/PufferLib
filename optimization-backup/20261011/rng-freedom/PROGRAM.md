@@ -439,3 +439,23 @@ score); PROVENANCE.txt has binary + engine sha256; the inis are copied alongside
 a baseline for the config under the handoff stack; the repo trainer at HEAD would take ~2x longer per seed.
 Smoke (2M steps, 64 eval episodes) exited 0 with checkpoint + eval. Landmines hit: NETHACKDIR must be set for a direct trainer run;
 PUF_PERF_LOADED_PROOF is required by the PUF_PERF_LOAD build; PUF_CPU_AFFINITY=1 crashes the inline eval's pool (ep_pin_cpu assertion).
+
+## 2026-10-12 07:20 OVERNIGHT CAMPAIGN: ALL 10 SEEDS SEGFAULTED — ENGINE LADDER BUG FOUND AND FIXED
+RESULTS.txt: every seed rc=139 (SIGSEGV), silent, at 190M-719M steps (15-57 min), learning normal to the crash (s3009 8.9K at 719M).
+Deterministic: seed 3002 re-run under gdb (crash/gdb_run.sh) died at the same epoch 725. Backtrace (crash/mt7_s3002/gdb.log):
+is_drawbridge_wall <- dfeature_at <- look_here <- pickup <- spoteffects <- domove_core. Fault = NH_TILE(x, y-1) with y=0: registers
+rsi=0xffffffff (y as unsigned), rdi=0x10bc=6*21*34 (x=34), index 6*rsi+rdi -> 24 GB past level.locations.
+ROOT CAUSE: the ladder's accessor `nh_tile_at(dlevel_t*, unsigned int x, unsigned int y)` (rm.h:668, introduced with primary_movement /
+flat_movement_query, NH_TILE replaced all 760 levl[][] sites). Vanilla/repo engine `levl[x][y-1]` with signed int aliases in-bounds
+(levl[x-1][ROWNO-1]); unsigned zero-extends -1 to 0xffffffff. 92 NH_TILE sites use +-1 neighbour offsets, so any hero/monster on a
+border row/column (doors at y=0 here) is a potential segfault. Never seen because every ladder gate is corpus replay (goldens 34+26,
+32768-step 512-game corpus) and no live run on mt7/cohort ever exceeded ~300 epochs.
+FIX: engines/tile_signed = mt7 + `nh_tile_at(dlevel_t *lev, int x, int y)` (one line; restores vanilla's exact aliasing, so bit-exact
+by construction). Quick gates 5/5 PASS 07:47. Backup fast-nle worktree commit e4d8e6e8f (unpushed). Corpus replay hash, PGO twin
+(tile_signed_pgo via build_pgo.py), fix repro (crash/fix_s3002 must pass epoch 725) and the 10-seed rerun under gdb (run10_fixed.sh ->
+fixed/RESULTS_FIXED.txt): PENDING below.
+08:07 RESOLVED PENDING ITEMS: corpus replay on tile_signed obs=b79eb25d93ca6d29 turns=115413681 (identical to mt7); tile_signed_pgo built
+(build_pgo.py, sha 5e466dfc1f4a6ff3) and quick gates 5/5 PASS; fix repro crash/fix_s3002 (tile_signed, gdb) passed epoch 946 vs the
+deterministic death at 725, stopped deliberately (SIGTERM) to free the GPU. 08:08 run10_fixed.sh launched: seeds 3001-3010 x 1B, cohort_d8 +
+tile_signed_pgo, every seed under gdb (gdb costs 0: 211K SPS), results -> /puffertank/docker/champion10_20261011/fixed/RESULTS_FIXED.txt
+(status="exited normally" = clean; any "received signal" line comes with a backtrace in fixed/s<seed>/gdb.log). ETA ~13-14 h.

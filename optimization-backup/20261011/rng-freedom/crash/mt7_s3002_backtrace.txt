@@ -1,0 +1,78 @@
+=== CRASH ===
+Signal        Stop	Print	Pass to program	Description
+SIGSEGV       Yes	Yes	Yes		Segmentation fault
+$1 = (void *) 0x7fbdfe035e78
+#0  0x00007fb8710f7772 in is_drawbridge_wall () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#1  0x00007fb8710ed65a in dfeature_at () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#2  0x00007fb8710ecdec in look_here () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#3  0x00007fb870f6985e in pickup[cold] () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#4  0x00007fb8710b258d in spoteffects () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#5  0x00007fb870f6f93d in domove_core[cold] () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#6  0x00007fb8710af9ad in domove () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#7  0x00007fb8710a53d0 in moveloop () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#8  0x00007fb8710dad7d in unixmain () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#9  0x00007fb8710dac20 in mainloop () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#10 0x00007fb87115adaf in make_fcontext () from /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+#11 0x0000000000000000 in ?? ()
+rax            0x0                 0
+rbx            0xc0                192
+rcx            0x7fb7fe02a000      140428217327616
+rdx            0x6000010b6         25769808054
+rsi            0xffffffff          4294967295
+rdi            0x10bc              4284
+rbp            0x0                 0x0
+rsp            0x7fb5e4481708      0x7fb5e4481708
+r8             0x22                34
+r9             0x103e              4158
+r10            0x113a              4410
+r11            0x0                 0
+r12            0x7fb7fe02b0bc      140428217331900
+r13            0x16                22
+r14            0x7fb7fe02a000      140428217327616
+r15            0x22                34
+rip            0x7fb8710f7772      0x7fb8710f7772 <is_drawbridge_wall+162>
+eflags         0x10212             [ AF IF RF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+fs_base        0x7fb66d7fa000      140421497856000
+gs_base        0x0                 0
+   0x7fb8710f775a <is_drawbridge_wall+138>:	incl   -0x7bf0ec06(%rax)
+   0x7fb8710f7760 <is_drawbridge_wall+144>:	push   %rdi
+   0x7fb8710f7761 <is_drawbridge_wall+145>:	and    %ebp,%ecx
+   0x7fb8710f7763 <is_drawbridge_wall+147>:	decl   0x6b(%rcx)
+   0x7fb8710f7766 <is_drawbridge_wall+150>:	clc
+   0x7fb8710f7767 <is_drawbridge_wall+151>:	jle    0x7fb8710f76f6 <is_drawbridge_wall+38>
+   0x7fb8710f7769 <is_drawbridge_wall+153>:	jo     0x7fb8710f776a <is_drawbridge_wall+154>
+   0x7fb8710f776b <is_drawbridge_wall+155>:	imul   $0x6,%rsi,%rdx
+   0x7fb8710f776f <is_drawbridge_wall+159>:	add    %rdi,%rdx
+=> 0x7fb8710f7772 <is_drawbridge_wall+162>:	movzbl 0xadc2(%rcx,%rdx,1),%edx
+   0x7fb8710f777a <is_drawbridge_wall+170>:	cmp    $0x21,%dl
+   0x7fb8710f777d <is_drawbridge_wall+173>:	je     0x7fb870f89891 <is_drawbridge_wall.cold+76>
+From                To                  Syms Read   Shared Object Library
+0x00007fb89c94d000  0x00007fb89c977195  Yes         /lib64/ld-linux-x86-64.so.2
+0x00007fb87729ad40  0x00007fb87dc243e2  Yes (*)     /usr/local/cuda/targets/x86_64-linux/lib/libcublasLt.so.13
+0x00007fb871364e00  0x00007fb87245fbe1  Yes (*)     /lib/x86_64-linux-gnu/libcuda.so.1
+0x00007fb870f54790  0x00007fb87115ae42  Yes (*)     /puffertank/experiments/nethack-compact-state-20261008/engines/mt7_pgo/build/libnethack.so
+0x00007fb870c0e1a0  0x00007fb870c84cb4  Yes (*)     /usr/local/cuda/targets/x86_64-linux/lib/libcudart.so.13
+0x00007fb865736070  0x00007fb8658da612  Yes (*)     /lib/x86_64-linux-gnu/libnccl.so.2
+0x00007fb86441fcd0  0x00007fb864597c11  Yes (*)     /lib/x86_64-linux-gnu/libnvidia-ml.so.1
+0x00007fb860e30bd0  0x00007fb86144b722  Yes (*)     /usr/local/cuda/targets/x86_64-linux/lib/libcublas.so.13
+0x00007fb858454820  0x00007fb858f73372  Yes (*)     /usr/local/cuda/targets/x86_64-linux/lib/libcusolver.so.12
+0x00007fb84fc0ae80  0x00007fb84fd2c6f2  Yes (*)     /usr/local/cuda/targets/x86_64-linux/lib/libcurand.so.10
+0x00007fb8655da1d0  0x00007fb86569f7e0  Yes (*)     /lib/x86_64-linux-gnu/libomp.so.5
+0x00007fb84fa275c0  0x00007fb84fb66ce2  Yes (*)     /lib/x86_64-linux-gnu/libstdc++.so.6
+0x00007fb860d27420  0x00007fb860da53a6  Yes         /lib/x86_64-linux-gnu/libm.so.6
+0x00007fb89c909780  0x00007fb89c92c745  Yes (*)     /lib/x86_64-linux-gnu/libgcc_s.so.1
+0x00007fb84f798800  0x00007fb84f91fd39  Yes         /lib/x86_64-linux-gnu/libc.so.6
+0x00007fb89c901080  0x00007fb89c9012b1  Yes         /lib/x86_64-linux-gnu/librt.so.1
+0x00007fb89c8fc040  0x00007fb89c8fc105  Yes         /lib/x86_64-linux-gnu/libpthread.so.0
+0x00007fb89c8f5040  0x00007fb89c8f5105  Yes         /lib/x86_64-linux-gnu/libdl.so.2
+0x00007fb849b6b100  0x00007fb84e2a1741  Yes (*)     /usr/local/cuda/targets/x86_64-linux/lib/libnvJitLink.so.13
+0x00007fb83fa6d0b0  0x00007fb8406815c2  Yes (*)     /usr/local/cuda/targets/x86_64-linux/lib/libcusparse.so.12
+(*): Shared library is missing debugging information.
+
+=== ALL THREADS ===
