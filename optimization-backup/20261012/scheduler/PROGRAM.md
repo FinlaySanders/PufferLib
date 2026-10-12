@@ -127,3 +127,15 @@ new to add when a readiness gap arrives; at 2048 a dry core starts another of it
 exactly balanced for 512/24/350 us (−6% vs F0). SELECTION RULE = mechanism: per-core ownership pays at ≳ 40 games per core (2048/24 = 85 ✓, 1024/24 = 43 borderline, 512/24 = 21 ✗).
 2048 games (seg128): ev1 slightly better — W350/F350 +11.0% (ev0 +9.4%), W800/F800 +6.1% (ev0 +4.7%), idle 0.11 vs 0.35 s. Keep event-driven readiness.
 HARNESS CAMPAIGN CLOSED 16:00 UTC. Final: REPORT.md.
+
+## Pass 9 RESULT — population scaling (2026-10-12 16:25 UTC; screens9/summary.txt; replay_sched6 final design C1 lazy borrow event seg128, W = F; hashes identical)
+| agents | pool F350 | hybrid W350/F350 | pool F800 | hybrid W800/F800 | zero-latency bound |
+|---|---|---|---|---|---|
+| 2048 | 333.5K | 370.2K (+11.0%) | 291.2K | 308.9K (+6.1%) | 400K |
+| 4096 | 326.9K | 372.0K (+13.8%) | 287.5K | 321.7K (+11.9%) | 453K |
+| 8192 | 329.5K | 368.0K (+11.7%) | see summary | see summary | 457K |
+Env side of this box saturates at ~370K from 2048 agents up (24 cores x ~63 us per L2-warm step); pool flat at ~330K; balance 98% of ideal at scale, idle < 0.1 s.
+Step-cost curve vs games in rotation per core: 1 → 52 us (L1), ~4 → 60, ~8 → 63, ~16 → 72, 21 (pool) → 72, 85 → 96 us. The first step (L1 → L2) is structural:
+any latency hiding by other games pays it; the hybrid's contribution is staying at 4-16 instead of 21-85. The remaining 18% to the bound is that L1 loss.
+Path to 1M: not this box (needs 2.6x core-seconds); per-core residency makes env scale with cores → ~65 cores at this step cost (80-100 server cores),
+≥ 4096 agents; GPU: PPO ~485K steps/s at 5M on the 4090 → fine at 1-2M params, H100-class or 2 GPUs at 5M. Next cheap step: run the harness on a big-core box.

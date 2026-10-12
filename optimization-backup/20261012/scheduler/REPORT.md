@@ -12,6 +12,8 @@ no below it. CPU replay harness, bit-exact (every arm reproduces the pool contro
 | 200 / 350 us (2x today's launch rate) | 333.5K | 374.5K | +12-14% |
 | 100 / 150 us (lean forward) vs pool at 150 us | 345K | 381-390K | +10-13% |
 Reproduced across passes 3-8 (pool run-to-run spread 1.7-1.8%); wall/busy 0.95-0.98; 4-7% of ticks borrowed; hashes identical.
+Population scaling (pass 9): 4096 agents +13.8% (372.0K vs 326.9K) / +11.9% at 800 us; 8192 agents +11.7% (368.0K vs 329.5K); the env side of this box
+saturates at ~370K from 2048 up (24 cores x 63 us), pool flat at ~330K; zero-latency bound 453-457K (52 us L1-warm step).
 512 games: +13..+20% at an 800 us round trip (depending on segment length), −2..−9% at 350 us → stay on the pool below ~40 games/core.
 Zero-latency bound of the design: +13% wall / 420-450K per core at 2048 — the hybrid collects ~85-90% of it at realistic latency.
 
