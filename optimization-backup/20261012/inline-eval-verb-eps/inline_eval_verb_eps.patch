@@ -1,0 +1,13 @@
+--- a/src/pufferl.cu	2026-09-18 17:31:46.071505568 +0000
++++ b/src/pufferl.cu
+@@ -2933,6 +2933,10 @@
+         snprintf(buf, sizeof(buf), "%ld", eval_agents);
+         puf_ini_put(ini, "vec.total_agents", buf);
+         puf_ini_put(ini, "train.verb_eps", "0");
++    } else {
++        // eval_agents == -1: the fresh eval policy re-uploads the un-annealed
++        // base verb_eps and eval_loop never anneals, so zero it here as well
++        puf_ini_put(ini, "train.verb_eps", "0");
+     }
+     if (match) {
+         int h = puf_ini_get(ini, "policy", "hidden_size");

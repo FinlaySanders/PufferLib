@@ -459,3 +459,32 @@ fixed/RESULTS_FIXED.txt): PENDING below.
 deterministic death at 725, stopped deliberately (SIGTERM) to free the GPU. 08:08 run10_fixed.sh launched: seeds 3001-3010 x 1B, cohort_d8 +
 tile_signed_pgo, every seed under gdb (gdb costs 0: 211K SPS), results -> /puffertank/docker/champion10_20261011/fixed/RESULTS_FIXED.txt
 (status="exited normally" = clean; any "received signal" line comes with a backtrace in fixed/s<seed>/gdb.log). ETA ~13-14 h.
+09:29 FIRST CLEAN 1B LIVE RUN ON THE EXPERIMENT STACK: fixed/s3001 exited normally, 81 min wall (3814 epochs, 999.8M steps, ~209K SPS
+throughout) + inline 10K-episode eval. Result ini (fixed/s3001/logs/nethack/champ10f_s3001.ini) env/score points 2281 / 5163 / 8460 /
+11585 (rolling, 875M) / FINAL EVAL 9714.6. Within the known 1B champion band (~9-13K, rolling ±1000). s3002 started 09:29 at 213K SPS.
+Note last night's s3001 died at epoch 1315; this run passed it with the same seed.
+09:41 s3002 (fixed campaign) died SIGABRT at epoch 572: assertion cudaGraphLaunch failed in pufferl_forward, all vec threads at once
+(fixed/s3002/gdb.log). NOT the engine. Timing: started 09:29, ran alone 6.5 min, then 5.5 min alongside the standalone cert eval I
+launched at 09:35 (./puffer eval on the same GPU, 7.5 GB), aborted 09:41. Last night's 10 seeds (~3.9B steps, GPU alone) and today's
+s3001 (1B alone) never hit this, so the working hypothesis is GPU co-tenancy, not a trainer bug; proof needs a recurrence alone.
+RULE: nothing else on the GPU while a campaign seed runs. s3002 re-queued after the campaign (rerun_seed.sh 3002 s3002_rerun ->
+RESULTS_FIXED.txt). The campaign script itself waits for GPU idle, so it resumes with s3003 when the cert eval exits.
+09:35 user: "thats a low eval score? can we re-cert it?" — inline 9714.6 vs certified 1B claim-config evals 14,317 (fixwt1b_s701) /
+13,201 (s702) and t1122 1B 12.4-13.3K. Standalone cert running: action-cert-scaling-20260915/source/puffer eval, seed 7, 512 agents,
+14000 episodes, first 4000 dropped -> fixed/cert_s3001/{cert.ep,cert.log}. Config check: campaign nethack.ini == repo HEAD;
+default.ini == repo + cohort keys (0 = off), so the campaign ran WITHOUT cohort scheduling (4 free-running buffers): stack under test
+= experiment trainer (env pool, async, fused/fast kernels, grad pipeline, Muon lanes, outplace) + bit-exact engine. Proposed control:
+seed 3001 on repo HEAD trainer+engine (awaiting user's call on queue position).
+09:51 RE-CERT RESULT (fixed/cert_s3001): certified protocol (action-cert binary + fork engine, seed 7, 512 agents, verb_eps forced 0,
+14041 games, first 4000 dropped) -> MEAN 12,871.7 +- 144 SE, MEDIAN 8,756, p90 28.9K. Certified claim-config 1B runs on the same
+protocol: 14,317 / 8,700 (s701), 13,003 / 9,019 (s702). The policy is normal. The inline 9,714.6 is the INLINE EVAL reading low:
+ (a) cold start: since a3338d99 (2026-09-07 "Hacky multigpu close fix", repo and experiment trainer alike) the inline eval closes the
+     trainer and creates a fresh vec, so the first 10K completions are length-censored; from the cert data a cold-start 10,061 would
+     read 12,354 (-4%).
+ (b) verb_eps: eval_make -> create_pufferl -> nethack_policy_init re-uploads verb_eps = base 0.005; with eval_agents = -1 (the default)
+     train.verb_eps is NOT zeroed (only the eval_agents != -1 branch zeroes it) and eval_loop never calls nethack_policy_on_rollout, so
+     the inline eval plays with 0.5% uniform random legal verbs at every step (~14 random verbs per game). Signature in the s3001 inline
+     dashboards vs train-end: searches 1.97 vs 0.82 per game, episode_length 2771 vs 3498, throws 152 vs 198; the eps=0 cert counters
+     match train-end (searches 1.67, throws 176, prays 16.9). Identical code in repo HEAD => every inline "cert" since 09-07 for configs
+     with verb_eps>0 is biased low (and sweeps are fed these points). Not a learning regression of the experiment stack.
+ Campaign continues: s3003 at 210K SPS alone on the GPU.
