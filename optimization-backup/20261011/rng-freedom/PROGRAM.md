@@ -488,3 +488,10 @@ protocol: 14,317 / 8,700 (s701), 13,003 / 9,019 (s702). The policy is normal. Th
      match train-end (searches 1.67, throws 176, prays 16.9). Identical code in repo HEAD => every inline "cert" since 09-07 for configs
      with verb_eps>0 is biased low (and sweeps are fed these points). Not a learning regression of the experiment stack.
  Campaign continues: s3003 at 210K SPS alone on the GPU.
+
+## 2026-10-12 12:30 SCHEDULER REOPENED (user: "find this" — a scheduler that collects L2 residency without losing load balance)
+New experiment /puffertank/experiments/nethack-scheduler-20261012 (PROGRAM.md there): replay_sched.c = cohort scheduler with sticky ownership,
+cohort-granularity borrow/migrate stealing, dynamic-batching inference model, segment barriers; replay_pool.c = latency-matched emulation of
+today's trainer pool (env_pool.h, 4x128 groups of 512, 64-tick turns). Smoke: 6 variants hash-identical (240e6a6071c57b09 @128 games).
+screen.sh queued (nohup) behind RUN10_FIXED_DONE + the s3002 rerun; ~40 min; results in screens/summary.txt. Campaign untouched: s3003 done
+(inline 10,271; same verb_eps bias as s3001), s3004 running.
