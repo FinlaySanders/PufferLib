@@ -1,0 +1,330 @@
+--- /puffertank/experiments/nethack-engine-scaling-20261010/trainer_cohort/source/src/pufferl.cu	2026-10-11 18:37:02.620059990 +0000
++++ source/src/pufferl.cu	2026-10-12 17:19:30.731209295 +0000
+@@ -26,6 +26,7 @@
+ #include <pthread.h>
+ #ifdef PUF_ENV_POOL
+ #include "env_pool.h"
++#include "env_sched.h"
+ #endif
+ #include <signal.h>
+ #include <spawn.h>
+@@ -458,6 +459,11 @@
+ #ifdef PUF_ENV_POOL
+     EnvPool* env_pool;
+ #endif
++    // cache-affine scheduler path (PUF_SCHED=1): per-game ownership + windowed inference slots
++    EnvSched* sched; int sched_on, sched_slots, sched_write_slot; long sched_segments; double sched_window;
++    pthread_t* sched_threads; obs_t** st_obs; float **st_rew, **st_term, **st_act; unsigned char** st_mask; int **st_idx, **st_tt, **d_idx, **d_tt;
++    long *sched_forwards, *sched_rows; double* sched_fwd_sum; const unsigned char* replay[4]; size_t replay_size;
++    int sched_zero_copy; obs_t* dh_obs; float *dh_rew, *dh_term; unsigned char* dh_mask;  /* device pointers to the mapped host arrays */
+     int shutdown;
+     pthread_t* threads;
+     float* accum;
+@@ -597,6 +603,7 @@
+     bool async_boot;
+     ulong seed;
+     curandStatePhilox4_32_10_t** rng_states;  // per-buffer persistent RNG states [num_buffers]
++    Prec sched_state; curandStatePhilox4_32_10_t* sched_rng;  // PUF_SCHED: per-agent recurrent state and sampler RNG
+     char env_name[64];  // For policy arch rebuild at create.
+ } PuffeRL;
+ 
+@@ -980,6 +987,221 @@
+     int O=B*p->step_rollouts.observations.shape[2],M=B*p->step_rollouts.action_mask.shape[2],A=B*p->step_rollouts.actions.shape[2];
+     record_step<<<nh_narrow_grid(grid_size(max(O,max(M,A))), false),BLOCK_SIZE,0,stream>>>(dst,src,O,M,A,B);
+ }
++
++// ===================== cache-affine scheduler path (PUF_SCHED=1) =====================
++// Inference runs on "slots" (the per-buffer graph machinery, rows = whichever agents are ready); per-agent recurrent state and
++// sampler RNG are gathered into the slot before the forward and scattered back after, so agent i always sees its own state and
++// RNG stream regardless of which slot/row forwards it. Outputs are scattered to (time, agent) in the rollout buffer.
++__global__ void sched_gather_state(Prec dst, Prec src, const int* idx, int R, int scratch) {
++    int L = dst.shape[0], H = dst.shape[2], A = (int)src.shape[1]; long total = (long)L * R * H;
++    for (long i = blockIdx.x * (long)blockDim.x + threadIdx.x; i < total; i += (long)gridDim.x * blockDim.x) {
++        int h = i % H, r = (i / H) % R, layer = i / ((long)R * H); int a = idx[r]; if (a < 0) a = scratch;
++        dst.data[state_elem_idx(layer, R, r, h, H)] = src.data[state_elem_idx(layer, A, a, h, H)];
++    }
++}
++__global__ void sched_scatter_state(Prec dst, Prec src, const int* idx, int R) {
++    int L = src.shape[0], H = src.shape[2], A = (int)dst.shape[1]; long total = (long)L * R * H;
++    for (long i = blockIdx.x * (long)blockDim.x + threadIdx.x; i < total; i += (long)gridDim.x * blockDim.x) {
++        int h = i % H, r = (i / H) % R, layer = i / ((long)R * H); int a = idx[r]; if (a < 0) continue;
++        dst.data[state_elem_idx(layer, A, a, h, H)] = src.data[state_elem_idx(layer, R, r, h, H)];
++    }
++}
++// Snapshot the (terminal-zeroed) state of rows at t==0 of their segment into initial_states[slot] (slot = tt / horizon).
++__global__ void sched_snapshot_state(Prec full, Prec src, const int* idx, const int* tt, int R, int horizon) {
++    int L = src.shape[0], H = src.shape[2], A = (int)full.shape[2]; long stride = (long)L * A * H; long total = (long)L * R * H;
++    for (long i = blockIdx.x * (long)blockDim.x + threadIdx.x; i < total; i += (long)gridDim.x * blockDim.x) {
++        int h = i % H, r = (i / H) % R, layer = i / ((long)R * H); int a = idx[r]; if (a < 0 || tt[r] % horizon) continue;
++        full.data[(long)(tt[r] / horizon) * stride + state_elem_idx(layer, A, a, h, H)] = src.data[state_elem_idx(layer, R, r, h, H)];
++    }
++}
++__global__ void sched_gather_rng(curandStatePhilox4_32_10_t* dst, const curandStatePhilox4_32_10_t* src, const int* idx, int R, int scratch) {
++    int r = blockIdx.x * blockDim.x + threadIdx.x; if (r >= R) return; int a = idx[r]; if (a < 0) a = scratch; dst[r] = src[a];
++}
++__global__ void sched_scatter_rng(curandStatePhilox4_32_10_t* dst, const curandStatePhilox4_32_10_t* src, const int* idx, int R) {
++    int r = blockIdx.x * blockDim.x + threadIdx.x; if (r >= R) return; int a = idx[r]; if (a < 0) return; dst[a] = src[r];
++}
++// Slot rows → rollouts[(tt[r], idx[r])]; tt is the absolute time row (write_slot*horizon + t). Padded rows (idx < 0) are skipped.
++__global__ void sched_record_scatter(StepRecord dst, StepRecord src, const int* idx, const int* tt, int R, int B, int Op, int Mp, int Ap) {
++    int maxp = max(Op, max(Mp, Ap)); long total = (long)R * maxp;
++    for (long i = blockIdx.x * (long)blockDim.x + threadIdx.x; i < total; i += (long)gridDim.x * blockDim.x) {
++        int r = i / maxp, e = i % maxp; int a = idx[r]; if (a < 0) continue; long row = (long)tt[r] * B + a;
++        if (e < Op) dst.obs[row * Op + e] = src.obs[(long)r * Op + e];
++        if (e < Mp) dst.mask[row * Mp + e] = src.mask[(long)r * Mp + e];
++        if (e < Ap) dst.actions[row * Ap + e] = src.actions[(long)r * Ap + e];
++        if (e == 0) { dst.lp[row] = src.lp[r]; dst.val[row] = src.val[r]; dst.rew[row] = src.rew[r]; dst.term[row] = src.term[r]; }
++    }
++}
++// Zero-copy gather: slot rows ← host (pinned, mapped) agent rows by index; padded rows get zero obs/rew/term and an all-ones mask.
++__global__ void sched_gather_inputs(obs_t* d_obs, float* d_rew, float* d_term, unsigned char* d_mask,
++        const obs_t* h_obs, const float* h_rew, const float* h_term, const unsigned char* h_mask, const int* idx, int R, int obs_size, int mask_size) {
++    int r = blockIdx.x; int a = idx[r];
++    const unsigned short* src = a >= 0 ? (const unsigned short*)(h_obs + (size_t)a * obs_size) : NULL; unsigned short* dst = (unsigned short*)(d_obs + (size_t)r * obs_size);
++    int n2 = obs_size / 2; /* obs_size is even (checked at setup): 2-byte units halve the PCIe transactions of a byte gather */
++    for (int i = threadIdx.x; i < n2; i += blockDim.x) dst[i] = src ? src[i] : (unsigned short)0;
++    for (int i = threadIdx.x; i < mask_size; i += blockDim.x) d_mask[(size_t)r * mask_size + i] = a >= 0 ? h_mask[(size_t)a * mask_size + i] : 1;
++    if (threadIdx.x == 0) { d_rew[r] = a >= 0 ? h_rew[a] : 0.f; d_term[r] = a >= 0 ? h_term[a] : 0.f; }
++}
++static void sched_forward_body(PuffeRL* p, int s, cudaStream_t stream) {
++    VecEnv* vec = p->vec; int R = vec->agents_per_buf, start = s * R, H = p->hypers.horizon;
++    Policy* pol = &p->policies[0]; Prec* st = &pol->buffer_states[s];
++    int state_n = (int)st->shape[0] * R * (int)st->shape[2];
++    if (vec->sched_zero_copy) {
++        EnvBuf* e = &p->env;
++        sched_gather_inputs<<<R, 256, 0, stream>>>(e->obs.data + (size_t)start * OBS_SIZE, e->rewards.data + start, e->terminals.data + start,
++            e->action_mask.data + (size_t)start * vec->mask_size, vec->dh_obs, vec->dh_rew, vec->dh_term, vec->dh_mask, vec->d_idx[s], R, OBS_SIZE, vec->mask_size);
++    }
++    sched_gather_state<<<grid_size(state_n), BLOCK_SIZE, 0, stream>>>(*st, p->sched_state, vec->d_idx[s], R, 0);
++    sched_gather_rng<<<grid_size(R), BLOCK_SIZE, 0, stream>>>(p->rng_states[s], p->sched_rng, vec->d_idx[s], R, 0);
++    zero_term_state<<<grid_size(state_n), BLOCK_SIZE, 0, stream>>>(*st, p->env.terminals, 0, start, R);
++    if (p->rollouts.initial_states.data)
++        sched_snapshot_state<<<grid_size(state_n), BLOCK_SIZE, 0, stream>>>(p->rollouts.initial_states, *st, vec->d_idx[s], vec->d_tt[s], R, H);
++    pufferl_forward_step(p, s, 0, stream);
++    sched_scatter_state<<<grid_size(state_n), BLOCK_SIZE, 0, stream>>>(p->sched_state, *st, vec->d_idx[s], R);
++    sched_scatter_rng<<<grid_size(R), BLOCK_SIZE, 0, stream>>>(p->sched_rng, p->rng_states[s], vec->d_idx[s], R);
++    RolloutBuf& ro = p->rollouts;
++    StepRecord dst = {ro.observations.data, ro.action_mask.data, ro.logprobs.data, ro.values.data, ro.rewards.data, ro.terminals.data, ro.actions.data};
++    StepRecord src = record_view(p->step_rollouts, 0, start, R);
++    int Op = p->step_rollouts.observations.shape[2], Mp = p->step_rollouts.action_mask.shape[2], Ap = p->step_rollouts.actions.shape[2];
++    sched_record_scatter<<<grid_size(R * max(Op, max(Mp, Ap))), BLOCK_SIZE, 0, stream>>>(dst, src, vec->d_idx[s], vec->d_tt[s], R, p->hypers.total_agents, Op, Mp, Ap);
++}
++static void sched_env_step(void* ctx, int a) { PuffeRL* p = (PuffeRL*)ctx; VecEnv* vec = p->vec; vec->rewards[a] = 0; vec->terminals[a] = 0; puf_step(&vec->envs[a]); }
++// Recorded-action replay (PUF_ACTION_REPLAY): agent a at its own step t takes frame (segments_done*horizon + t) of stream a / (agents/4), slot a % 128.
++static void sched_before_step(void* ctx, int a, int t) {
++    PuffeRL* p = (PuffeRL*)ctx; VecEnv* vec = p->vec; if (!vec->replay[0]) return;
++    int stream = a / (vec->total_agents / 4), slot = a % 128;
++    size_t frame = (size_t)(vec->sched_segments - 1) * p->hypers.horizon + t;
++    size_t off = (frame * 128 + slot) * NUM_ATNS * sizeof(float);
++    assert(off + NUM_ATNS * sizeof(float) <= vec->replay_size);
++    memcpy(vec->actions + (size_t)a * NUM_ATNS, vec->replay[stream] + off, NUM_ATNS * sizeof(float));
++}
++typedef struct { PuffeRL* p; int slot; } SchedSlotArg;
++static void* sched_slot_main(void* arg) {
++    SchedSlotArg* a = (SchedSlotArg*)arg; PuffeRL* p = a->p; VecEnv* vec = p->vec; int s = a->slot;
++    cudaSetDevice(p->hypers.gpu_id); cublas_init_handle();
++    cudaStream_t stream = p->streams[s]; cublas_init_stream(stream);
++    if (getenv("PUF_CPU_AFFINITY") && s < 8) ep_pin_cpu(2 * s + 1); /* P-core SMT siblings, like the pool's submitters */
++    int R = vec->agents_per_buf, H = p->hypers.horizon; long mask = vec->mask_size; EnvSched* es = vec->sched;
++    int* idx = vec->st_idx[s]; int* tt = vec->st_tt[s]; obs_t* sobs = vec->st_obs[s]; float* srew = vec->st_rew[s]; float* sterm = vec->st_term[s];
++    unsigned char* smask = vec->st_mask[s]; float* sact = vec->st_act[s]; EnvBuf* e = &p->env; int start = s * R;
++    memset(sobs, 0, (size_t)R * OBS_SIZE * sizeof(obs_t)); memset(smask, 1, (size_t)R * mask);
++    cudaGraphExec_t graph = NULL; double fwd_ewma = 350e-6;
++    long sleep_ns = getenv("PUF_SCHED_SLOT_SLEEP_US") ? atol(getenv("PUF_SCHED_SLOT_SLEEP_US")) * 1000L : 0;
++    for (;;) {
++        if (__atomic_load_n(&vec->shutdown, __ATOMIC_SEQ_CST)) return NULL;
++        if (!__atomic_load_n(&es->running, __ATOMIC_ACQUIRE)) { struct timespec ts = {0, 50000}; nanosleep(&ts, NULL); continue; }
++        double window = vec->sched_window > 0 ? vec->sched_window : fwd_ewma;
++        int n = es_infer_pop(es, idx, R, window);
++        if (!n) { if (sleep_ns) { struct timespec ts = {0, sleep_ns}; nanosleep(&ts, NULL); } else for (int i = 0; i < 16; i++) _mm_pause(); continue; }
++        int wslot = vec->sched_write_slot;
++        if (vec->sched_zero_copy) {
++            for (int r = 0; r < n; r++) tt[r] = wslot * H + es->agent[idx[r]].t;
++            for (int r = n; r < R; r++) { idx[r] = -1; tt[r] = wslot * H; }
++        } else {
++        for (int r = 0; r < n; r++) { int g = idx[r];
++            memcpy(sobs + (size_t)r * OBS_SIZE, vec->observations + (size_t)g * OBS_SIZE, OBS_SIZE * sizeof(obs_t));
++            srew[r] = vec->rewards[g]; sterm[r] = vec->terminals[g];
++            memcpy(smask + (size_t)r * mask, vec->action_mask + (size_t)g * mask, mask);
++            tt[r] = wslot * H + es->agent[g].t; }
++        for (int r = n; r < R; r++) { idx[r] = -1; tt[r] = wslot * H; srew[r] = 0; sterm[r] = 0; }
++        cudaMemcpyAsync(e->obs.data + (size_t)start * OBS_SIZE, sobs, (size_t)R * OBS_SIZE * sizeof(obs_t), cudaMemcpyHostToDevice, stream);
++        cudaMemcpyAsync(e->rewards.data + start, srew, R * sizeof(float), cudaMemcpyHostToDevice, stream);
++        cudaMemcpyAsync(e->terminals.data + start, sterm, R * sizeof(float), cudaMemcpyHostToDevice, stream);
++        cudaMemcpyAsync(e->action_mask.data + (size_t)start * mask, smask, (size_t)R * mask, cudaMemcpyHostToDevice, stream);
++        }
++        cudaMemcpyAsync(vec->d_idx[s], idx, R * sizeof(int), cudaMemcpyHostToDevice, stream);
++        cudaMemcpyAsync(vec->d_tt[s], tt, R * sizeof(int), cudaMemcpyHostToDevice, stream);
++        double f0 = es_now();
++        if (!graph) {
++            assert(cudaStreamBeginCapture(stream, cudaStreamCaptureModeThreadLocal) == cudaSuccess);
++            sched_forward_body(p, s, stream);
++            cudaGraph_t g; assert(cudaStreamEndCapture(stream, &g) == cudaSuccess);
++            assert(cudaGraphInstantiate(&graph, g, 0) == cudaSuccess); cudaGraphDestroy(g);
++        }
++        assert(cudaGraphLaunch(graph, stream) == cudaSuccess && "sched graph launch failed");
++        cudaMemcpyAsync(sact, e->actions.data + (size_t)start * NUM_ATNS, (size_t)R * NUM_ATNS * sizeof(float), cudaMemcpyDeviceToHost, stream);
++        assert(cudaStreamSynchronize(stream) == cudaSuccess);
++        double dt = es_now() - f0; fwd_ewma = 0.9 * fwd_ewma + 0.1 * dt; vec->sched_fwd_sum[s] += dt;
++        for (int r = 0; r < n; r++) memcpy(vec->actions + (size_t)idx[r] * NUM_ATNS, sact + (size_t)r * NUM_ATNS, NUM_ATNS * sizeof(float));
++        es_actions_back(es, idx, n);
++        vec->sched_forwards[s]++; vec->sched_rows[s] += n;
++    }
++}
++static void env_restart(PuffeRL* p);
++static void sched_setup(PuffeRL* p) {
++    VecEnv* vec = p->vec; Hypers* h = &p->hypers;
++    assert(vec->size == vec->total_agents && "PUF_SCHED assumes one agent per env");
++    assert(p->num_policies == 1 && "PUF_SCHED: single policy only");
++    env_restart(p);
++    int workers = getenv("PUF_POOL_WORKERS") ? atoi(getenv("PUF_POOL_WORKERS")) : 24;
++    int pin = getenv("PUF_CPU_AFFINITY") ? atoi(getenv("PUF_CPU_AFFINITY")) : 0;
++    vec->sched_slots = getenv("PUF_SCHED_SLOTS") ? atoi(getenv("PUF_SCHED_SLOTS")) : (vec->buffers < 4 ? vec->buffers : 4);
++    assert(vec->sched_slots >= 1 && vec->sched_slots <= vec->buffers);
++    vec->sched_window = getenv("PUF_SCHED_WINDOW_US") ? atof(getenv("PUF_SCHED_WINDOW_US")) * 1e-6 : 0.0;
++    vec->sched_zero_copy = getenv("PUF_SCHED_ZERO_COPY") ? atoi(getenv("PUF_SCHED_ZERO_COPY")) : 1;
++    if (vec->sched_zero_copy) {
++        assert(OBS_SIZE % 2 == 0 && sizeof(obs_t) == 1 && "zero-copy gather copies 2-byte units");
++        fprintf(stderr, "SCHED zero-copy gather: OBS_SIZE=%d mask=%d\n", (int)OBS_SIZE, vec->mask_size);
++        assert(cudaHostGetDevicePointer((void**)&vec->dh_obs, vec->observations, 0) == cudaSuccess);
++        assert(cudaHostGetDevicePointer((void**)&vec->dh_rew, vec->rewards, 0) == cudaSuccess);
++        assert(cudaHostGetDevicePointer((void**)&vec->dh_term, vec->terminals, 0) == cudaSuccess);
++        assert(cudaHostGetDevicePointer((void**)&vec->dh_mask, vec->action_mask, 0) == cudaSuccess);
++    }
++    int R = vec->agents_per_buf, A = vec->total_agents;
++    Prec* st0 = &p->policies[0].buffer_states[0]; int L = (int)st0->shape[0], Hh = (int)st0->shape[2];
++    p->sched_state = {.shape = {L, A, Hh}};
++    assert(cudaMalloc((void**)&p->sched_state.data, (size_t)L * A * Hh * sizeof(precision_t)) == cudaSuccess);
++    cudaMemset(p->sched_state.data, 0, (size_t)L * A * Hh * sizeof(precision_t));
++    assert(cudaMalloc((void**)&p->sched_rng, (size_t)A * sizeof(curandStatePhilox4_32_10_t)) == cudaSuccess);
++    int ref = getenv("PUF_BENCH_REFERENCE_AGENTS") ? atoi(getenv("PUF_BENCH_REFERENCE_AGENTS")) : 0;
++    for (int i = 0; i < vec->buffers; i++)
++        rng_init<<<grid_size(R), BLOCK_SIZE>>>(p->sched_rng + (size_t)i * R, p->seed + (ref ? 0 : i), R, i * R, ref); /* same per-agent streams as the pool's rng_states[i][row] */
++    int S = vec->sched_slots; long mask = vec->mask_size;
++    vec->st_obs = (obs_t**)calloc(S, sizeof(obs_t*)); vec->st_rew = (float**)calloc(S, sizeof(float*)); vec->st_term = (float**)calloc(S, sizeof(float*));
++    vec->st_act = (float**)calloc(S, sizeof(float*)); vec->st_mask = (unsigned char**)calloc(S, sizeof(unsigned char*));
++    vec->st_idx = (int**)calloc(S, sizeof(int*)); vec->st_tt = (int**)calloc(S, sizeof(int*)); vec->d_idx = (int**)calloc(S, sizeof(int*)); vec->d_tt = (int**)calloc(S, sizeof(int*));
++    vec->sched_forwards = (long*)calloc(S, sizeof(long)); vec->sched_rows = (long*)calloc(S, sizeof(long)); vec->sched_fwd_sum = (double*)calloc(S, sizeof(double));
++    for (int s = 0; s < S; s++) {
++        assert(cudaHostAlloc((void**)&vec->st_obs[s], (size_t)R * OBS_SIZE * sizeof(obs_t), cudaHostAllocPortable) == cudaSuccess);
++        assert(cudaHostAlloc((void**)&vec->st_rew[s], R * sizeof(float), cudaHostAllocPortable) == cudaSuccess);
++        assert(cudaHostAlloc((void**)&vec->st_term[s], R * sizeof(float), cudaHostAllocPortable) == cudaSuccess);
++        assert(cudaHostAlloc((void**)&vec->st_act[s], (size_t)R * NUM_ATNS * sizeof(float), cudaHostAllocPortable) == cudaSuccess);
++        assert(cudaHostAlloc((void**)&vec->st_mask[s], (size_t)R * mask, cudaHostAllocPortable) == cudaSuccess);
++        assert(cudaHostAlloc((void**)&vec->st_idx[s], R * sizeof(int), cudaHostAllocPortable) == cudaSuccess);
++        assert(cudaHostAlloc((void**)&vec->st_tt[s], R * sizeof(int), cudaHostAllocPortable) == cudaSuccess);
++        assert(cudaMalloc((void**)&vec->d_idx[s], R * sizeof(int)) == cudaSuccess);
++        assert(cudaMalloc((void**)&vec->d_tt[s], R * sizeof(int)) == cudaSuccess);
++    }
++    if (const char* dir = getenv("PUF_ACTION_REPLAY")) {
++        for (int b = 0; b < 4; b++) {
++            char path[4096]; snprintf(path, sizeof(path), "%s/buf%d.bin", dir, b);
++            int fd = open(path, O_RDONLY); assert(fd >= 0); struct stat st; assert(fstat(fd, &st) == 0);
++            vec->replay_size = st.st_size;
++            vec->replay[b] = (const unsigned char*)mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);
++            assert(vec->replay[b] != MAP_FAILED); close(fd);
++        }
++    }
++    vec->sched = es_create(workers, A, h->horizon, sched_env_step, p, pin);
++    vec->sched->before_step = vec->replay[0] ? sched_before_step : NULL;
++    vec->sched_threads = (pthread_t*)calloc(S, sizeof(pthread_t));
++    SchedSlotArg* args = (SchedSlotArg*)calloc(S, sizeof(SchedSlotArg));
++    for (int s = 0; s < S; s++) { args[s].p = p; args[s].slot = s; pthread_create(&vec->sched_threads[s], NULL, sched_slot_main, &args[s]); }
++    if (pin) ep_pin_cpu(9);
++    cudaDeviceSynchronize();
++    fprintf(stderr, "SCHED enabled: workers=%d slots=%d rows=%d agents=%d window=%s pin=%d replay=%d zero_copy=%d\n", workers, S, R, A,
++        vec->sched_window > 0 ? getenv("PUF_SCHED_WINDOW_US") : "forward-ewma", pin, vec->replay[0] != NULL, vec->sched_zero_copy);
++}
++static void sched_segment_begin(PuffeRL* p) { VecEnv* vec = p->vec; vec->sched_write_slot = p->write_slot; vec->sched_segments++; es_segment_start(vec->sched); }
++static void sched_segment_end(PuffeRL* p, double t0) {
++    VecEnv* vec = p->vec; es_segment_finish(vec->sched);
++    struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts); double now = ts.tv_sec + ts.tv_nsec * 1e-9;
++    p->profile.accum[PROF_ROLLOUT] += (float)((now - t0) * 1000.0);
++    if (getenv("PUF_SCHED_STATS") && p->epoch >= atoi(getenv("PUF_SCHED_STATS"))) {
++        char tag[64]; snprintf(tag, sizeof(tag), "epoch=%ld", (long)p->epoch); es_print_stats(vec->sched, stderr, tag);
++        long f = 0, rows = 0; double fs = 0; for (int s = 0; s < vec->sched_slots; s++) { f += vec->sched_forwards[s]; rows += vec->sched_rows[s]; fs += vec->sched_fwd_sum[s]; vec->sched_forwards[s] = vec->sched_rows[s] = 0; vec->sched_fwd_sum[s] = 0; }
++        fprintf(stderr, "SCHED_INFER epoch=%ld forwards=%ld rows_per_forward=%.1f forward_us=%.0f\n", (long)p->epoch, f, f ? (double)rows / f : 0.0, f ? 1e6 * fs / f : 0.0);
++    }
++}
++
+ static void snapshot_rollout_start(PuffeRL* p,int buf,cudaStream_t stream) {
+     if(!p->rollouts.initial_states.data)return;
+     int start=buf*(p->hypers.total_agents/p->hypers.num_buffers);
+@@ -1209,14 +1431,12 @@
+ 
+     size_t obs_bytes = total_agents * OBS_SIZE * sizeof(obs_t);
+     size_t mask_bytes = total_agents * vec->mask_size * sizeof(unsigned char);
+-    cudaHostAlloc((void**)&vec->observations, obs_bytes, cudaHostAllocPortable);
+-    cudaHostAlloc((void**)&vec->actions, total_agents * NUM_ATNS * sizeof(float),
+-        cudaHostAllocPortable);
+-    cudaHostAlloc((void**)&vec->rewards, total_agents * sizeof(float),
+-        cudaHostAllocPortable);
+-    cudaHostAlloc((void**)&vec->terminals, total_agents * sizeof(float),
+-        cudaHostAllocPortable);
+-    cudaHostAlloc((void**)&vec->action_mask, mask_bytes, cudaHostAllocPortable);
++    unsigned host_flags = cudaHostAllocPortable | cudaHostAllocMapped; /* mapped: the PUF_SCHED gather kernel reads these rows directly */
++    cudaHostAlloc((void**)&vec->observations, obs_bytes, host_flags);
++    cudaHostAlloc((void**)&vec->actions, total_agents * NUM_ATNS * sizeof(float), host_flags);
++    cudaHostAlloc((void**)&vec->rewards, total_agents * sizeof(float), host_flags);
++    cudaHostAlloc((void**)&vec->terminals, total_agents * sizeof(float), host_flags);
++    cudaHostAlloc((void**)&vec->action_mask, mask_bytes, host_flags);
+     memset(vec->action_mask, 1, mask_bytes);
+ 
+     float frozen_pct = dict_get(vk, "hist_policy_percent");
+@@ -1561,6 +1781,8 @@
+         return;
+     }
+     vec->perf_completed = (double*)calloc(vec->buffers, sizeof(double));
++    vec->sched_on = getenv("PUF_SCHED") && atoi(getenv("PUF_SCHED"));
++    if (vec->sched_on) { sched_setup(p); return; }
+     vec->cohort_size = getenv("PUF_COHORT_BUFFERS") ? atoi(getenv("PUF_COHORT_BUFFERS")) : vec->cohort_ini_buffers;
+     vec->cohort_steps = getenv("PUF_COHORT_STEPS") ? atoi(getenv("PUF_COHORT_STEPS")) : vec->cohort_ini_steps;
+     if (vec->cohort_steps <= 0) vec->cohort_steps = p->hypers.horizon;
+@@ -1645,6 +1867,7 @@
+         }
+         return;
+     }
++    if (p->vec->sched_on) { sched_segment_begin(p); return; }
+     pthread_mutex_lock(&p->vec->cohort_mutex);
+     p->vec->cohort_ticket = p->vec->cohort_arrived = 0;
+     for (int buf = 0; buf < p->vec->buffers; buf++) {
+@@ -1682,6 +1905,7 @@
+         p->profile.accum[PROF_ROLLOUT] += model_ms + env_ms;
+         return;
+     }
++    if (p->vec->sched_on) { sched_segment_end(p, t0); return; }
+     if (p->vec->finish_sleep) pthread_mutex_lock(&p->vec->cohort_mutex);
+     for (int buf = 0; buf < p->vec->buffers; buf++) {
+         int* state = &p->vec->worker_state[buf];
+@@ -1737,6 +1961,11 @@
+         cudaFree(vec->log_scratch);
+         return;
+     }
++    if (vec->sched_on) {
++        __atomic_store_n(&vec->shutdown, 1, __ATOMIC_SEQ_CST);
++        for (int s = 0; s < vec->sched_slots; s++) pthread_join(vec->sched_threads[s], NULL);
++        es_destroy(vec->sched);
++    } else {
+     pthread_mutex_lock(&vec->cohort_mutex);
+     __atomic_store_n(&vec->shutdown, 1, __ATOMIC_SEQ_CST);
+     pthread_cond_broadcast(&vec->cohort_cond);
+@@ -1748,6 +1977,7 @@
+     ep_destroy(vec->env_pool);
+     vec->env_pool = NULL;
+ #endif
++    }
+     pthread_cond_destroy(&vec->cohort_cond);
+     pthread_mutex_destroy(&vec->cohort_mutex);
+     free(vec->perf_completed);
+@@ -3718,6 +3948,11 @@
+             }
+             fprintf(stderr,"BATCH_PROOF epoch=%ld obs=%016llx params=%ld copies=%d\n",epoch,(unsigned long long)hash,(long)numel(pufferl->policies[0].master_weights.shape),pufferl->hypers.total_agents/512);
+         }
++        if (getenv("PUF_LIVE_PROOF")) { /* FNV over every agent's observation after the epoch's rollout: scheduling-invariant under a frozen policy */
++            uint64_t hash=1469598103934665603ULL; const unsigned char* bytes=(const unsigned char*)pufferl->vec->observations;
++            size_t n=(size_t)pufferl->hypers.total_agents*OBS_SIZE*sizeof(obs_t); for(size_t j=0;j<n;j++){hash^=bytes[j];hash*=1099511628211ULL;}
++            fprintf(stderr,"LIVE_PROOF epoch=%ld obs=%016llx\n",epoch,(unsigned long long)hash);
++        }
+         if(epoch==train_epochs-1 && getenv("PUF_STATE_PROOF")) {
+             assert(cudaDeviceSynchronize()==cudaSuccess);
+             auto save_state=[&](const char* name,void* ptr,size_t bytes) {

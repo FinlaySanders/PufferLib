@@ -139,3 +139,64 @@ Step-cost curve vs games in rotation per core: 1 → 52 us (L1), ~4 → 60, ~8 �
 any latency hiding by other games pays it; the hybrid's contribution is staying at 4-16 instead of 21-85. The remaining 18% to the bound is that L1 loss.
 Path to 1M: not this box (needs 2.6x core-seconds); per-core residency makes env scale with cores → ~65 cores at this step cost (80-100 server cores),
 ≥ 4096 agents; GPU: PPO ~485K steps/s at 5M on the 4090 → fine at 1-2M params, H100-class or 2 GPUs at 5M. Next cheap step: run the harness on a big-core box.
+
+## I-cache test (callgrind cache sim, 1 worker, 32 games, 768 ticks, I1/D1 48K 12-way, LL 2 MB; icache/) — I-CACHE REFUTED
+per step: I1 misses 1,139 / 1,151 / 1,152 at rotation 1 / 4 / 16 (constant); D1 read misses 235 → 485 → 495, D1 write 118 → 235 → 236; LL misses 7-13.
+Rotation costs ~+370 L1 data misses per step ≈ 1-2 us — not the 11 us measured (52 → 63 us). Remaining suspect: branch prediction (census 5.4K
+mispredicts/step ≈ 20 us; predictor state is per game). Branch-sim run queued (icache/branch.sh).
+Branch-sim (callgrind --branch-sim, same config): conditional mispredicts per step 2,663 / 2,777 / 2,819 at rotation 1 / 4 / 16 (+4-6% ≈ 0.5 us); indirect
+mispredicts flat (38/step). BRANCH PREDICTION REFUTED as the rotation cost. Neither I1, D1 nor branch simulation explains the 52 → 63 us step → measuring the
+rotation cost natively (1 core and 24 cores, F=0, A = 1/4/16) to isolate it from latency and multi-core effects (icache/native.sh).
+
+## Native rotation cost (icache/native.sh, 2026-10-12 16:45 UTC; replay_sched6 C1 fixed A, group refill, no steal, F=0; hashes identical per config)
+1 core, 32 young games (warm 2048): rotation 1 / 4 / 16 → 23.5 / 27.2 / 29.4 us per step (+16% / +25%).
+24 cores pinned, 2048 mature games (warm 4096): rotation 1 / 4 / 16 / 64 → 51 / 56 / 62 / 86 us per step (busy 468K / 430K / 387K / 279K); +9% / +21% / +68%.
+→ the step-cost curve is confirmed natively: the first step (1 → 4) is +9-16%, 4 → 16 another +11%, 16 → 64 (out of L2) +39%. Cause of the first step
+NOT identified: callgrind I1 misses flat, D1 misses +370/step (~1-2 us), branch mispredicts +4-6% (~0.5 us). Needs hardware counters (host perf_event_paranoid).
+
+## TRAINER BUILD (2026-10-12 16:50-17:00 UTC; trainer/ = copy of engine-scaling trainer_cohort/source; DESIGN.md; build.py sched_ctrl (control, unchanged
+source, binary c9dac4b0) and sched_v1 (patched); binaries symlinked into nethack-24h-20261009/binaries)
+Patch: src/env_sched.h (ownership + lazy active set + borrow-when-idle + timed inference ring, workers never sleep) and pufferl.cu: PUF_SCHED=1 path —
+per-agent recurrent state (sched_state) and sampler RNG (sched_rng, initialised per agent exactly as the pool's rng_states[buf][row]); slot threads
+gather up to R=agents_per_buf ready agents per window (window = forward-time EWMA or PUF_SCHED_WINDOW_US), upload as one block, run a per-slot
+captured graph (gather state/rng → zero_term → snapshot t==0 rows → pufferl_forward_step → scatter state/rng → record_step_scatter to (tt, agent)),
+D2H actions, scatter to agents, hand them to owners. Segment = horizon (rollout_start/finish hooks); async write_slot via tt = slot*H + t.
+Replay hook for PUF_ACTION_REPLAY indexes the file by the agent's own t. New PUF_LIVE_PROOF (FNV over all host observations per epoch).
+SMOKE (fast protocol, 5M/2048, 16x128, 4 slots, 24 pinned workers, 6 epochs): runs; BATCH_PROOF epochs 0-4 IDENTICAL to the pool control
+(0375f42a96cddeee, ff5b905b6870fb65, 167efab0075754ff, 05e04c8c49497685, 8c5cbf1f77dee379 — also = the mt7_pgo-engine control of 11 Oct);
+rows per forward 121-126; borrow 8-11%; idle ~4% of busy. A/B (ctrl / sched / ctrl repeat, 44 epochs from 32, PUF_STATE_PROOF) running.
+
+## TRAINER A/B #1 (17:05 UTC; fast protocol 5M/2048 16x128, 24 pinned workers, 44 epochs from 32; nethack-24h-20261009/runs/sch_ab_*)
+GATE PASSED: BATCH_PROOF identical for all 44 epochs; PUF_STATE_PROOF master / momentum / updates IDENTICAL after 44 epochs of training on the
+scheduler's rollouts (rollout.hashes differ only in the per-buffer state buffers, which are staging slots under PUF_SCHED — expected). The gather/scatter
+path, per-agent state and RNG are exactly right. SPS: ctrl 322.3K / 323.6K, sched 281.8K (−13%). Stats: workers 94% busy, 80 us per step (pool ≈ 67),
+borrow 6-8%, rows/forward 111-113, forwards 2330-2360/epoch (ideal 2097). Hypotheses: (a) longer round trip (window = forward-ewma, forward includes
+gather/scatter + 6 H2D) → larger hot set; (b) 4 slot threads spinning + 512 KB memcpy per forward on the P-core SMT siblings 1,3,5,7 hurt workers 0-3
+(shared L2 + execution). v2: fwd time + hot-set instrumentation, PUF_SCHED_SLOT_SLEEP_US; knob sweep (window 150/250 us, slot sleep).
+
+## TRAINER knob sweep v2 (17:12 UTC; sched_v2; 5M/2048; ctrl 322-324K)
+default 280.8K | window 150 us 277.2K (5031 forwards, 52 rows) | window 250 280.2K | slot sleep 20 us 282.4K | w200+sleep 281.8K | 8 slots 265.1K.
+DIAGNOSIS: hot_set_mean = 28-31 games per core (harness design point ~8-10), us_per_step 80; forward_us 428-573 (pool 290-390). The hot set ratchets:
+the forward time varies under PPO contention (async), every long round trip makes a worker activate more parked games, and active games stay active for
+the rest of the segment. The harness had constant latency and never saw it. Window/slot-thread knobs: no effect (not the mechanism).
+FIX (v3): self-tuning cap — per worker round-trip EWMA and step-time EWMA; activate only while in-rotation < K * rt/step (K=1.25 default); a returning
+game above the cap is parked again (deactivated). Knob-free: both quantities are measured online.
+
+## TRAINER v3 — self-tuning hot-set cap (17:15 UTC; 5M/2048; ctrl 322-324K)
+adaptive k=1.25: 317.7K (cap 9.2, hot set 13.8, 70.2 us/step, borrow 15.5%) | k=1.5: 318.7K (cap 10.8, hot 16.5, 70.1 us, borrow 8.9%) | k=1.0: 317.2K (hot 11.2, borrow 26.7%)
+fixed cap 10: 321.2K (hot 9.8, 69.1 us, borrow 35%) | fixed cap 16: 324.1K (hot 15.5, 68.6 us, borrow 13.7%). rt 447-459 us, forward 455-460 us, rows 113-115.
+The cap removes the ratchet (hot set 29 → 10-16, step 80 → 69-70 us) and brings the trainer to PARITY with the pool. Not yet the harness gain: the
+harness measured 60-63 us/step at this rotation. Remaining suspect = the 4 slot threads' 512 KB host memcpy per forward + spinning on the P-core SMT
+siblings 1,3,5,7 (shared L2 with workers 0-3) — the harness had no such threads. v4: zero-copy gather (device kernel reads the pinned host rows by index,
+cudaHostAllocMapped), no CPU copy; per-core-type step cost in SCHED_STATS.
+
+## TRAINER v4 (17:20 UTC): zero-copy arms aborted at setup (OBS_SIZE 4184 is not a multiple of 16; gather kernel now copies 8-byte units → v5).
+Memcpy variant with per-core-type stats (k=1.5): 318.3K; P-cores 61.3 us/step, E-cores 75.4 (pool steady state 10-11 Oct: P ≈ 59, E ≈ 71); hot set 16.5,
+borrow 8.6%. Pool control repeat: 323.9K. → the scheduler's steps cost +4% (P) / +6% (E) over the pool's at a hot set the native curve prices at 62 us.
+
+## TRAINER v6 — zero-copy gather (17:25 UTC; 5M/2048; ctrl 322-324K; BATCH_PROOF identical to the pool)
+k=1.5: 325.7K (hot set 16.8, P 60.2 / E 74.7 us per step) | fixed cap 16: 331.5K (+2.4%; hot 15.4, P 58.6 / E 74.0) | k=1.5 + slot sleep: 326.7K.
+Zero-copy removes the slot threads' 512 KB CPU memcpy per forward: P-core steps fall from 61.3 to 58.5-60 (= the pool's P cost). E-cores stay 74-75 vs
+the pool's 71 (1 MB L2 share, hot set 15-17 x ~55 KB fills it). Forward 456 → 540 us (byte-granular PCIe gather of 612 KB + mask). Leaks: (1) the
+segment-start burst (all agents forwarded at t=0) inflates the round-trip EWMA → cap jumps → hot set 2x the steady cap, shrinking slowly; (2) gather cost.
+v7: round-trip EWMA ignores t==0 returns; 2-byte gather units (OBS_SIZE 4782 is even).
