@@ -60,8 +60,9 @@ struct EnvSched {
     void (*step)(void*, int); void* ctx;
     void (*before_step)(void*, int, int); // optional hook (recorded-action replay): (ctx, agent, t)
     pthread_t* threads; ESWorker* args;
-    long *steps_own, *steps_borrow, *activations; double *busy, *idle; long *steps_own_w, *steps_borrow_w; double* busy_w;
+    long *steps_own, *steps_borrow, *activations; double *busy, *idle; long *steps_own_w, *steps_borrow_w, *borrowed_from_w; double* busy_w;
     int* inrot; double* inrot_sum;  /* own games active and not yet done this segment; summed per step for the mean hot set */
+    int* cluster; int cluster_pref;  /* L2 cluster of each worker's core (P-cores private, E-cores 4 per cluster) */
     double *rt_ewma, *step_ewma; int* cap; double hot_k; int hot_cap_fixed; long* parked_back;
 };
 
@@ -71,7 +72,7 @@ static inline void es_step_agent(EnvSched* s, int w, int a, int borrowed) {
     if (s->before_step) s->before_step(s->ctx, a, g->t);
     s->step(s->ctx, a);
     double dt = es_now() - t0; s->busy[w] += dt; s->busy_w[w] += dt; s->step_ewma[w] = s->step_ewma[w] > 0 ? 0.98 * s->step_ewma[w] + 0.02 * dt : dt;
-    if (borrowed) { s->steps_borrow[w]++; s->steps_borrow_w[w]++; } else { s->steps_own[w]++; s->steps_own_w[w]++; }
+    if (borrowed) { s->steps_borrow[w]++; s->steps_borrow_w[w]++; s->borrowed_from_w[g->owner]++; } else { s->steps_own[w]++; s->steps_own_w[w]++; }
     int t = ++g->t;
     s->inrot_sum[w] += s->inrot[g->owner];
     if (t >= s->horizon) { if (g->active) __atomic_fetch_sub(&s->inrot[g->owner], 1, __ATOMIC_RELAXED); __atomic_fetch_add(&s->done_count, 1, __ATOMIC_ACQ_REL); }
@@ -92,9 +93,14 @@ static void* es_worker(void* arg) {
         int a;
         if (es_pop_front(&s->ready_active[w], &a)) { es_step_agent(s, w, a, 0); continue; }
         if (__atomic_load_n(&s->inrot[w], __ATOMIC_RELAXED) < s->cap[w] && es_pop_front(&s->ready_parked[w], &a)) { s->agent[a].active = 1; s->active_count[w]++; s->activations[w]++; __atomic_fetch_add(&s->inrot[w], 1, __ATOMIC_RELAXED); es_step_agent(s, w, a, 0); continue; }
-        /* borrow one tick of the busiest other worker's ready game */
+        /* borrow one tick of the busiest other worker's ready game; prefer a worker whose core shares my L2 (E-core clusters of 4) */
         int v = -1, most = 0;
-        for (int u = 0; u < s->workers; u++) {
+        if (s->cluster_pref) for (int u = 0; u < s->workers; u++) {
+            if (u == w || s->cluster[u] != s->cluster[w]) continue;
+            int c = __atomic_load_n(&s->ready_parked[u].count, __ATOMIC_RELAXED) + __atomic_load_n(&s->ready_active[u].count, __ATOMIC_RELAXED);
+            if (c > most) { most = c; v = u; }
+        }
+        if (v < 0) for (int u = 0; u < s->workers; u++) {
             if (u == w) continue;
             int c = __atomic_load_n(&s->ready_parked[u].count, __ATOMIC_RELAXED) + __atomic_load_n(&s->ready_active[u].count, __ATOMIC_RELAXED);
             if (c > most) { most = c; v = u; }
@@ -108,15 +114,21 @@ static EnvSched* es_create(int workers, int agents, int horizon, void (*step)(vo
     EnvSched* s = (EnvSched*)calloc(1, sizeof(EnvSched));
     s->workers = workers; s->agents = agents; s->horizon = horizon; s->step = step; s->ctx = ctx; s->pin = pin;
     s->agent = (ESAgent*)calloc(agents, sizeof(ESAgent));
-    for (int a = 0; a < agents; a++) s->agent[a].owner = a % workers;
+    { /* weighted ownership: P-core workers (0..7 when pinned 24) take PWEIGHT x the games of an E-core worker */
+      double pw = getenv("PUF_SCHED_PWEIGHT") ? atof(getenv("PUF_SCHED_PWEIGHT")) : 1.0; double wt[256], sum = 0; int given[256];
+      for (int w = 0; w < workers; w++) { wt[w] = (pin && workers == 24 && w < 8) ? pw : 1.0; sum += wt[w]; given[w] = 0; }
+      for (int a = 0; a < agents; a++) { int best = 0; double br = 1e30; for (int w = 0; w < workers; w++) { double r = (given[w] + 1) / (wt[w] * agents / sum); if (r < br) { br = r; best = w; } } s->agent[a].owner = best; given[best]++; }
+      if (pw != 1.0) fprintf(stderr, "SCHED ownership: P-core workers own %d games each, E-core workers %d\n", given[0], given[workers - 1]); }
     s->ready_active = (ESRing*)calloc(workers, sizeof(ESRing)); s->ready_parked = (ESRing*)calloc(workers, sizeof(ESRing));
     for (int w = 0; w < workers; w++) { es_ring_init(&s->ready_active[w], agents + 1, 0); es_ring_init(&s->ready_parked[w], agents + 1, 0); }
     es_ring_init(&s->infer, agents + 1, 1);
     s->active_count = (int*)calloc(workers, sizeof(int));
     s->steps_own = (long*)calloc(workers, sizeof(long)); s->steps_borrow = (long*)calloc(workers, sizeof(long)); s->activations = (long*)calloc(workers, sizeof(long));
     s->busy = (double*)calloc(workers, sizeof(double)); s->idle = (double*)calloc(workers, sizeof(double));
-    s->steps_own_w = (long*)calloc(workers, sizeof(long)); s->steps_borrow_w = (long*)calloc(workers, sizeof(long)); s->busy_w = (double*)calloc(workers, sizeof(double));
+    s->steps_own_w = (long*)calloc(workers, sizeof(long)); s->steps_borrow_w = (long*)calloc(workers, sizeof(long)); s->busy_w = (double*)calloc(workers, sizeof(double)); s->borrowed_from_w = (long*)calloc(workers, sizeof(long));
     s->inrot = (int*)calloc(workers, sizeof(int)); s->inrot_sum = (double*)calloc(workers, sizeof(double));
+    s->cluster = (int*)calloc(workers, sizeof(int)); s->cluster_pref = getenv("PUF_SCHED_CLUSTER") ? atoi(getenv("PUF_SCHED_CLUSTER")) : 0;
+    for (int w = 0; w < workers; w++) { int cpu = (pin && workers == 24) ? (w < 8 ? 2 * w : 16 + w - 8) : w; s->cluster[w] = cpu < 16 ? cpu : 100 + (cpu - 16) / 4; } /* i9-14900K: P-cores private L2, E-cores 16-19, 20-23, 24-27, 28-31 share one each */
     s->rt_ewma = (double*)calloc(workers, sizeof(double)); s->step_ewma = (double*)calloc(workers, sizeof(double)); s->cap = (int*)calloc(workers, sizeof(int)); s->parked_back = (long*)calloc(workers, sizeof(long));
     s->hot_k = getenv("PUF_SCHED_HOT_K") ? atof(getenv("PUF_SCHED_HOT_K")) : 1.25;
     s->hot_cap_fixed = getenv("PUF_SCHED_HOT_CAP") ? atoi(getenv("PUF_SCHED_HOT_CAP")) : 0;
@@ -172,8 +184,8 @@ static void es_destroy(EnvSched* s) {
 static void es_print_stats(EnvSched* s, FILE* f, const char* tag) {
     long own = 0, bor = 0, act = 0, pb = 0; double busy = 0, idle = 0, bmin = 1e30, bmax = 0, rot = 0, rt = 0, se = 0; long capsum = 0;
     for (int w = 0; w < s->workers; w++) { own += s->steps_own[w]; bor += s->steps_borrow[w]; act += s->activations[w]; busy += s->busy[w]; idle += s->idle[w]; rot += s->inrot_sum[w]; pb += s->parked_back[w]; s->parked_back[w] = 0; rt += s->rt_ewma[w]; se += s->step_ewma[w]; capsum += s->cap[w] > 100000 ? 0 : s->cap[w]; if (s->busy[w] < bmin) bmin = s->busy[w]; if (s->busy[w] > bmax) bmax = s->busy[w]; s->steps_own[w] = s->steps_borrow[w] = s->activations[w] = 0; s->busy[w] = s->idle[w] = 0; s->inrot_sum[w] = 0; }
-    { double pb_=0,pe_=0; long pn=0,en=0; for (int w = 0; w < s->workers; w++) { long n = s->steps_own_w[w] + s->steps_borrow_w[w]; if (!n) continue; if (s->pin && s->workers == 24 && w < 8) { pb_ += s->busy_w[w]; pn += n; } else { pe_ += s->busy_w[w]; en += n; } s->steps_own_w[w] = s->steps_borrow_w[w] = 0; s->busy_w[w] = 0; }
-      fprintf(f, "SCHED_CORES %s P_us_per_step=%.1f E_us_per_step=%.1f P_steps=%ld E_steps=%ld\n", tag, pn ? 1e6 * pb_ / pn : 0.0, en ? 1e6 * pe_ / en : 0.0, pn, en); }
+    { double pb_=0,pe_=0; long pn=0,en=0,pbor=0,ebor=0,pfrom=0,efrom=0; for (int w = 0; w < s->workers; w++) { long n = s->steps_own_w[w] + s->steps_borrow_w[w]; int isP = s->pin && s->workers == 24 && w < 8; if (isP) { pb_ += s->busy_w[w]; pn += n; pbor += s->steps_borrow_w[w]; pfrom += s->borrowed_from_w[w]; } else { pe_ += s->busy_w[w]; en += n; ebor += s->steps_borrow_w[w]; efrom += s->borrowed_from_w[w]; } s->steps_own_w[w] = s->steps_borrow_w[w] = 0; s->busy_w[w] = 0; s->borrowed_from_w[w] = 0; }
+      fprintf(f, "SCHED_CORES %s P_us_per_step=%.1f E_us_per_step=%.1f P_steps=%ld E_steps=%ld P_borrows=%ld E_borrows=%ld taken_from_P=%ld taken_from_E=%ld\n", tag, pn ? 1e6 * pb_ / pn : 0.0, en ? 1e6 * pe_ / en : 0.0, pn, en, pbor, ebor, pfrom, efrom); }
     fprintf(f, "SCHED_STATS %s steps_own=%ld steps_borrow=%ld borrow_pct=%.1f activations=%ld parked_back=%ld cap_mean=%.1f rt_us=%.0f step_us=%.1f hot_set_mean=%.1f us_per_step=%.1f busy_mean=%.3f busy_min=%.3f busy_max=%.3f idle_mean=%.3f\n",
         tag, own, bor, 100.0 * bor / (double)(own + bor ? own + bor : 1), act, pb, capsum / (double)s->workers, 1e6 * rt / s->workers, 1e6 * se / s->workers, rot / (double)(own + bor ? own + bor : 1), 1e6 * busy / (double)(own + bor ? own + bor : 1), busy / s->workers, bmin, bmax, idle / s->workers);
 }

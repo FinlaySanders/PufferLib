@@ -200,3 +200,30 @@ Zero-copy removes the slot threads' 512 KB CPU memcpy per forward: P-core steps 
 the pool's 71 (1 MB L2 share, hot set 15-17 x ~55 KB fills it). Forward 456 → 540 us (byte-granular PCIe gather of 612 KB + mask). Leaks: (1) the
 segment-start burst (all agents forwarded at t=0) inflates the round-trip EWMA → cap jumps → hot set 2x the steady cap, shrinking slowly; (2) gather cost.
 v7: round-trip EWMA ignores t==0 returns; 2-byte gather units (OBS_SIZE 4782 is even).
+
+## TRAINER v7 (17:30 UTC; burst-excluded rt EWMA, 2-byte gather; ctrl 323.2K; BATCH_PROOF identical)
+adaptive k1.25 323.8K (hot 14.2, borrow 16.5%) | k1.5 324.2K (hot 16.6, borrow 9.7%) | k2.0 321.4K (hot 20.5, borrow 5.5%) | cap12 328.5K (+1.6%; hot 11.7,
+borrow 26.9%) | cap16 329.1K (+1.8%; hot 15.5, borrow 14.6%). P-core steps 57.4-61.0 us (pool ≈ 59); E-core steps 74.5-75.6 at EVERY hot set 12-21 (pool ≈ 71).
+Readings: the hot set is no longer the lever at 12-21; cap_mean is an end-of-segment snapshot (short tail round trips) so adaptive hot sets sit ~1.6x it —
+the adaptive rule is fine, the design point is just rt/step ≈ 9-10 here. The E-core excess (+4 us) is borrow-cold returns: P-cores exhaust their capped own
+work first and borrow E-core games (14-27% of ticks), which return cold to their owners. v8: weighted initial ownership (PUF_SCHED_PWEIGHT: P-core workers
+own more games so the speed gap is covered by ownership, not cold borrows) + per-core-type borrow stats; also a 2-slot arm.
+
+## TRAINER v8 — weighted ownership (17:35 UTC; 5M/2048; ctrl 323.2K)
+cap16: 330.0K (+2.1%; borrow 14.3%, taken_from_P 8K / from_E 29K: P-cores borrow E games) | cap16 + PWEIGHT 1.25 (P own 98, E own 79): 336.2K (+4.0%;
+borrow 15.2% now symmetric 21K/19K; E 73.4 us) | PWEIGHT 1.5: 331.9K | cap12 + pw1.25: 332.3K (borrow 28.5%) | k1.5 + pw1.25: 324.9K (hot 17, borrow 8.7%) |
+2 slots: 322.2K (forward 613 us, borrow 24.7%, E 80.4 — fewer inference threads starve the ring).
+Per-core: P 57.2 (pool 59), E 73.4-74.8 (pool 71). E-core excess ≈ borrowed cold ticks (E does 10% of its steps on borrowed games, 12% of its own come back
+cold); borrowing fills idle, so shrinking it via a bigger hot set (k2.0) loses more. Optimum cap 12-16 + pw1.25 → +3-4% at 5M/2048 (single runs; pool spread 0.5%).
+Trainer vs harness: trainer pool steps are ~5 us cheaper than the harness pool emulation, trainer hybrid steps ~5 us dearer than the harness hybrid → the
+harness's +11% was partly emulation optimism (no real data movement, no PPO, deterministic latency). Next: repeats + 5M/4096 + 15M/2048.
+
+## TRAINER RESULT — real config shapes (17:50 UTC; fast protocol; sched_v8 cap16 + PWEIGHT 1.25 unless noted; all BATCH_PROOFs identical to the pool)
+| shape | pool (cohort knobs, 24 pinned) | scheduler | gain |
+| 5M/2048 (16x128, H128) | 323.4K / 323.2K | 335.6K / 335.3K | +3.8% (reproduced) |
+| 5M/4096 (32x128, H64) | 354.6K | 364.0K (cap16 plain 360.1K) | +2.7% |
+| 15M/2048 (width 1024, real frozen weights) | 237.6K | 215.0K (cap24: 213.6K) | −9.5% |
+15M mechanism: inference-bound regime — forward 990-998 us under PPO contention (pool 790), rt 1.2-1.3 ms, workers idle 35% waiting on the GPU, borrow 28%;
+the per-forward gather/scatter + PCIe read overhead (+~200 us) is paid 2100 times per epoch. Selection rule holds: pool at 15M (GPU-bound), scheduler at 5M.
+Gap to the harness (+11% predicted at 5M/2048): trainer scheduler steps cost P 57 / E 72.5 us (harness ≈ 53 / 69), the pool's P 59 / E 71. Borrowed cold ticks
+(15-18% of steps, symmetric after weighting) are the main residual; next: same-L2-cluster borrow preference (E-core clusters of 4 share 4 MB L2).
