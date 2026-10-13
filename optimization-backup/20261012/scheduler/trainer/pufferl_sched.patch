@@ -1,5 +1,5 @@
 --- /puffertank/experiments/nethack-engine-scaling-20261010/trainer_cohort/source/src/pufferl.cu	2026-10-11 18:37:02.620059990 +0000
-+++ /puffertank/experiments/nethack-scheduler-20261012/trainer/source/src/pufferl.cu	2026-10-12 17:19:30.731209295 +0000
++++ /puffertank/experiments/nethack-scheduler-20261012/trainer/source/src/pufferl.cu	2026-10-12 17:44:06.521806136 +0000
 @@ -26,6 +26,7 @@
  #include <pthread.h>
  #ifdef PUF_ENV_POOL
@@ -28,7 +28,7 @@
      char env_name[64];  // For policy arch rebuild at create.
  } PuffeRL;
  
-@@ -980,6 +987,221 @@
+@@ -980,6 +987,233 @@
      int O=B*p->step_rollouts.observations.shape[2],M=B*p->step_rollouts.action_mask.shape[2],A=B*p->step_rollouts.actions.shape[2];
      record_step<<<nh_narrow_grid(grid_size(max(O,max(M,A))), false),BLOCK_SIZE,0,stream>>>(dst,src,O,M,A,B);
  }
@@ -90,7 +90,7 @@
 +    VecEnv* vec = p->vec; int R = vec->agents_per_buf, start = s * R, H = p->hypers.horizon;
 +    Policy* pol = &p->policies[0]; Prec* st = &pol->buffer_states[s];
 +    int state_n = (int)st->shape[0] * R * (int)st->shape[2];
-+    if (vec->sched_zero_copy) {
++    if (vec->sched_zero_copy == 1) {
 +        EnvBuf* e = &p->env;
 +        sched_gather_inputs<<<R, 256, 0, stream>>>(e->obs.data + (size_t)start * OBS_SIZE, e->rewards.data + start, e->terminals.data + start,
 +            e->action_mask.data + (size_t)start * vec->mask_size, vec->dh_obs, vec->dh_rew, vec->dh_term, vec->dh_mask, vec->d_idx[s], R, OBS_SIZE, vec->mask_size);
@@ -129,6 +129,9 @@
 +    int* idx = vec->st_idx[s]; int* tt = vec->st_tt[s]; obs_t* sobs = vec->st_obs[s]; float* srew = vec->st_rew[s]; float* sterm = vec->st_term[s];
 +    unsigned char* smask = vec->st_mask[s]; float* sact = vec->st_act[s]; EnvBuf* e = &p->env; int start = s * R;
 +    memset(sobs, 0, (size_t)R * OBS_SIZE * sizeof(obs_t)); memset(smask, 1, (size_t)R * mask);
++    void** bdst = (void**)calloc(2 * R, sizeof(void*)); const void** bsrc = (const void**)calloc(2 * R, sizeof(void*)); size_t* bsz = (size_t*)calloc(2 * R, sizeof(size_t));
++    struct cudaMemcpyAttributes battr; memset(&battr, 0, sizeof(battr)); battr.srcAccessOrder = cudaMemcpySrcAccessOrderStream;
++    battr.srcLocHint.type = cudaMemLocationTypeHost; battr.dstLocHint.type = cudaMemLocationTypeDevice; battr.dstLocHint.id = p->hypers.gpu_id; battr.flags = cudaMemcpyFlagPreferOverlapWithCompute;
 +    cudaGraphExec_t graph = NULL; double fwd_ewma = 350e-6;
 +    long sleep_ns = getenv("PUF_SCHED_SLOT_SLEEP_US") ? atol(getenv("PUF_SCHED_SLOT_SLEEP_US")) * 1000L : 0;
 +    for (;;) {
@@ -138,7 +141,16 @@
 +        int n = es_infer_pop(es, idx, R, window);
 +        if (!n) { if (sleep_ns) { struct timespec ts = {0, sleep_ns}; nanosleep(&ts, NULL); } else for (int i = 0; i < 16; i++) _mm_pause(); continue; }
 +        int wslot = vec->sched_write_slot;
-+        if (vec->sched_zero_copy) {
++        if (vec->sched_zero_copy == 2) {
++            for (int r = 0; r < n; r++) { int g = idx[r]; tt[r] = wslot * H + es->agent[g].t; srew[r] = vec->rewards[g]; sterm[r] = vec->terminals[g];
++                bdst[2 * r] = e->obs.data + (size_t)(start + r) * OBS_SIZE; bsrc[2 * r] = vec->observations + (size_t)g * OBS_SIZE; bsz[2 * r] = (size_t)OBS_SIZE * sizeof(obs_t);
++                bdst[2 * r + 1] = e->action_mask.data + (size_t)(start + r) * mask; bsrc[2 * r + 1] = vec->action_mask + (size_t)g * mask; bsz[2 * r + 1] = (size_t)mask; }
++            for (int r = n; r < R; r++) { idx[r] = -1; tt[r] = wslot * H; srew[r] = 0; sterm[r] = 0; }
++            size_t aidx = 0;
++            assert(cudaMemcpyBatchAsync(bdst, bsrc, bsz, (size_t)2 * n, &battr, &aidx, 1, stream) == cudaSuccess && "cudaMemcpyBatchAsync failed");
++            cudaMemcpyAsync(e->rewards.data + start, srew, R * sizeof(float), cudaMemcpyHostToDevice, stream);
++            cudaMemcpyAsync(e->terminals.data + start, sterm, R * sizeof(float), cudaMemcpyHostToDevice, stream);
++        } else if (vec->sched_zero_copy) {
 +            for (int r = 0; r < n; r++) tt[r] = wslot * H + es->agent[idx[r]].t;
 +            for (int r = n; r < R; r++) { idx[r] = -1; tt[r] = wslot * H; }
 +        } else {
@@ -250,7 +262,7 @@
  static void snapshot_rollout_start(PuffeRL* p,int buf,cudaStream_t stream) {
      if(!p->rollouts.initial_states.data)return;
      int start=buf*(p->hypers.total_agents/p->hypers.num_buffers);
-@@ -1209,14 +1431,12 @@
+@@ -1209,14 +1443,12 @@
  
      size_t obs_bytes = total_agents * OBS_SIZE * sizeof(obs_t);
      size_t mask_bytes = total_agents * vec->mask_size * sizeof(unsigned char);
@@ -271,7 +283,7 @@
      memset(vec->action_mask, 1, mask_bytes);
  
      float frozen_pct = dict_get(vk, "hist_policy_percent");
-@@ -1561,6 +1781,8 @@
+@@ -1561,6 +1793,8 @@
          return;
      }
      vec->perf_completed = (double*)calloc(vec->buffers, sizeof(double));
@@ -280,7 +292,7 @@
      vec->cohort_size = getenv("PUF_COHORT_BUFFERS") ? atoi(getenv("PUF_COHORT_BUFFERS")) : vec->cohort_ini_buffers;
      vec->cohort_steps = getenv("PUF_COHORT_STEPS") ? atoi(getenv("PUF_COHORT_STEPS")) : vec->cohort_ini_steps;
      if (vec->cohort_steps <= 0) vec->cohort_steps = p->hypers.horizon;
-@@ -1645,6 +1867,7 @@
+@@ -1645,6 +1879,7 @@
          }
          return;
      }
@@ -288,7 +300,7 @@
      pthread_mutex_lock(&p->vec->cohort_mutex);
      p->vec->cohort_ticket = p->vec->cohort_arrived = 0;
      for (int buf = 0; buf < p->vec->buffers; buf++) {
-@@ -1682,6 +1905,7 @@
+@@ -1682,6 +1917,7 @@
          p->profile.accum[PROF_ROLLOUT] += model_ms + env_ms;
          return;
      }
@@ -296,7 +308,7 @@
      if (p->vec->finish_sleep) pthread_mutex_lock(&p->vec->cohort_mutex);
      for (int buf = 0; buf < p->vec->buffers; buf++) {
          int* state = &p->vec->worker_state[buf];
-@@ -1737,6 +1961,11 @@
+@@ -1737,6 +1973,11 @@
          cudaFree(vec->log_scratch);
          return;
      }
@@ -308,7 +320,7 @@
      pthread_mutex_lock(&vec->cohort_mutex);
      __atomic_store_n(&vec->shutdown, 1, __ATOMIC_SEQ_CST);
      pthread_cond_broadcast(&vec->cohort_cond);
-@@ -1748,6 +1977,7 @@
+@@ -1748,6 +1989,7 @@
      ep_destroy(vec->env_pool);
      vec->env_pool = NULL;
  #endif
@@ -316,7 +328,7 @@
      pthread_cond_destroy(&vec->cohort_cond);
      pthread_mutex_destroy(&vec->cohort_mutex);
      free(vec->perf_completed);
-@@ -3718,6 +3948,11 @@
+@@ -3718,6 +3960,11 @@
              }
              fprintf(stderr,"BATCH_PROOF epoch=%ld obs=%016llx params=%ld copies=%d\n",epoch,(unsigned long long)hash,(long)numel(pufferl->policies[0].master_weights.shape),pufferl->hypers.total_agents/512);
          }

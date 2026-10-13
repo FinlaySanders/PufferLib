@@ -57,3 +57,19 @@ cache-affine tasks with demand-grown in-flight sets and borrow-only-when-idle; n
 ## Files
 replay_sched.c (all variants; builds replay_sched{,2..6} via build.sh [engine] [suffix]); replay_pool.c (trainer pool emulation: env_pool.h from
 trainer_cohort, 4x128 groups, 64-tick turns, per-buffer round trip); analyze.py; screen{,2..8}.sh; screens*/summary.txt + per-arm logs; PROGRAM.md (ledger).
+
+## Trainer realisation (same day, 16:50-17:50 UTC) — trainer/ (experiment copy of the engine-scaling trainer_cohort source; handoff = trainer/pufferl_sched.patch + src/env_sched.h)
+PUF_SCHED=1: per-game ownership with weighted initial assignment (P-core workers 1.25x), lazy active set with a self-tuning cap (round-trip EWMA /
+step EWMA, segment-start burst excluded, returning games above the cap are parked), borrow-when-idle (busiest other worker, same-L2-cluster preference
+optional), workers never sleep; S=4 inference slots gather up to 128 ready agents per window (window = forward-time EWMA), zero-copy gather kernel reads
+the pinned host rows by index (no CPU copy), per-slot captured graph (gather state/RNG → zero_term → snapshot t==0 → forward → scatter → record to
+(time, agent)), D2H actions scattered to agents. Per-agent recurrent state and sampler RNG; replay hook indexes recorded actions by the agent's own t.
+GATES: BATCH_PROOF identical to the pool at every shape (44 epochs each); PUF_STATE_PROOF (master weights, Muon momentum, gradient updates after 44
+epochs of training on the scheduler's rollouts) IDENTICAL. The scheduler changes wall time only.
+RESULT (fast protocol, 24 pinned workers, cap 16 + P-weight 1.25): 5M/2048 +3.8% (335.6K / 335.3K vs 323.4K / 323.2K); 5M/4096 +2.7% (364.0K vs 354.6K);
+15M/2048 −9.5% (215.0K vs 237.6K: inference-bound regime, forward ~1 ms under PPO contention, +200 us per-forward overhead paid 2100x/epoch, workers idle
+35%). Selection rule: scheduler at 5M-like (collection-bound) shapes with ≥ 40 agents per worker; pool otherwise.
+WHY LESS THAN THE HARNESS (+11%): (1) the ratchet — variable forward latency made the lazy hot set grow to 29 games (fixed by the cap: 80 → 68 us/step);
+(2) the slot threads' 512 KB CPU memcpy per forward on the P-core SMT siblings (fixed by zero-copy: P-core steps 61 → 57 us); (3) borrowed cold ticks at
+15-18% of steps (E-core steps 72.5 vs the pool's 71) — borrowing fills idle, so a bigger hot set loses more than it saves; (4) the harness's pool emulation
+was ~5 us/step pessimistic and its hybrid ~5 us optimistic (no real data movement, no PPO, deterministic latency). Per-core: P 57 us (pool 59), E 72.5 (pool 71).

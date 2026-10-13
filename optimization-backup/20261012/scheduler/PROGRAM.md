@@ -227,3 +227,44 @@ harness's +11% was partly emulation optimism (no real data movement, no PPO, det
 the per-forward gather/scatter + PCIe read overhead (+~200 us) is paid 2100 times per epoch. Selection rule holds: pool at 15M (GPU-bound), scheduler at 5M.
 Gap to the harness (+11% predicted at 5M/2048): trainer scheduler steps cost P 57 / E 72.5 us (harness ≈ 53 / 69), the pool's P 59 / E 71. Borrowed cold ticks
 (15-18% of steps, symmetric after weighting) are the main residual; next: same-L2-cluster borrow preference (E-core clusters of 4 share 4 MB L2).
+
+## TRAINER v9 — same-L2-cluster borrow preference (17:45 UTC): NULL. cluster 334.2K / 335.2K vs no-cluster 335.6K; E-core steps 72.9-73.4 either way;
+cap12+cluster 333.3K. The E-core residual (~2 us over the pool) is not cross-cluster coldness. Trainer result settled: +3.8% (5M/2048), +2.7% (5M/4096).
+Closing checks: live-action A/B with PUF_LIVE_PROOF (frozen random policy → hashes must match the pool); CUDA batched-memcpy availability for the gather.
+
+## 2026-10-13 22:40 — pending items from 12 Oct landed
+LIVE PROOF: PUF_LIVE_PROOF (FNV over all host observations per epoch) IDENTICAL for 44 epochs, scheduler (sched_v9, cap16 pw1.25) vs pool (sched_v9
+pool path), live actions from the frozen random policy: the sampler/action-scatter path is bit-exact too. Live SPS 315.2K vs 278.8K (young-game regime).
+BATCHED-DMA GATHER (sched_v10, PUF_SCHED_ZERO_COPY=2 = cudaMemcpyBatchAsync of the 2R row copies): first pass (not interleaved, box freshly idle after the
+PR tests): batch 365.5K / 369.8K, batch cap12 374.4K, kernel gather 354.3K, ctrl 348.2K; forward 490-494 us (kernel gather 695 in this pass); BATCH_PROOF
+identical. Today's control is 8% above yesterday's 323K (thermal state after hours of back-to-back runs yesterday?) → interleaved repeat running.
+PR 693 side result (today): the stock upstream trainer gains +56% at the shipped config (h512 x 4 buffers) from the cuBLAS per-stream workspace fix
+and becomes deterministic there; the experiment stack already contains that fix.
+
+## 2026-10-13 22:35 — interleaved repeat, batched-DMA gather (sched_v10; 5M/2048 fast protocol; 24 pinned; cap16 pw1.25; BATCH_PROOF identical)
+ctrl 347.3K / 346.3K | kernel gather (zero-copy=1) 357.2K / 358.9K (+3.2%) | batched DMA gather (zero-copy=2) 368.8K / 375.6K (+7.3%) | batched + cap12
+372.0K / 378.0K (+8.1%). forward 486-499 us with the batch copy vs 700 with the PCIe gather kernel. Step costs today P 47-49 / E 63-64 us (yesterday
+57 / 73: the box runs ~15% faster per step after a cool night; relative comparisons within a session only).
+READING: replacing the gather kernel with cudaMemcpyBatchAsync halves the per-forward overhead and doubles the trainer gain to +7-8% at 5M/2048.
+Next: cap scan 8/10/12/14 with the batch gather; then 5M/4096 and the handoff patch refresh.
+
+## 2026-10-13 22:40 — ROTATION COST ATTRIBUTED (hardware counters via host-side perf attach; 1 P-core, 128 games, 40 s windows; perf_rot/perf_rot*.txt)
+| per 1000 instructions | rot 1 | rot 4 | rot 16 | rot 64 |   step us: 27.4 / 30.7 / 34.1 / 35.5
+| cycles (CPI x1000) | 350 | 391 | 434 | 450 |
+| branch misses | 2.97 | 4.17 | 5.30 | 5.44 |   (miss rate 1.40% → 1.96% → 2.50% → 2.56%)
+| L1d load misses | 2.44 | 2.87 | 2.90 | 3.07 |
+| L1i misses | 7.10 | 7.29 | 7.74 | 7.87 |
+| dTLB / iTLB misses | 0.01 / 0.01 | 0.01 / 0.01 | 0.01 / 0.01 | 0.12 / 0.01 |
+| LLC loads | 0.01 | 0.01 | 0.18 | 0.60 |
+MECHANISM: the 1 → 16 step is BRANCH PREDICTION — +2.3 mispredicts per 1000 instructions (+78%) ≈ 45-50 of the +84 cycles/Kinstr; L1d misses +19%
+(≈ 10-15 cycles); frontend +9%; TLB nil (explains huge pages +1%). The real predictor is history-based and loses the game's control-flow context when
+other games run in between; callgrind's simple branch model (+5%) missed it. 16 → 64 adds the L2-overflow regime (LLC loads x3, dTLB x10).
+Levers this implies: fewer games per core (the scheduler, done), less data-dependent branching in the monster turn / movement code (engine), or
+PGO vs plain comparison (tonight). Instruction cache dominates misses at every rotation (7/Kinstr) — a code-footprint item independent of rotation.
+
+## 2026-10-13 22:45 — cap scan with the batched gather (5M/2048; ctrl 357.9K / 348.8K)
+cap8 374.1K | cap10 375.3K | cap12 365.6K (perturbed: step 74 us vs 58 in its neighbours) | cap14 377.1K | cap12+pw1.5 363.9K (also perturbed, 69 us) |
+adaptive k1.5 358.1K (hot set 21: the adaptive rule overshoots now that the forward is ~490 us). Optimum is broad, cap 8-14 ≈ +6-8%; keep cap 12-14 fixed
+(or adaptive with k≈1.0). Borrow fraction rises as the cap falls (31% at 14, 55% at 8) without hurting throughput — borrowed ticks are cheap when the
+borrowed game sits in a shared E-cluster L2 or was just forwarded. Overnight queue (overnight/overnight.sh, LOG.txt) started 22:45: phase D map →
+A rotation perf matrix (G1/G3/topdown/record) → B PGO vs plain → C trainer perf pool vs sched → E live LEARNING proof pair → F PR693 ws32.

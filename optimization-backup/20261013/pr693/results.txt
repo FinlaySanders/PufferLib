@@ -1,0 +1,6 @@
+[21:52:06] BASE profile-target build rc=255 (PR: rc=255, 100 errors in tests/profile_kernels.cu)
+[21:52:07] === determinism gates (2M steps, seed 42, async=0, 1 buffer)
+GATE base rc=0 wall=23s ckpt=0000000001835008.bin sha=b77d4f402f2a8ec6 score=score                        43.134
+GATE pr rc=0 wall=21s ckpt=0000000001835008.bin sha=b77d4f402f2a8ec6 score=score                        43.134
+GATE pr_rep rc=0 wall=21s ckpt=0000000001835008.bin sha=b77d4f402f2a8ec6 score=score                        43.134
+[21:53:12] === shipped config stability: nethack 50M steps, async=1, 4 buffers, 512 agents, inline eval 1000 episodes
