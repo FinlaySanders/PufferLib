@@ -1,0 +1,2016 @@
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+--------------------------------------------------------------------------------
+Profile data file '/puffertank/experiments/nethack-monster-turn-plan-20261014/callgrind.out' (creator: callgrind-3.22.0)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 279049289
+Trigger: Program termination
+Profiled target:  /puffertank/experiments/nethack-scheduler-20261012/replay_sched6 8 1 512 256 /puffertank/experiments/nethack-comprehensive-20261008/actions (PID 159487, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99.9
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+1,359,941,376 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+5,273,816,562 (387.8%)  ???:rhack'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+5,053,981,266 (371.6%)  ???:moveloop'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+1,339,669,959 (98.51%)  ???:clone
+1,339,669,959 (98.51%)  ???:mainloop [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+1,339,668,559 (98.51%)  ???:unixmain [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+1,326,743,344 (97.56%)  ???:moveloop [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+1,212,909,262 (89.19%)  ???:rhack [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+1,203,167,333 (88.47%)  ???:readchar [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+1,202,871,700 (88.45%)  ???:jump_fcontext [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+1,198,763,455 (88.15%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_pack_obs [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+1,185,940,085 (87.21%)  /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:step_game [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+1,185,934,192 (87.20%)  /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:worker [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+1,183,535,767 (87.03%)  ???:worker
+1,173,754,599 (86.31%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:puf_step [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+  815,133,890 (59.94%)  ???:domove [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+  763,232,270 (56.12%)  ???:movemon [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+  704,039,971 (51.77%)  ???:dochug [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+  632,384,236 (46.50%)  ???:domove'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+  575,430,211 (42.31%)  ???:m_move [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+  211,554,665 (15.56%)  ???:mfndpos_masked.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+  130,403,902 ( 9.59%)  ???:jump_fcontext'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+  129,541,817 ( 9.53%)  ???:readchar'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+  123,337,883 ( 9.07%)  ???:domove_core [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+  120,998,163 ( 8.90%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:puf_step'2 [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+  101,576,830 ( 7.47%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_pack_obs'2 [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+   97,573,549 ( 7.17%)  ???:vision_recalc [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   88,733,510 ( 6.52%)  ???:newsym [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   53,174,188 ( 3.91%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_engine_step [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+   49,164,545 ( 3.62%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_drain_prompts [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+   42,793,316 ( 3.15%)  ???:flush_screen [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   36,934,279 ( 2.72%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:puf_step [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+   34,215,270 ( 2.52%)  ???:parseoptions'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   31,370,950 ( 2.31%)  ???:isaac64_update.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   30,755,315 ( 2.26%)  ???:vpline.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   29,878,191 ( 2.20%)  ???:dosearch0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   24,689,562 ( 1.82%)  ???:mcalcdistress [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   23,943,331 ( 1.76%)  ???:nethack_rl::NetHackRL::fill_obs(nle_observation*) [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   23,419,847 ( 1.72%)  ???:nh_timeout [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   22,275,502 ( 1.64%)  ???:0x000000000010a990 [???]
+   22,263,178 ( 1.64%)  ???:nle_obs_refresh [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   22,241,443 ( 1.64%)  ???:goto_level [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   21,695,584 ( 1.60%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_item_use [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+   20,813,382 ( 1.53%)  ???:mattacku [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   20,389,783 ( 1.50%)  ./stdio-common/./stdio-common/vfprintf-internal.c:__printf_buffer [/usr/lib/x86_64-linux-gnu/libc.so.6]
+   20,172,117 ( 1.48%)  ???:right_side'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   20,142,550 ( 1.48%)  ???:0x000000000001f540 [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+   20,114,283 ( 1.48%)  ???:left_side'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   18,935,323 ( 1.39%)  ./debug/./debug/sprintf_chk.c:__sprintf_chk [/usr/lib/x86_64-linux-gnu/libc.so.6]
+   18,050,731 ( 1.33%)  ./libio/./libio/iovsprintf.c:__vsprintf_internal [/usr/lib/x86_64-linux-gnu/libc.so.6]
+   17,674,094 ( 1.30%)  ???:(below main) [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+   17,674,082 ( 1.30%)  ./csu/../csu/libc-start.c:__libc_start_main@@GLIBC_2.34 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+   17,673,908 ( 1.30%)  ./csu/../sysdeps/nptl/libc_start_call_main.h:(below main) [/usr/lib/x86_64-linux-gnu/libc.so.6]
+   17,660,762 ( 1.30%)  /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:main [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+   17,396,360 ( 1.28%)  ???:nethack_rl::NetHackRL::update_blstats() [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   15,362,197 ( 1.13%)  ???:left_side [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   14,986,668 ( 1.10%)  ./malloc/./malloc/malloc.c:calloc [/usr/lib/x86_64-linux-gnu/libc.so.6]
+   14,945,206 ( 1.10%)  ???:cmov [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   14,805,459 ( 1.09%)  ???:right_side [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   14,603,045 ( 1.07%)  ???:0x000000000010a6c0 [???]
+   14,574,152 ( 1.07%)  ???:dothrow [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   12,100,966 ( 0.89%)  ???:dodown [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   12,096,975 ( 0.89%)  ???:next_level [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   11,967,111 ( 0.88%)  ???:find_misc [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   11,855,627 ( 0.87%)  ???:nh_fobj_next [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   11,838,302 ( 0.87%)  ???:dog_move [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   11,814,595 ( 0.87%)  ???:minliquid [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   11,481,889 ( 0.84%)  ???:pline [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   11,351,150 ( 0.83%)  ???:spoteffects [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   10,677,746 ( 0.79%)  ???:pickup [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   10,657,192 ( 0.78%)  ???:find_offensive [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   10,531,858 ( 0.77%)  ???:tty_putstr [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+   10,051,350 ( 0.74%)  ./malloc/./malloc/malloc.c:_int_malloc [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    9,800,383 ( 0.72%)  ???:find_defensive [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    9,327,375 ( 0.69%)  ./stdio-common/./stdio-common/vfprintf-process-arg.c:__printf_buffer
+    9,047,621 ( 0.67%)  ???:doup [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    9,043,655 ( 0.67%)  ???:You [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    8,990,166 ( 0.66%)  ???:prev_level [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    8,774,906 ( 0.65%)  ???:getobj [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    8,694,724 ( 0.64%)  ???:mintrap [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    8,635,810 ( 0.64%)  ???:thrwmu [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    8,578,471 ( 0.63%)  ???:custompline [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    8,510,629 ( 0.63%)  ???:throw_obj.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    7,966,198 ( 0.59%)  ???:select_rwep [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    7,844,179 ( 0.58%)  ???:monster_nearby [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    7,647,901 ( 0.56%)  ???:encumber_msg [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    7,563,262 ( 0.56%)  ???:update_topl [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    7,411,051 ( 0.54%)  ???:hmon [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    7,409,876 ( 0.54%)  ./stdio-common/./stdio-common/Xprintf_buffer_write.c:__printf_buffer_write [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    7,394,796 ( 0.54%)  ???:hmon_hitmon.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    7,270,456 ( 0.53%)  ???:attack [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    7,135,098 ( 0.52%)  ???:newgame [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    6,887,557 ( 0.51%)  ???:mklev [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    6,663,072 ( 0.49%)  ???:isaac64_init [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    6,615,236 ( 0.49%)  ???:nle_getlt_maybe_fixed.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    6,593,545 ( 0.48%)  ???:nle_fill_fixed_tm [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    6,460,038 ( 0.48%)  ???:isaac64_reseed [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    6,280,488 ( 0.46%)  ???:night [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    6,159,598 ( 0.45%)  ./string/../sysdeps/x86_64/multiarch/memset-vec-unaligned-erms.S:__memset_avx2_unaligned_erms [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    6,117,373 ( 0.45%)  ???:0x000000000010a640 [???]
+    6,105,069 ( 0.45%)  ???:nle_weight [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    5,881,512 ( 0.43%)  ???:yn_function [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    5,826,526 ( 0.43%)  ???:nethack_rl::NetHackRL::rl_yn_function(char const*, char const*, int) [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    5,823,098 ( 0.43%)  ???:initoptions [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    5,815,616 ( 0.43%)  ???:tty_yn_function [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    5,691,949 ( 0.42%)  ???:known_hitum.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    5,533,054 ( 0.41%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_answer_menu [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+    5,428,757 ( 0.40%)  ???:vision_reset [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    5,198,061 ( 0.38%)  ???:tty_display_nhwindow [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    5,102,653 ( 0.38%)  ???:dosounds [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    5,021,437 ( 0.37%)  ???:pickup_object [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    4,895,907 ( 0.36%)  ???:mapglyph [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    4,706,941 ( 0.35%)  ???:0x000000000010a590 [???]
+    4,660,602 ( 0.34%)  ???:throwit [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    4,656,377 ( 0.34%)  ???:killed [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    4,654,418 ( 0.34%)  ???:xkilled [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    4,640,540 ( 0.34%)  ???:test_move [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    4,619,732 ( 0.34%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_track_cant_hold [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+    4,566,131 ( 0.34%)  ./string/../sysdeps/x86_64/multiarch/strstr-sse2-unaligned.S:__strstr_sse2_unaligned [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    4,558,330 ( 0.34%)  ???:mon_wield_item [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    4,509,157 ( 0.33%)  /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:step_game'2 [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+    4,239,873 ( 0.31%)  ???:exerchk [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    4,211,998 ( 0.31%)  ???:show_glyph [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    4,187,585 ( 0.31%)  ./libio/./libio/vsnprintf.c:__vsnprintf_internal [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    4,185,609 ( 0.31%)  ./debug/./debug/vsnprintf_chk.c:__vsnprintf_chk [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    4,019,134 ( 0.30%)  ./stdlib/./stdlib/qsort.c:msort_with_tmp.part.0'2 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    3,995,817 ( 0.29%)  ???:pooleffects [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,918,122 ( 0.29%)  /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:worker'2
+    3,918,122 ( 0.29%)  ???:worker'2 [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+    3,908,503 ( 0.29%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_do_reset [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+    3,902,339 ( 0.29%)  ???:makelevel [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,861,677 ( 0.28%)  ???:lookaround [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,803,973 ( 0.28%)  ???:savelev [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,725,627 ( 0.27%)  ???:addtopl [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,701,641 ( 0.27%)  ???:mainloop'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,683,557 ( 0.27%)  ???:done [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,682,861 ( 0.27%)  ???:really_done.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,629,078 ( 0.27%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_zt_mask_on [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+    3,593,181 ( 0.26%)  ???:creach_core'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,584,982 ( 0.26%)  ???:doeat [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,518,973 ( 0.26%)  ./string/../sysdeps/x86_64/multiarch/strcmp-avx2.S:__strcmp_avx2 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    3,505,570 ( 0.26%)  ./string/../sysdeps/x86_64/multiarch/memmove-vec-unaligned-erms.S:__memcpy_avx_unaligned_erms [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    3,494,857 ( 0.26%)  ???:thitmonst [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,482,507 ( 0.26%)  ???:unixmain'2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,358,090 ( 0.25%)  ???:check_here.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,347,185 ( 0.25%)  ???:initoptions_finish [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,346,041 ( 0.25%)  ???:nethack_rl::NetHackRL::update_inventory_method() [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,342,091 ( 0.25%)  ???:nethack_rl::NetHackRL::rl_update_inventory() [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,337,907 ( 0.25%)  ???:getlev [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,294,879 ( 0.24%)  ???:makemon [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,283,462 ( 0.24%)  ???:docrt [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,249,395 ( 0.24%)  ???:nh_typ_sync [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,246,357 ( 0.24%)  ???:dobuzz [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,202,957 ( 0.24%)  ???:back_to_glyph [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,168,709 ( 0.23%)  ???:hitmu [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,112,048 ( 0.23%)  ???:dopickup [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    3,063,394 ( 0.23%)  ???:0x0000000004c496b0 [???]
+    2,967,749 ( 0.22%)  ???:prinv [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,951,532 ( 0.22%)  ???:read_config_file [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,930,971 ( 0.22%)  ???:parse_conf_file.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,925,663 ( 0.22%)  ???:inv_weight [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,902,644 ( 0.21%)  ???:parse_config_line [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,852,894 ( 0.21%)  ???:parseoptions [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,825,444 ( 0.21%)  ???:use_offensive [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,797,018 ( 0.21%)  ???:buzz [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,794,284 ( 0.21%)  ???:zhitu.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,788,401 ( 0.21%)  ???:nethack_rl::NetHackRL::rl_select_menu(int, int, mi**) [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,788,213 ( 0.21%)  ???:tty_select_menu [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,625,706 ( 0.19%)  ./stdio-common/../string/bits/string_fortified.h:__printf_buffer_write
+    2,594,577 ( 0.19%)  ./string/../sysdeps/x86_64/multiarch/strchr-avx2.S:__strchr_avx2 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    2,557,450 ( 0.19%)  ???:look_here [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,524,369 ( 0.19%)  ???:getdir [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,513,536 ( 0.18%)  ???:docast [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,475,863 ( 0.18%)  ???:initoptions_init [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,369,553 ( 0.17%)  ???:sortloot [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,346,544 ( 0.17%)  ???:can_reach_location [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,317,941 ( 0.17%)  ./stdio-common/./stdio-common/printf-parse.h:__printf_buffer
+    2,312,800 ( 0.17%)  ./string/../sysdeps/x86_64/multiarch/strlen-avx2.S:__strlen_avx2 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    2,258,730 ( 0.17%)  ???:dlb_init [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,258,550 ( 0.17%)  ???:lib_dlb_init [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,256,311 ( 0.17%)  ???:newuhs [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,254,230 ( 0.17%)  ???:open_library [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,221,977 ( 0.16%)  ./elf/./elf/rtld.c:_dl_start [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+    2,221,304 ( 0.16%)  ./elf/../sysdeps/unix/sysv/linux/dl-sysdep.c:_dl_sysdep_start [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+    2,188,903 ( 0.16%)  ???:check_special_room [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,183,996 ( 0.16%)  ???:nh_terminate [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,156,130 ( 0.16%)  ???:doextcmd.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,150,058 ( 0.16%)  ./stdio-common/./stdio-common/isoc23_fscanf.c:__isoc23_fscanf [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    2,147,209 ( 0.16%)  ./elf/./elf/rtld.c:dl_main [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+    2,138,352 ( 0.16%)  ./stdio-common/./stdio-common/vfscanf-internal.c:__vfscanf_internal [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    2,136,342 ( 0.16%)  ???:floorfood [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,132,251 ( 0.16%)  ???:in_rooms [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,094,050 ( 0.15%)  ./stdlib/./stdlib/qsort.c:qsort [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    2,092,421 ( 0.15%)  ./stdlib/./stdlib/qsort.c:qsort_r [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    2,082,283 ( 0.15%)  ???:addinv [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,061,188 ( 0.15%)  ./elf/./elf/dl-reloc.c:_dl_relocate_object [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+    2,059,521 ( 0.15%)  ???:show_topl [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,050,040 ( 0.15%)  ./stdlib/./stdlib/qsort.c:msort_with_tmp.part.0 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    2,024,101 ( 0.15%)  ???:doname_base.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,021,400 ( 0.15%)  ???:nle_yield [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,021,228 ( 0.15%)  ???:tty_dismiss_nhwindow [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    2,011,860 ( 0.15%)  ???:erase_menu_or_text.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,987,090 ( 0.15%)  ./debug/./debug/strcpy_chk.c:__strcpy_chk [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    1,986,930 ( 0.15%)  ???:reglyph_darkroom [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,986,376 ( 0.15%)  ???:0x000000000010a680 [???]
+    1,974,387 ( 0.15%)  ???:match_optname [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,914,356 ( 0.14%)  ???:stop_occupation [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,912,054 ( 0.14%)  ???:0x0000000004c49590 [???]
+    1,867,803 ( 0.14%)  ???:rn2 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,860,261 ( 0.14%)  ???:enhance_weapon_skill [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,826,883 ( 0.13%)  ???:mineralize [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,780,905 ( 0.13%)  ???:pick_obj [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,779,487 ( 0.13%)  ???:hitmsg [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,760,595 ( 0.13%)  ???:creach_core [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,753,545 ( 0.13%)  ???:nethack_do_reset
+    1,746,975 ( 0.13%)  ???:rest_levl [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,734,010 ( 0.13%)  ???:can_carry [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,730,072 ( 0.13%)  ???:onscary [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,730,028 ( 0.13%)  ./string/../sysdeps/x86_64/multiarch/strchr-avx2.S:__strchrnul_avx2 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    1,697,132 ( 0.12%)  ./elf/./elf/dl-lookup.c:_dl_lookup_symbol_x [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+    1,693,197 ( 0.12%)  ???:tty_curs [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,649,766 ( 0.12%)  ???:rndmonst [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,607,186 ( 0.12%)  ???:dosearch [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,584,958 ( 0.12%)  ???:getspell [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,580,453 ( 0.12%)  ???:dospellmenu.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,565,637 ( 0.12%)  ???:docorner [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,488,576 ( 0.11%)  /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_reward [/puffertank/experiments/nethack-scheduler-20261012/replay_sched6]
+    1,467,703 ( 0.11%)  ./malloc/./malloc/malloc.c:free [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    1,438,657 ( 0.11%)  ???:xname_flags.lto_priv.0 [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,437,300 ( 0.11%)  ???:savelevl [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,425,008 ( 0.10%)  ???:invault [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+    1,410,688 ( 0.10%)  /usr/include/x86_64-linux-gnu/bits/string_fortified.h:nethack_pack_obs'2
+    1,392,810 ( 0.10%)  ./nptl/./nptl/pthread_create.c:start_thread [/usr/lib/x86_64-linux-gnu/libc.so.6]
+    1,326,873 ( 0.10%)  ???:searches_for_item [/puffertank/experiments/nethack-engine-lines-20261014/engines/selE/build/libnethack.so]
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c
+--------------------------------------------------------------------------------
+Ir               
+
+-- line 56 ----------------------------------------
+      .           #define NB 65536
+      .           #define BQ 50e-6
+      .           typedef struct{long gen;int n;int* ids;volatile int lock;}Bucket;
+      .           static Bucket* buckets;static int bucket_cap;
+      .           static void bucket_push(int id,double r){long b=(long)((r-t_origin)/BQ);if(b<0)b=0;Bucket* k=&buckets[b%NB];
+      .            while(__atomic_exchange_n(&k->lock,1,__ATOMIC_ACQUIRE))_mm_pause();
+      .            if(k->gen!=b){k->gen=b;k->n=0;} if(k->n<bucket_cap)k->ids[k->n++]=id;
+      .            __atomic_store_n(&k->lock,0,__ATOMIC_RELEASE);}
+ 23,339 ( 0.00%)  static double now(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return t.tv_sec+t.tv_nsec*1e-9;}
+     52 ( 0.00%)  => ???:0x000000000010a770 (4x)
+229,585 ( 0.02%)  static uint64_t hash_bytes(uint64_t h,const void* ptr,size_t n){const unsigned char* p=ptr;for(size_t j=0;j<n;j++){h^=p[j];h*=1099511628211ULL;}return h;}
+ 30,720 ( 0.00%)  static void step_game(int i,long t){
+ 55,296 ( 0.00%)   Env* e=envs+i;int b=i/apb,slot=i%apb%128;
+ 49,152 ( 0.00%)   memcpy(e->agents[0].actions,actions[b]+((size_t)t*128+slot)*NUM_ATNS,NUM_ATNS*sizeof(float));
+ 24,576 ( 0.00%)   *e->agents[0].rewards=0;*e->agents[0].terminals=0;
+  6,144 ( 0.00%)   long before=e->blstats[NLE_BL_TIME];
+ 12,288 ( 0.00%)   puf_step(e);
+126,540 ( 0.01%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:puf_step (1x)
+ 34,465 ( 0.00%)   long after=e->blstats[NLE_BL_TIME];if(measured&&after>before)advances[i]+=after-before;
+ 24,576 ( 0.00%)  }
+1,185,806,087 (87.20%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:worker (775x)
+      .           static void sleep_until(double t){double d=t-now();if(d<=0)return;if(d*1e9>SPIN_NS){struct timespec ts={(time_t)d,(long)((d-(time_t)d)*1e9)};nanosleep(&ts,NULL);}while(now()<t)_mm_pause();}
+     19 ( 0.00%)  static int is_pcore(int w){if(!PIN)return 0;if(W==24)return w<8;if(W==32)return w<16;return 0;}
+      .           static double gpu_ready(double e){
+ 36,864 ( 0.00%)   if(!latency_on||(!WIN_NS&&!FWD_NS))return e;
+      .            double t=e;
+      .            if(WIN_NS){double win=WIN_NS*1e-9;t=t_origin+ceil((e-t_origin)/win)*win;}
+      .            if(STREAMS>0){double win=WIN_NS>0?WIN_NS*1e-9:FWD_NS*1e-9;long k=(long)ceil((e-t_origin)/win);int slot=(int)(k%NWIN);double r;
+      .             pthread_mutex_lock(&gpu_mu);
+      .             if(win_k[slot]==k)r=win_end[slot];
+      .             else{int s=0;for(int j=1;j<STREAMS;j++)if(stream_free[j]<stream_free[s])s=j;double wend=t_origin+k*win;double start=wend>stream_free[s]?wend:stream_free[s];stream_free[s]=start+FWD_NS*1e-9;win_k[slot]=k;win_end[slot]=stream_free[s];r=win_end[slot];}
+      .             pthread_mutex_unlock(&gpu_mu);return r;}
+      .            return t+FWD_NS*1e-9;
+ 12,288 ( 0.00%)  }
+      .           #define LD(x) __atomic_load_n(&(x),__ATOMIC_RELAXED)
+      .           #define DEAD 0x7fffffffffffffffL
+    384 ( 0.00%)  static int cmp_first(const void*a,const void*b){int x=*(const int*)a,y=*(const int*)b;return (coh[x].first>coh[y].first)-(coh[x].first<coh[y].first);}
+      .           typedef struct{int w;long begin,end,seg;}WorkerArg;
+     29 ( 0.00%)  static void* worker(void* arg){
+      1 ( 0.00%)   WorkerArg* wa=arg;int w=wa->w;
+      3 ( 0.00%)   if(PIN){int cpu=-1;if(W==24)cpu=w<8?2*w:16+w-8;else if(W==32)cpu=w;if(cpu>=0){cpu_set_t cs;CPU_ZERO(&cs);CPU_SET(cpu,&cs);sched_setaffinity(0,sizeof cs,&cs);}}
+      5 ( 0.00%)   prctl(PR_SET_TIMERSLACK,SLACK_NS);
+     31 ( 0.00%)  => ???:0x000000000010a820 (1x)
+     11 ( 0.00%)   int amax=is_pcore(w)?(A_P>0?A_P:A):(A_E>0?A_E:A);if(amax>64)amax=64;if(LAZY)amax=64;
+      .            int act[64];
+     19 ( 0.00%)   for(long sb=wa->begin;sb<wa->end;sb+=wa->seg){
+      8 ( 0.00%)    long se=sb+wa->seg<wa->end?sb+wa->seg:wa->end;int nact=0;
+      .             for(;;){
+ 88,160 ( 0.01%)     for(int j=0;j<nact;){Cohort*c=&coh[act[j]];if(LD(c->holder)!=w||LD(c->tick)>=se)act[j]=act[--nact];else j++;}
+  5,499 ( 0.00%)     if(!(GROUPFILL&&nact>0))while(nact<amax){if(LAZY&&nact>0){double tn=now();int any=0;for(int j=0;j<nact;j++)if(coh[act[j]].ready<=tn){any=1;break;}if(any)break;} /* lazy: grow the hot set only when nothing is ready */
+  1,244 ( 0.00%)      int pick=-1;for(int k=0;k<ncoh;k++){Cohort*c=&coh[k];if(LD(c->holder)!=w||LD(c->tick)>=se)continue;int in=0;for(int j=0;j<nact;j++)if(act[j]==k){in=1;break;}if(!in){pick=k;break;}}if(pick<0)break;act[nact++]=pick;}
+      6 ( 0.00%)     if(!nact){
+      6 ( 0.00%)      if(!STEAL)break;
+      .               long rem[256]={0};int pend[256]={0};int pending=0,nc=LD(ncoh);
+      .               for(int k=0;k<nc;k++){Cohort*c=&coh[k];long tk=LD(c->tick);if(tk>=se)continue;pending++;int h=LD(c->holder);pend[h]++;if(LD(c->busy))continue;rem[h]+=se-tk;}
+      .               if(!pending)break;
+      .               int v=-1;for(int u=0;u<W;u++){if(u==w||!rem[u]||pend[u]<2)continue;if(v<0||rem[u]>rem[v])v=u;}
+      .               if(v>=0){ /* whole-cohort steal: the most-behind idle cohort of the busiest holder that keeps at least one */
+      .                int victim=-1;long most=-1;for(int k=0;k<nc;k++){Cohort*c=&coh[k];if(LD(c->holder)!=v||LD(c->busy)||LD(c->tick)>=se)continue;long r=se-LD(c->tick);if(r>most){most=r;victim=k;}}
+      .                if(victim<0)continue;
+      .                Cohort*c=&coh[victim];pthread_mutex_lock(&c->mu);int ok=(c->holder==v&&!c->busy&&c->tick<se);if(ok)c->holder=w;pthread_mutex_unlock(&c->mu);
+-- line 112 ----------------------------------------
+-- line 121 ----------------------------------------
+      .               if(c->busy||c->tick>=se||c->n<2*CMIN||c->holder==w){pthread_mutex_unlock(&c->mu);continue;}
+      .               pthread_mutex_lock(&alloc_mu);int slot=-1;for(int k=0;k<ncoh;k++)if(coh[k].n==0&&!coh[k].busy&&LD(coh[k].tick)==DEAD){slot=k;break;}
+      .               if(slot<0&&ncoh<ncoh_cap)slot=ncoh;
+      .               if(slot>=0){Cohort*d=&coh[slot];pthread_mutex_lock(&d->mu);int half=c->n/2;d->first=c->first+c->n-half;d->n=half;d->owner=c->owner;d->holder=w;d->ready=c->ready;d->busy=0;d->cost=c->cost*half/c->n;c->cost-=d->cost;__atomic_store_n(&d->tick,c->tick,__ATOMIC_RELAXED);c->n-=half;pthread_mutex_unlock(&d->mu);if(slot==ncoh)__atomic_store_n(&ncoh,ncoh+1,__ATOMIC_RELEASE);}
+      .               pthread_mutex_unlock(&alloc_mu);pthread_mutex_unlock(&c->mu);
+      .               if(slot>=0){if(measured)splits[w]++;act[nact++]=slot;}
+      .               continue;
+      .              }
+116,104 ( 0.01%)     int best=-1;for(int j=0;j<nact;j++){Cohort*c=&coh[act[j]];if(LD(c->busy))continue;if(best<0||c->ready<coh[best].ready)best=act[j];}
+  1,548 ( 0.00%)     if(best<0){sched_yield();continue;} /* all my active cohorts are being borrowed right now */
+  3,870 ( 0.00%)     Cohort*c=&coh[best];double t0=now();
+  2,322 ( 0.00%)     if(c->ready>t0){
+      .               double wait=c->ready-t0;
+      .               if((FIT&&wait>0)||(BORROW_NS>=0&&wait>BORROW_NS*1e-9)){ /* fill the wait with one tick of somebody else's ready cohort */
+      .                int b=-1;long most=-1;int nc=LD(ncoh);double cf_now=cold_factor;
+      .                for(int k=0;k<nc;k++){Cohort*d=&coh[k];if(LD(d->holder)==w||LD(d->busy)||LD(d->tick)>=se||d->ready>t0)continue;
+      .                 if(FIT&&d->cost>0&&d->cost*cf_now>wait)continue; /* would not finish before my own actions are back */
+      .                 long r=se-LD(d->tick);if(r>most){most=r;b=k;}}
+      .                if(b>=0){Cohort*d=&coh[b];pthread_mutex_lock(&d->mu);int ok=(d->holder!=w&&!d->busy&&d->tick<se&&d->ready<=t0);int cf=d->first,cn=d->n;if(ok)d->busy=1;pthread_mutex_unlock(&d->mu);
+      .                 if(ok){double s=now();long t=d->tick;for(int i=cf;i<cf+cn;i++)step_game(i,t);double e=now();if(measured){busy[w]+=e-s;borrows[w]++;}
+-- line 140 ----------------------------------------
+-- line 158 ----------------------------------------
+      .                 for(int z=0;z<32;z++)_mm_pause();
+      .                }
+      .                if(borrowed)continue;
+      .                if(measured)idle_t[w]+=now()-spin0;
+      .               } else {
+      .                if(measured)idle_t[w]+=c->ready-t0;sleep_until(c->ready);
+      .               }
+      .              }
+ 15,480 ( 0.00%)     pthread_mutex_lock(&c->mu);int ok=(c->holder==w&&!c->busy&&c->tick<se);int cf=c->first,cn=c->n;if(ok)c->busy=1;pthread_mutex_unlock(&c->mu);
+ 29,412 ( 0.00%)  => ???:0x000000000010a8c0 (774x)
+ 21,672 ( 0.00%)  => ???:0x000000000010a6f0 (774x)
+    775 ( 0.00%)     if(!ok)continue;
+ 17,808 ( 0.00%)     double s=now();long t=c->tick;for(int i=cf;i<cf+cn;i++)step_game(i,t);double e=now();
+541,125 ( 0.04%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:step_game'2 (773x)
+126,581 ( 0.01%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:step_game (1x)
+  6,961 ( 0.00%)     if(measured)busy[w]+=e-s;
+  1,550 ( 0.00%)     double r=gpu_ready(e);
+  6,186 ( 0.00%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:gpu_ready (775x)
+ 17,801 ( 0.00%)     pthread_mutex_lock(&c->mu);c->tick=t+1;c->ready=r;c->busy=0;c->cost=c->cost>0?0.875*c->cost+0.125*(e-s):(e-s);pthread_mutex_unlock(&c->mu);if(EVENT&&c->tick<se)bucket_push(best,r);
+ 29,450 ( 0.00%)  => ???:0x000000000010a8c0 (775x)
+ 21,700 ( 0.00%)  => ???:0x000000000010a6f0 (775x)
+      .             }
+      4 ( 0.00%)    double b0=now();pthread_barrier_wait(&barrier);
+    132 ( 0.00%)  => ???:0x000000000010a7a0 (2x)
+    280 ( 0.00%)    { int mine[4096],nm=0,nc=LD(ncoh);for(int k=0;k<nc&&nm<4096;k++)if(coh[k].n>0&&coh[k].owner==w){mine[nm++]=k;__atomic_store_n(&coh[k].holder,w,__ATOMIC_RELAXED);} /* borrowed cohorts go home */
+     10 ( 0.00%)      qsort(mine,nm,sizeof(int),cmp_first);
+  1,834 ( 0.00%)  => ???:0x000000000010a9f0 (2x)
+    444 ( 0.00%)      for(int a=0;a+1<nm;a++){Cohort*x=&coh[mine[a]];for(int b=a+1;b<nm;b++){Cohort*y=&coh[mine[b]];if(y->n==0)continue;if(y->first!=x->first+x->n||x->n+y->n>C)break;x->n+=y->n;if(y->ready>x->ready)x->ready=y->ready;y->n=0;__atomic_store_n(&y->tick,DEAD,__ATOMIC_RELAXED);} } }
+     21 ( 0.00%)    pthread_barrier_wait(&barrier);if(measured)bar_t[w]+=now()-b0;
+    132 ( 0.00%)  => ???:0x000000000010a7a0 (2x)
+      .            }
+      .            return NULL;
+     24 ( 0.00%)  }
+1,263,966 ( 0.09%)  => ./nptl/./nptl/pthread_create.c:start_thread (2x)
+      .           static void run_window(long begin,long end,long seg){
+      .            pthread_t th[256];WorkerArg wa[256];
+      .            for(int k=0;k<ncoh;k++){if(coh[k].n==0)continue;coh[k].tick=begin;coh[k].ready=0;coh[k].busy=0;coh[k].holder=coh[k].owner;}
+      .            for(int w=0;w<W;w++){wa[w].w=w;wa[w].begin=begin;wa[w].end=end;wa[w].seg=seg;pthread_create(&th[w],NULL,worker,&wa[w]);}
+      .            for(int w=0;w<W;w++)pthread_join(th[w],NULL);
+      .           }
+    138 ( 0.00%)  static long envl(const char* k,long d){const char* v=getenv(k);return v?atol(v):d;}
+ 15,902 ( 0.00%)  => ???:0x000000000010a800 (19x)
+     13 ( 0.00%)  int main(int argc,char**argv){
+      2 ( 0.00%)   if(argc<6){fprintf(stderr,"replay_sched envs workers warm steps action_dir\n");return 2;}
+      1 ( 0.00%)   env_count=atoi(argv[1]);W=atoi(argv[2]);long warm=atol(argv[3]),steps=atol(argv[4]);
+     24 ( 0.00%)   C=envl("SCHED_C",16);A=envl("SCHED_A",2);A_P=envl("SCHED_A_P",-1);A_E=envl("SCHED_A_E",-1);SEG=envl("SCHED_SEG",64);
+  3,801 ( 0.00%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:envl (5x)
+     15 ( 0.00%)   WIN_NS=envl("SCHED_WIN_US",0)*1000L;FWD_NS=envl("SCHED_FWD_US",0)*1000L;STREAMS=envl("SCHED_STREAMS",0);
+  2,479 ( 0.00%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:envl (3x)
+     52 ( 0.00%)   STEAL=envl("SCHED_STEAL",1);LAZY=envl("SCHED_LAZY",0);GROUPFILL=envl("SCHED_GROUPFILL",0);FIT=envl("SCHED_BORROW_FIT",0);EVENT=envl("SCHED_EVENT",0);BORROW_NS=envl("SCHED_BORROW_US",-1);if(BORROW_NS>=0)BORROW_NS*=1000L;SLACK_NS=envl("SCHED_SLACK_US",1)*1000L;SPIN_NS=envl("SCHED_SPIN_US",20)*1000L;MIGRATE=envl("SCHED_MIGRATE",2);CMIN=envl("SCHED_CMIN",2);PIN=envl("SCHED_PIN",1);if(getenv("SCHED_PWEIGHT"))PWEIGHT=atof(getenv("SCHED_PWEIGHT"));
+ 10,596 ( 0.00%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:envl (11x)
+  1,052 ( 0.00%)  => ???:0x000000000010a800 (1x)
+     32 ( 0.00%)   assert(env_count%buffers==0);apb=env_count/buffers;assert(C>=1&&env_count%C==0&&A>=1&&W>=1&&W<=256&&SEG>=1&&steps%SEG==0&&STREAMS>=0&&STREAMS<=64);
+    125 ( 0.00%)   for(int b=0;b<4;b++){char path[4096];snprintf(path,sizeof(path),"%s/buf%d.bin",argv[5],b);int fd=open(path,O_RDONLY);assert(fd>=0);struct stat st;assert(fstat(fd,&st)==0);assert(st.st_size>=(warm+steps)*128*NUM_ATNS*sizeof(float));actions[b]=mmap(NULL,st.st_size,PROT_READ,MAP_PRIVATE,fd,0);assert(actions[b]!=MAP_FAILED);close(fd);}
+    112 ( 0.00%)  => ???:0x000000000010a9c0 (4x)
+     40 ( 0.00%)  => ???:0x000000000010aa30 (4x)
+     32 ( 0.00%)  => ???:0x000000000010a9b0 (4x)
+     38 ( 0.00%)   envs=calloc(env_count,sizeof(Env));advances=calloc(env_count,sizeof(uint64_t));busy=calloc(W,sizeof(double));idle_t=calloc(W,sizeof(double));bar_t=calloc(W,sizeof(double));steals=calloc(W,sizeof(long));migrations=calloc(W,sizeof(long));owned=calloc(W,sizeof(int));
+  1,883 ( 0.00%)  => ???:0x000000000010a6c0 (8x)
+     12 ( 0.00%)   stream_free=calloc(STREAMS>0?STREAMS:1,sizeof(double));pthread_barrier_init(&barrier,NULL,W);
+    216 ( 0.00%)  => ???:0x000000000010a6c0 (1x)
+     15 ( 0.00%)  => ???:0x000000000010a950 (1x)
+524,296 ( 0.04%)   bucket_cap=env_count;buckets=calloc(NB,sizeof(Bucket));for(int k=0;k<NB;k++){buckets[k].gen=-1;buckets[k].ids=calloc(bucket_cap,sizeof(int));}
+14,552,672 ( 1.07%)  => ???:0x000000000010a6c0 (65,537x)
+    170 ( 0.00%)   ncoh=env_count/C;ncoh_cap=env_count;coh=calloc(ncoh_cap,sizeof(Cohort));for(int k=0;k<ncoh_cap;k++){pthread_mutex_init(&coh[k].mu,NULL);coh[k].tick=DEAD;}for(int k=0;k<ncoh;k++){coh[k].first=k*C;coh[k].n=C;}splits=calloc(W,sizeof(long));borrows=calloc(W,sizeof(long));
+    698 ( 0.00%)  => ???:0x000000000010a6c0 (3x)
+    376 ( 0.00%)  => ???:0x000000000010a8d0 (8x)
+     17 ( 0.00%)   { double wt[256],wsum=0;int n[256],assigned=0;for(int w=0;w<W;w++){wt[w]=is_pcore(w)?PWEIGHT:1.0;wsum+=wt[w];}
+     33 ( 0.00%)     for(int w=0;w<W;w++){n[w]=(int)floor(ncoh*wt[w]/wsum);assigned+=n[w];}
+      5 ( 0.00%)     for(int w=0;assigned<ncoh;w=(w+1)%W){n[w]++;assigned++;}
+     45 ( 0.00%)     int k=0;for(int w=0;w<W;w++){owned[w]=n[w];for(int j=0;j<n[w];j++){coh[k].owner=w;coh[k].holder=w;k++;}}assert(k==ncoh); }
+      4 ( 0.00%)   Dict kwargs={0};
+     45 ( 0.00%)   dict_set(&kwargs,"gold_coef",0.0530697852);dict_set(&kwargs,"score_coef",0.00148907036);dict_set(&kwargs,"exp_coef",0.0912783295);dict_set(&kwargs,"descent_coef",1);dict_set(&kwargs,"floor_coef",0.126026332);dict_set(&kwargs,"xp_coef",1);dict_set(&kwargs,"scout_coef",0.00686222408);dict_set(&kwargs,"death_penalty",-0.472198129);dict_set(&kwargs,"mask_search20",0);dict_set(&kwargs,"mask_run",0);dict_set(&kwargs,"multi_role",1);
+  7,654 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/src/ini.h:dict_set.isra.0 (11x)
+     21 ( 0.00%)   int sizes[]=ACT_SIZES,mask_size=0;for(int h=0;h<NUM_ATNS;h++)mask_size+=sizes[h];
+    292 ( 0.00%)   for(int i=0;i<env_count;i++){Env*e=envs+i;e->rng=(i/apb*128+i%apb%128);puf_init(e,&kwargs);Agent*a=e->agents;a->observations=calloc(OBS_SIZE,1);a->actions=calloc(NUM_ATNS,sizeof(float));a->rewards=calloc(1,sizeof(float));a->terminals=calloc(1,sizeof(float));a->action_mask=calloc(mask_size,1);puf_reset(e);}
+ 47,576 ( 0.00%)  => ???:0x000000000010a6c0 (40x)
+543,569 ( 0.04%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:puf_init (8x)
+      2 ( 0.00%)   double initialized=now();
+     31 ( 0.00%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:now (1x)
+      7 ( 0.00%)   latency_on=0;run_window(0,warm,warm>0?warm:1); /* warm: same scheduler, no inference latency, ownership settles */
+  1,799 ( 0.00%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:run_window (1x)
+327,701 ( 0.02%)   double warmed=now();measured=1;latency_on=1;t_origin=now();for(int s=0;s<(STREAMS>0?STREAMS:1);s++)stream_free[s]=0;for(int k=0;k<NWIN;k++)win_k[k]=-1;for(int k=0;k<NB;k++){buckets[k].gen=-1;buckets[k].n=0;}
+524,322 ( 0.04%)  => ???:0x000000000010a680 (2x)
+     62 ( 0.00%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:now (2x)
+      5 ( 0.00%)   run_window(warm,warm+steps,SEG);double stopped=now();
+  1,673 ( 0.00%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:run_window (1x)
+     31 ( 0.00%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:now (1x)
+      3 ( 0.00%)   uint64_t hash=1469598103934665603ULL;long turns=0;uint64_t world_steps=0;
+    198 ( 0.00%)   for(int b=0;b<buffers;b++)for(int i=b*apb;i<(b+1)*apb;i++){if(i%apb<128)hash=hash_bytes(hash,envs[i].agents[0].observations,OBS_SIZE);else assert(memcmp(envs[i].agents[0].observations,envs[b*apb+i%128].agents[0].observations,OBS_SIZE)==0);turns+=envs[i].blstats[NLE_BL_TIME];world_steps+=advances[i];}
+     54 ( 0.00%)   double tb=0,ti=0,tbar=0,maxb=0,minb=1e30;long ts=0,tm=0,tsp=0,tbo=0;int ownP=0,ownE=0,live=0;for(int w=0;w<W;w++){tb+=busy[w];ti+=idle_t[w];tbar+=bar_t[w];ts+=steals[w];tm+=migrations[w];tsp+=splits[w];tbo+=borrows[w];if(busy[w]>maxb)maxb=busy[w];if(busy[w]<minb)minb=busy[w];}
+     69 ( 0.00%)   for(int k=0;k<ncoh;k++){if(coh[k].n==0)continue;live++;if(is_pcore(coh[k].owner))ownP++;else ownE++;}
+     76 ( 0.00%)   printf("RESULT mode=sched envs=%d workers=%d event=%d borrow_us=%ld fit=%d cold=%.2f groupfill=%d lazy=%d slack_us=%ld spin_us=%ld C=%d A=%d A_P=%d A_E=%d seg=%d win_us=%ld fwd_us=%ld streams=%d steal=%d pin=%d pweight=%.2f migrate=%d warm=%ld steps=%ld warm_seconds=%.3f seconds=%.3f sps=%.2f busy_sps=%.2f busy_mean=%.3f busy_min=%.3f busy_max=%.3f idle_mean=%.3f bar_mean=%.3f steals=%ld migrations=%ld splits=%ld borrows=%ld live_cohorts=%d own_P=%d own_E=%d obs=%016lx age=%.2f turns=%lu\n",
+      7 ( 0.00%)    env_count,W,EVENT,BORROW_NS>=0?BORROW_NS/1000:-1,FIT,cold_factor,GROUPFILL,LAZY,SLACK_NS/1000,SPIN_NS/1000,C,A,A_P,A_E,SEG,WIN_NS/1000,FWD_NS/1000,STREAMS,STEAL,PIN,PWEIGHT,MIGRATE,warm,steps,warmed-initialized,stopped-warmed,env_count*steps/(stopped-warmed),env_count*steps/(tb/W),tb/W,minb,maxb,ti/W,tbar/W,ts,tm,tsp,tbo,live,ownP,ownE,hash,(double)turns/env_count,world_steps);
+    137 ( 0.00%)   for(int i=0;i<env_count;i++){Env*e=envs+i;puf_close(e);free(e->agents[0].observations);free(e->agents[0].actions);free(e->agents[0].rewards);free(e->agents[0].terminals);free(e->agents[0].action_mask);}free(envs);return 0;
+  5,066 ( 0.00%)  => ???:0x000000000010a7d0 (41x)
+     12 ( 0.00%)  }
+
+ 22,706 ( 0.00%)  <counts for unidentified lines in /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c>
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h
+--------------------------------------------------------------------------------
+Ir                 
+
+-- line 154 ----------------------------------------
+        .           static unsigned char* nethack_tty_chars_sink;
+        .           static signed char* nethack_tty_colors_sink;
+        .           static unsigned char* nethack_tty_cursor_sink;
+        .           static const char* nethack_options_override; // demo-only; NULL = default options
+        .           
+        .           static int nethack_want_chars; // renderers/demo bind the char grid; training leaves it unfilled
+        .           // glyphs live in the agent's observation slot (the engine writes the grid where
+        .           // the trainer reads it); re-bound when the slot moves, carrying the current grid
+       18 ( 0.00%)  static void nethack_bind_glyphs(Nethack* env) {
+       18 ( 0.00%)      const unsigned char* base = env->agents[0].observations;
+       36 ( 0.00%)      short* target = (base && ((((uintptr_t)base + NETHACK_OFF_GLYPHS) & 1) == 0))
+       54 ( 0.00%)                      ? (short*)(base + NETHACK_OFF_GLYPHS) : env->glyphs_local;
+      124 ( 0.00%)      if (env->glyphs && env->glyphs != target) memcpy(target, env->glyphs, NH_GRID * sizeof(short));
+       18 ( 0.00%)      env->glyphs = target;
+       18 ( 0.00%)      env->obs.glyphs = target;
+        .               env->obs_bound = base;
+       18 ( 0.00%)  }
+        .           static void nethack_bind_obs(Nethack* env) {
+       10 ( 0.00%)      nle_obs* o = &env->obs;
+        .               memset(o, 0, sizeof(*o));
+        .               o->colors = nethack_color_sink;
+        .               o->inv_strs = nethack_invstr_sink;
+       20 ( 0.00%)      o->tty_chars = nethack_tty_chars_sink;
+        .               o->tty_colors = nethack_tty_colors_sink;
+       10 ( 0.00%)      o->tty_cursor = nethack_tty_cursor_sink;
+       20 ( 0.00%)      nethack_bind_glyphs(env);
+      160 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_bind_glyphs (10x)
+       20 ( 0.00%)      o->blstats = env->blstats;
+       50 ( 0.00%)      o->chars = nethack_want_chars ? env->chars : NULL;
+       20 ( 0.00%)      o->message = env->message;
+       20 ( 0.00%)      o->misc = env->misc;
+       20 ( 0.00%)      o->internal = env->internal;
+       20 ( 0.00%)      o->inv_glyphs = env->inv_glyphs;
+       20 ( 0.00%)      o->inv_true_glyphs = env->inv_true;
+       20 ( 0.00%)      o->inv_letters = env->inv_letters;
+       20 ( 0.00%)      o->inv_oclasses = env->inv_oclasses;
+       20 ( 0.00%)      o->inv_state = env->inv_state;
+       10 ( 0.00%)      o->partial = 1;
+        .           }
+        .           
+        .           static void nethack_init_settings(Nethack* env) {
+        8 ( 0.00%)      memset(&env->settings, 0, sizeof(env->settings));
+       24 ( 0.00%)      const char* source = getenv("NETHACKDIR");
+   14,336 ( 0.00%)  => ???:0x000000000010a800 (8x)
+       24 ( 0.00%)      if (source == NULL) source = "./vendor/fast-nle/build/dat";
+        .           
+       48 ( 0.00%)      if (nethack_make_vardir(source, env->vardir, sizeof(env->vardir)) != 0) {
+   71,984 ( 0.01%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/fs.h:nethack_make_vardir.constprop.0 (8x)
+        .                   fprintf(stderr, "nethack: failed to create vardir from source=%s\n", source);
+        .                   strncpy(env->settings.hackdir, source, sizeof(env->settings.hackdir) - 1);
+        .               } else {
+        .                   strncpy(env->settings.hackdir, env->vardir, sizeof(env->settings.hackdir) - 1);
+        .               }
+       16 ( 0.00%)      env->settings.spawn_monsters = 1;
+        .               env->settings.underfoot_glyphs = 1; // underfoot shows objects
+        .               snprintf(env->settings.options, sizeof(env->settings.options), "@%s",
+        .                        nethack_rc_path(nethack_options_override
+        .                            ? nethack_options_override : NETHACK_DEFAULT_OPTIONS));
+        8 ( 0.00%)      env->settings.fix_moon_phase = true; // moon phase from seed
+        .           }
+        .           
+       56 ( 0.00%)  void init(Nethack* env) {
+       32 ( 0.00%)      env->seed = 0xCAFEBEEFUL + (unsigned long)env->rng; // rng = env index
+        .               // opt into consumed-head gating (env_head_consume_map below); =0 still disables
+       32 ( 0.00%)      setenv("PUFFER_HEAD_GATING", "1", 0);
+   36,636 ( 0.00%)  => ???:0x000000000010a8f0 (8x)
+        .               // nle_start deferred to first puf_reset
+        .               nethack_init_settings(env);
+       48 ( 0.00%)  }
+        .           
+        .           // masking
+        .           
+        .           
+        .           #define NETHACK_CANT_HOLD_TURNS 100
+   49,184 ( 0.00%)  static void nethack_track_cant_hold(Nethack* env) { // handless polymorph: the engine refuses WIELD/THROW/WEAR/ENGRAVE for free
+   36,888 ( 0.00%)      if (env->cant_hold && env->blstats[NLE_BL_TIME] - env->cant_hold_t > NETHACK_CANT_HOLD_TURNS) env->cant_hold = 0;
+   12,296 ( 0.00%)      const char* m = (const char*) env->message;
+   24,592 ( 0.00%)      if (!m || !*m) return;
+  116,130 ( 0.01%)      if (strstr(m, "can't even hold anything") || strstr(m, "Don't be ridiculous") || strstr(m, "can't throw or shoot without hands")
+1,392,767 ( 0.10%)  => ???:0x000000000010a590 (23,226x)
+   77,420 ( 0.01%)          || strstr(m, "Don't even bother") || strstr(m, "can't wear any armor in your current form")) { env->cant_hold = 1; env->cant_hold_t = env->blstats[NLE_BL_TIME]; }
+  927,145 ( 0.07%)  => ???:0x000000000010a590 (15,484x)
+  123,872 ( 0.01%)      else if (strstr(m, "You return to ") || strstr(m, "You turn into ") || strstr(m, "You break out of your cocoon")) env->cant_hold = 0;
+1,810,254 ( 0.13%)  => ???:0x000000000010a590 (23,226x)
+   49,184 ( 0.00%)  }
+        .           static int nethack_zt_world_same(const Nethack* env) {
+       12 ( 0.00%)      return env->blstats[NLE_BL_X] == env->zt_x && env->blstats[NLE_BL_Y] == env->zt_y
+       32 ( 0.00%)          && env->blstats[NLE_BL_DEPTH] == env->zt_d && env->blstats[NLE_BL_TIME] == env->zt_t;
+        .           }
+        .           // zero-time mask (NH_ZT_MASK=1, stock evals): an action refused for free twice in the same world stays masked until the world changes
+3,627,084 ( 0.27%)  static int nethack_zt_mask_on(void) { static int v = -1; if (v < 0) { const char* e = getenv("NH_ZT_MASK"); v = e && atoi(e) != 0; } return v; }
+    1,879 ( 0.00%)  => ???:0x000000000010a800 (1x)
+        .           static int nethack_zt_blocked(const Nethack* env, int verb, int slot) {
+2,701,848 ( 0.20%)      if (!nethack_zt_mask_on() || !env->zt_n || !nethack_zt_world_same(env)) return 0;
+  334,754 ( 0.02%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_zt_mask_on (83,187x)
+        .               for (int k = 0; k < env->zt_n; k++) if (env->zt_verb[k] == verb && env->zt_slot[k] == slot && env->zt_cnt[k] >= 2) return 1;
+        .               return 0;
+        .           }
+        .           static int nethack_slot_usable(const Nethack* env, const Verb* verb, int i) {
+3,425,973 ( 0.25%)      if (env->cant_hold && (verb == &NETHACK_VERBS[NETHACK_ACT_WIELD] || verb == &NETHACK_VERBS[NETHACK_ACT_THROW]
+        .                                      || verb == &NETHACK_VERBS[NETHACK_ACT_WEAR])) return 0;
+  337,925 ( 0.02%)      if (nethack_zt_blocked(env, (int)(verb - NETHACK_VERBS), i)) return 0;
+2,701,848 ( 0.20%)      if (!(verb->item_classes & (1u << env->inv_oclasses[i]))) return 0;
+        .               // APPLY on a container (box/bag) is a silent zero-turn no-op: the macro
+        .               // drives no put-in/take-out menus, so it is an absorbing spam loop, not a
+        .               // choice. Bag of tricks (spawns monsters, costs a turn) stays legal.
+  756,375 ( 0.06%)      if (verb == &NETHACK_VERBS[NETHACK_ACT_APPLY]) {
+        .                   int a = env->inv_glyphs[i] - NH_GLYPH_OBJ_OFF;
+   20,924 ( 0.00%)          if (a >= 189 /* LARGE_BOX */ && a <= 194 /* BAG_OF_HOLDING */) return 0;
+        .               }
+        .               // READ hygiene: blind reads refuse for free, and re-reading a still-fresh
+        .               // book is a multi-turn re-study furnace; low-retention refresh stays legal
+  502,792 ( 0.04%)      if (verb->item_classes == ((1u << 9) | (1u << 10))) {
+   20,010 ( 0.00%)          if (env->blstats[NLE_BL_CONDITION] & 0x20L) return 0;
+   20,006 ( 0.00%)          if (env->inv_oclasses[i] == 10
+    9,234 ( 0.00%)              && env->inv_true[i] != NETHACK_PAD_GLYPH) {
+        .                       // only the discoveries channel names the spell (glyphs are shuffled
+        .                       // appearances), exactly when the agent could know it
+    9,234 ( 0.00%)              int otyp = env->inv_true[i] - NH_GLYPH_OBJ_OFF;
+    6,921 ( 0.00%)              for (int j = 0; j < NETHACK_SPELL_SLOTS; j++)
+   72,551 ( 0.01%)                  if (env->spell_ids[j] == otyp && env->spell_knows[j] > 2000)
+        .                               return 0;
+        .                   }
+        .               }
+        .               // WIELD while welded (known-cursed wield) refuses for free and the weld
+        .               // never expires; the revealing first attempt on unknown BUC stays legal
+  749,898 ( 0.06%)      if (verb == &NETHACK_VERBS[NETHACK_ACT_WIELD]) {
+2,333,538 ( 0.17%)          for (int j = 0; j < NETHACK_INV_SLOTS && env->inv_letters[j]; j++)
+  905,118 ( 0.07%)              if ((env->inv_state[j * NLE_INV_STATE_FIELDS + 5] & 2)
+   38,618 ( 0.00%)                  && env->inv_state[j * NLE_INV_STATE_FIELDS + 0] == 1)
+        .                           return 0;
+        .               }
+        .               // TAKEOFF/REMOVE of known-cursed gear refuses for free; first attempt on
+        .               // unknown BUC consumes a move and reveals, so it stays legal
+        .               if ((verb == &NETHACK_VERBS[NETHACK_ACT_TAKEOFF]
+1,321,398 ( 0.10%)           || verb == &NETHACK_VERBS[NETHACK_ACT_REMOVE])
+   40,204 ( 0.00%)          && env->inv_state[i * NLE_INV_STATE_FIELDS + 0] == 1)
+        .                   return 0;
+  248,316 ( 0.02%)      int worn = env->inv_state[i * NLE_INV_STATE_FIELDS + 5] & 1;
+  993,264 ( 0.07%)      if (verb->wornreq == WORN_ONLY) return worn;
+  456,428 ( 0.03%)      if (verb->wornreq == UNWORN_ONLY) {
+  253,780 ( 0.02%)          if (worn) return 0;
+        .                   // WEAR: mirror the engine's layering rules and known-cursed same-slot
+        .                   // swaps (56% of measured prompt aborts)
+  199,468 ( 0.01%)          if (verb->item_classes == (1u << 3)) {
+   13,048 ( 0.00%)              int gn = env->inv_glyphs[i] - NH_GLYPH_OBJ_OFF;
+   32,620 ( 0.00%)              int cat = (gn >= 0 && gn < NH_NUM_OBJECTS) ? nh_obj_armcat[gn] : -1;
+   19,572 ( 0.00%)              if (cat >= 0) {
+  707,068 ( 0.05%)                  for (int j = 0; j < NETHACK_INV_SLOTS && env->inv_letters[j]; j++) {
+  278,910 ( 0.02%)                      if (!(env->inv_state[j * NLE_INV_STATE_FIELDS + 5] & 1)) continue;
+   29,702 ( 0.00%)                      int gj = env->inv_glyphs[j] - NH_GLYPH_OBJ_OFF;
+   59,404 ( 0.00%)                      int cj = (gj >= 0 && gj < NH_NUM_OBJECTS) ? nh_obj_armcat[gj] : -1;
+   93,954 ( 0.01%)                      if ((cat == 0 || cat == 6) && (cj == 5 || (cat == 6 && cj == 0))) return 0;
+   28,400 ( 0.00%)                      if (cj == cat
+   10,410 ( 0.00%)                          && env->inv_state[j * NLE_INV_STATE_FIELDS + 0] == 1) return 0;
+        .                           }
+        .                       }
+        .                   }
+        .                   return 1;
+        .               }
+        .               return 1;
+        .           }
+        .           
+        .           // visible HOSTILE target (monster/detected/warning glyph) on the ray within
+        .           // 8 tiles. A peaceful in the line blocks the shot: ranged attacks have no
+        .           // "really attack?" prompt, so aiming at (or through) a watchman starts a war
+        .           static int nethack_ray_target(Nethack* env, int dx, int dy) {
+  196,864 ( 0.01%)      long hx = env->blstats[NLE_BL_X], hy = env->blstats[NLE_BL_Y];
+1,603,236 ( 0.12%)      for (int k = 1; k <= 8; k++) {
+1,853,340 ( 0.14%)          long x = hx + dx * k, y = hy + dy * k;
+7,847,870 ( 0.58%)          if (x < 0 || x >= NH_COLS || y < 0 || y >= NH_ROWS) return 0;
+  196,864 ( 0.01%)          int gl = env->glyphs[y * NH_COLS + x];
+3,550,266 ( 0.26%)          if ((gl >= 0 && gl < NETHACK_NUMMONS)
+  710,062 ( 0.05%)              || (gl >= 762 && gl < 1144)
+2,119,872 ( 0.16%)              || (gl >= 5589 && gl < 5595))
+   30,942 ( 0.00%)              return !nle_peaceful_at(env->ctx, (int)x + 1, (int)y);
+    7,532 ( 0.00%)  => ???:0x000000000010a740 (328x)
+        .               }
+        .               return 0;
+        .           }
+        .           
+        .           static void nethack_compute_mask(Nethack* env) {
+   12,304 ( 0.00%)      nethack_track_cant_hold(env);
+  263,936 ( 0.02%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_track_cant_hold (783x)
+        .               unsigned char* mask = env->action_mask;
+        .               memset(mask, 1, NETHACK_NUM_ACTIONS);
+   24,608 ( 0.00%)      if (env->mask_search20 != 0.0f) mask[NETHACK_ACT_SEARCH20] = 0;
+   24,608 ( 0.00%)      if (env->mask_run != 0.0f) mask[NETHACK_ACT_RUN] = 0;
+   12,777 ( 0.00%)      if (env->blstats[NLE_BL_HUNGER] == 0) mask[NETHACK_ACT_EAT] = 0; // choke gate
+        .           
+        .               // underfoot
+   12,304 ( 0.00%)      long hero_x = env->blstats[NLE_BL_X], hero_y = env->blstats[NLE_BL_Y];
+   49,216 ( 0.00%)      int underfoot = (hero_x >= 0 && hero_x < NH_COLS && hero_y >= 0 && hero_y < NH_ROWS)
+   30,760 ( 0.00%)             ? env->glyphs[hero_y * NH_COLS + hero_x] : -1;
+   24,608 ( 0.00%)      int on_object = (underfoot >= NETHACK_GLYPH_OBJ_LO && underfoot < NETHACK_GLYPH_OBJ_HI);
+        .               int on_corpse = (underfoot >= NETHACK_GLYPH_BODY_OFF
+   30,760 ( 0.00%)                       && underfoot < NETHACK_GLYPH_BODY_OFF + NETHACK_NUMMONS);
+        .           
+        .               // terrain, not the map glyph: an object on the tile occludes the stairs
+        .               // (underfoot_glyphs shows the top item), which used to mask DOWN off and
+        .               // strand the agent on a littered staircase
+   18,456 ( 0.00%)      int terrain = nle_terrain_underfoot(env->ctx);
+   28,820 ( 0.00%)  => ???:0x000000000010a5b0 (783x)
+   24,608 ( 0.00%)      if (terrain != NETHACK_GLYPH_DNSTAIR && terrain != NETHACK_GLYPH_DNLADDER)
+    6,105 ( 0.00%)          mask[NETHACK_ACT_DOWN] = 0;
+   24,420 ( 0.00%)      if (terrain != NETHACK_GLYPH_UPSTAIR && terrain != NETHACK_GLYPH_UPLADDER)
+    6,049 ( 0.00%)          mask[NETHACK_ACT_UP] = 0;
+      260 ( 0.00%)      if (env->blstats[NLE_BL_DEPTH] <= 1) mask[NETHACK_ACT_UP] = 0; // declined exit
+   23,978 ( 0.00%)      if (!on_object && !on_corpse) mask[NETHACK_ACT_PICKUP] = 0;
+   24,317 ( 0.00%)      if (terrain != NETHACK_GLYPH_ALTAR) mask[NETHACK_ACT_ALTAR_ID] = 0;
+        .               // presence is public (the container renders); locked/empty is learnable
+   43,056 ( 0.00%)      if (!nle_container_at(env->ctx)) mask[NETHACK_ACT_TIP] = 0;
+   12,634 ( 0.00%)  => ???:0x000000000010a760 (783x)
+        .           
+        .               // engrave-test needs an unidentified wand not yet tested this episode:
+        .               // one test prints all its information, re-testing just drains charges
+        .               int unid_wand = 0;
+  652,820 ( 0.05%)      for (int i = 0; i < NETHACK_INV_SLOTS && env->inv_letters[i]; i++) {
+  205,420 ( 0.02%)          if (env->inv_oclasses[i] != 11
+    4,530 ( 0.00%)              || env->inv_state[i * NLE_INV_STATE_FIELDS + 6] != 0) continue;
+        .                   int lb = nethack_letter_bit(env->inv_letters[i]);
+    3,252 ( 0.00%)          if (lb >= 0 && (env->engid_tested & (1ULL << lb))) continue;
+        .                   unid_wand = 1;
+        .                   break;
+        .               }
+   10,136 ( 0.00%)      if (!unid_wand) mask[NETHACK_ACT_ENGRAVE_ID] = 0;
+        .           
+        .               // ELBERETH: unengravable terrain (fountain/water/lava/air/cloud) and
+        .               // levitating/engulfed both refuse for free
+        .               int tg = terrain - 2359;
+   24,638 ( 0.00%)      if (tg == 31 || tg == 32 || tg == 34 || tg == 39 || tg == 40 || tg == 41)
+       10 ( 0.00%)          mask[NETHACK_ACT_ELBERETH] = 0;
+   18,456 ( 0.00%)      if (env->cant_hold) mask[NETHACK_ACT_ELBERETH] = 0;
+   24,608 ( 0.00%)      if ((env->blstats[NLE_BL_CONDITION] & 0x400L) || (env->internal[6] & 4))
+        .                   mask[NETHACK_ACT_ELBERETH] = 0;
+        .           
+        .               // spell-slot head: castable iff still known (retention > 0) and Pw covers
+        .               // 5 * level; fail% is deliberately NOT masked (it's in the obs)
+        .               unsigned char* sp = mask + NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS
+        .                                   + NETHACK_DIR_HEADS * NETHACK_NUM_DIRS;
+        .               memset(sp, 0, NETHACK_SPELL_SLOTS);
+    6,921 ( 0.00%)      int castable = 0;
+   36,912 ( 0.00%)      for (int s = 0; s < env->n_spells && s < NETHACK_SPELL_SLOTS; s++) {
+   19,225 ( 0.00%)          if (env->spell_ids[s] > 0 && env->spell_knows[s] > 0
+   15,380 ( 0.00%)              && env->blstats[NLE_BL_ENE] >= 5L * (long)env->spell_levs[s]) {
+    3,306 ( 0.00%)              sp[s] = 1;
+    9,458 ( 0.00%)              castable = 1;
+        .                   }
+        .               }
+    8,652 ( 0.00%)      if (!castable) sp[0] = 1; // unconsumed head still needs a legal entry
+        .               // CAST zero-turn refusal mirror (engine predicate: stun, chant, freehand,
+        .               // too-weak, hunger): a free refusal never advances the clock, so the
+        .               // blocking condition can never expire -- self-sealing wedge
+   20,910 ( 0.00%)      if (!castable || env->blstats[NLE_BL_HUNGER] >= 3 || nle_cast_blocked(env->ctx)) // public hunger band, not the exact counter
+      400 ( 0.00%)  => ???:0x000000000010a920 (4x)
+    4,054 ( 0.00%)          mask[NETHACK_ACT_CAST] = 0;
+        .               // shop goods we can't pay for: picking them up incurs a bill the agent
+        .               // has no way to settle, so gate on affordability (price is quoted to the
+        .               // player on arrival, so this is public information)
+   18,456 ( 0.00%)      long shop_price = nle_shop_price(env->ctx);
+   38,994 ( 0.00%)  => ???:0x000000000010a810 (783x)
+   18,456 ( 0.00%)      if (shop_price > env->blstats[NLE_BL_GOLD]) mask[NETHACK_ACT_PICKUP] = 0;
+        .           
+        .               // item slot heads. Exact shortcuts: the class set carried in inventory
+        .               // decides at the predicate's first test, so a verb whose classes are all
+        .               // absent has no usable slot without walking them; the WIELD weld scan
+        .               // reads no per-slot state, so it runs once instead of once per slot.
+    6,152 ( 0.00%)      unsigned int inv_classes = 0;
+        .               int inv_n = 0;
+  676,830 ( 0.05%)      for (int i = 0; i < NETHACK_INV_SLOTS && env->inv_letters[i]; i++) {
+  329,187 ( 0.02%)          if (env->inv_oclasses[i] >= NETHACK_NUM_OCLASSES) break; // padded tail
+  341,491 ( 0.03%)          inv_classes |= 1u << env->inv_oclasses[i];
+        .                   inv_n = i + 1;
+        .               }
+    6,152 ( 0.00%)      int welded = 0;
+  573,253 ( 0.04%)      for (int j = 0; j < NETHACK_INV_SLOTS && env->inv_letters[j]; j++)
+  219,458 ( 0.02%)          if ((env->inv_state[j * NLE_INV_STATE_FIELDS + 5] & 2)
+    8,874 ( 0.00%)              && env->inv_state[j * NLE_INV_STATE_FIELDS + 0] == 1) { welded = 1; break; }
+  645,888 ( 0.05%)      for (int a = 0; a < NETHACK_NUM_ACTIONS; a++) {
+        .                   const Verb* verb = &NETHACK_VERBS[a];
+  479,856 ( 0.04%)          if (verb->head < 0) continue; // direct verb, no item argument
+  369,120 ( 0.03%)          unsigned char* slots = mask + NETHACK_NUM_ACTIONS + verb->head * NETHACK_INV_SLOTS;
+        .                   memset(slots, 0, NETHACK_INV_SLOTS);
+   48,275 ( 0.00%)          int has_usable = 0;
+  221,472 ( 0.02%)          if ((verb->item_classes & inv_classes)
+  107,904 ( 0.01%)              && !(a == NETHACK_ACT_WIELD && welded)) {
+2,798,398 ( 0.21%)              for (int i = 0; i < inv_n; i++) {
+   46,728 ( 0.00%)                  if (nethack_slot_usable(env, verb, i)) {
+  213,985 ( 0.02%)                      slots[i] = 1;
+  213,985 ( 0.02%)                      has_usable = 1;
+        .                           }
+        .                       }
+        .                   }
+  627,575 ( 0.05%)          if (has_usable) continue;
+        .                   // no usable item: verb off unless EAT has actual floor food underfoot
+        .                   // (any-object gating kept EAT legal on inedible piles -- refusal loop)
+   28,659 ( 0.00%)          slots[0] = 1;
+   58,620 ( 0.00%)          int floor_food = (a == NETHACK_ACT_EAT) && (on_object || on_corpse)
+      864 ( 0.00%)                           && nle_food_underfoot(env->ctx);
+      786 ( 0.00%)  => ???:0x000000000010a7e0 (43x)
+   28,611 ( 0.00%)          if (!floor_food) mask[a] = 0;
+        .               }
+        .           
+        .               // per-verb dir rows: wall legality; THROW/ZAP use target rays (all-1 fallback)
+    6,152 ( 0.00%)      unsigned char* dirs = mask + NETHACK_NUM_ACTIONS + 12 * NETHACK_INV_SLOTS;
+        .               memset(dirs, 1, NETHACK_NUM_DIRS);
+    6,152 ( 0.00%)      int legal_dirs = 0;
+  147,648 ( 0.01%)      for (int d = 0; d < NETHACK_NUM_DIRS; d++) {
+  295,296 ( 0.02%)          long col = hero_x + NETHACK_DIR_DX[d], row = hero_y + NETHACK_DIR_DY[d];
+  196,864 ( 0.01%)          if (row < 0 || row >= NH_ROWS || col < 0 || col >= NH_COLS) {
+        .                       dirs[d] = 0;
+        .                       continue;
+        .                   }
+  246,080 ( 0.02%)          int g = env->glyphs[row * NH_COLS + col];
+  204,677 ( 0.02%)          if (g >= NETHACK_WALL_GLYPH_LO && g <= NETHACK_WALL_GLYPH_HI) dirs[d] = 0;
+   41,403 ( 0.00%)          else legal_dirs++;
+        .               }
+   12,304 ( 0.00%)      if (!legal_dirs) memset(dirs, 1, NETHACK_NUM_DIRS);
+        .               for (int h = 1; h < NETHACK_DIR_HEADS; h++)
+   18,456 ( 0.00%)          memcpy(dirs + h * NETHACK_NUM_DIRS, dirs, NETHACK_NUM_DIRS);
+        .           
+        .               // zero-time memory: directional verbs lose the refused direction, headless verbs switch off
+   24,608 ( 0.00%)      if (nethack_zt_mask_on() && env->zt_n && nethack_zt_world_same(env)) {
+    3,132 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_zt_mask_on (783x)
+        .                   for (int k = 0; k < env->zt_n; k++) {
+        .                       int v = env->zt_verb[k];
+        .                       if (env->zt_cnt[k] < 2 || NETHACK_VERBS[v].head >= 0) continue;
+        .                       int dh = nethack_dir_head(v);
+        .                       int same_verb = 0;
+        .                       for (int j = 0; j < env->zt_n; j++) same_verb += (env->zt_verb[j] == v && env->zt_cnt[j] >= 2);
+        .                       if (dh >= 0 && env->zt_dir[k] >= 0 && same_verb < 3) {
+        .                           unsigned char* row = dirs + dh * NETHACK_NUM_DIRS;
+-- line 468 ----------------------------------------
+-- line 475 ----------------------------------------
+        .                   int any = 0;
+        .                   for (int v = 0; v < NETHACK_NUM_ACTIONS; v++) any += mask[v];
+        .                   if (!any) mask[NETHACK_ACT_SEARCH] = 1;
+        .               }
+        .           
+        .               // MOVE-head refinements: peaceful-adjacent and diagonal-door moves are void
+        .               unsigned char keep[NETHACK_NUM_DIRS];
+        .               memcpy(keep, dirs, NETHACK_NUM_DIRS);
+   18,456 ( 0.00%)      int on_door = (tg >= 12 && tg <= 14);
+  127,852 ( 0.01%)      for (int d = 0; d < NETHACK_NUM_DIRS; d++) {
+   98,432 ( 0.01%)          if (!dirs[d]) continue;
+  248,418 ( 0.02%)          long col = hero_x + NETHACK_DIR_DX[d], row = hero_y + NETHACK_DIR_DY[d];
+  165,612 ( 0.01%)          if (row < 0 || row >= NH_ROWS || col < 0 || col >= NH_COLS) continue;
+  207,015 ( 0.02%)          int g = env->glyphs[row * NH_COLS + col];
+  124,209 ( 0.01%)          if (g >= 0 && g < 381
+   13,428 ( 0.00%)              && nle_peaceful_at(env->ctx, (int)col + 1, (int)row)) {
+    3,607 ( 0.00%)  => ???:0x000000000010a740 (157x)
+        .                       dirs[d] = 0;
+        .                       continue;
+        .                   }
+  177,843 ( 0.01%)          if (d >= 4 && (on_door || (g >= 2371 && g <= 2373))) dirs[d] = 0;
+        .               }
+        .               int open_moves = 0;
+  123,040 ( 0.01%)      for (int d = 0; d < NETHACK_NUM_DIRS; d++) open_moves |= dirs[d];
+   30,760 ( 0.00%)      if (!open_moves) memcpy(dirs, keep, NETHACK_NUM_DIRS); // cornered: restore
+        .           
+        .               // RUN head: a run aimed at an adjacent hostile is void with p=1.0;
+        .               // directional only -- escape dirs stay
+        .               unsigned char* rdirs = dirs + 1 * NETHACK_NUM_DIRS;
+        .               unsigned char rkeep[NETHACK_NUM_DIRS];
+        .               memcpy(rkeep, rdirs, NETHACK_NUM_DIRS);
+  289,144 ( 0.02%)      for (int d = 0; d < NETHACK_NUM_DIRS; d++) {
+   98,432 ( 0.01%)          if (!rdirs[d]) continue;
+  165,612 ( 0.01%)          long col = hero_x + NETHACK_DIR_DX[d], row = hero_y + NETHACK_DIR_DY[d];
+  165,612 ( 0.01%)          if (row < 0 || row >= NH_ROWS || col < 0 || col >= NH_COLS) continue;
+  207,015 ( 0.02%)          int g = env->glyphs[row * NH_COLS + col];
+  137,637 ( 0.01%)          if (g >= 0 && g < 381 && !nle_peaceful_at(env->ctx, (int)col + 1, (int)row))
+    3,607 ( 0.00%)  => ???:0x000000000010a740 (157x)
+    2,946 ( 0.00%)              rdirs[d] = 0;
+        .               }
+        .               int open_runs = 0;
+  123,040 ( 0.01%)      for (int d = 0; d < NETHACK_NUM_DIRS; d++) open_runs |= rdirs[d];
+   43,064 ( 0.00%)      if (!open_runs) memcpy(rdirs, rkeep, NETHACK_NUM_DIRS);
+        .           
+        .               static const int ray_verbs[2] = {NETHACK_ACT_THROW, NETHACK_ACT_ZAP};
+   49,216 ( 0.00%)      for (int v = 0; v < 2; v++) {
+   30,760 ( 0.00%)          unsigned char* vdirs = dirs + nethack_dir_head(ray_verbs[v]) * NETHACK_NUM_DIRS;
+   73,824 ( 0.01%)          int any = 0;
+  295,296 ( 0.02%)          for (int d = 0; d < NETHACK_NUM_DIRS; d++) {
+   98,432 ( 0.01%)              vdirs[d] = nethack_ray_target(env, NETHACK_DIR_DX[d], NETHACK_DIR_DY[d]);
+    3,438 ( 0.00%)              any |= vdirs[d];
+        .                   }
+   86,128 ( 0.01%)          if (!any) memset(vdirs, 1, NETHACK_NUM_DIRS);
+        .               }
+        .           }
+        .           
+        .           // observations
+        .           
+   73,824 ( 0.01%)  static void nethack_pack_obs(Nethack* env) {
+   36,912 ( 0.00%)      if ((short*)(((obs_t*)env->agents[0].observations) + NETHACK_OFF_GLYPHS) != env->glyphs)
+        .                   memcpy(((obs_t*)env->agents[0].observations) + NETHACK_OFF_GLYPHS, env->glyphs, NH_GRID * sizeof(short));
+        .               unsigned char* bl = ((obs_t*)env->agents[0].observations) + NETHACK_OFF_BLSTATS;
+  498,312 ( 0.04%)      for (int i = 0; i < NLE_BLSTATS_SIZE; i++) {
+        .                   uint32_t v = (uint32_t)(int32_t)env->blstats[i];
+  332,208 ( 0.02%)          bl[4*i + 0] = (unsigned char)(v & 0xffu);
+        .                   bl[4*i + 1] = (unsigned char)((v >> 8) & 0xffu);
+        .                   bl[4*i + 2] = (unsigned char)((v >> 16) & 0xffu);
+        .                   bl[4*i + 3] = (unsigned char)((v >> 24) & 0xffu);
+        .               }
+  276,840 ( 0.02%)      int32_t extra[NETHACK_EXTRA_INTS] = {0};
+        .               // engraving state 0/1/2 (bit 2 = engulfed, mask-only -- keep it out of obs)
+   55,368 ( 0.00%)      extra[0] = env->internal[6] & 3;
+        .               extra[1] = env->prev_action;
+  335,339 ( 0.02%)      for (int i = 0; i < NLE_INVENTORY_SIZE; i++) {
+  115,881 ( 0.01%)          int oc = env->inv_oclasses[i];
+  231,762 ( 0.02%)          if (oc >= NETHACK_NUM_OCLASSES) break; // padded tail
+  329,187 ( 0.02%)          extra[2 + oc]++;
+        .               }
+        .           
+        .               // 8-slot spell channel with retention (know 0 = forgotten, the re-read cue)
+   55,368 ( 0.00%)      env->n_spells = nle_spells(env->ctx, env->spell_ids, env->spell_levs,
+   27,862 ( 0.00%)  => ???:0x000000000010a870 (783x)
+    6,152 ( 0.00%)                                  env->spell_fails, env->spell_knows,
+        .                                           NETHACK_SPELL_SLOTS);
+   18,456 ( 0.00%)      extra[NETHACK_EXTRA_SPELL] = env->n_spells;
+  196,864 ( 0.01%)      for (int s = 0; s < NETHACK_SPELL_SLOTS; s++) {
+        .                   int* q = extra + NETHACK_EXTRA_SPELL + 1 + 4 * s;
+  109,967 ( 0.01%)          int known = s < env->n_spells && env->spell_ids[s] > 0;
+   49,216 ( 0.00%)          q[0] = known ? env->spell_ids[s] : 0;
+    7,690 ( 0.00%)          q[1] = known ? env->spell_levs[s] : 0;
+   53,061 ( 0.00%)          q[2] = known ? env->spell_fails[s] : 0;
+  143,803 ( 0.01%)          q[3] = known ? env->spell_knows[s] : 0;
+        .               }
+        .           
+   18,456 ( 0.00%)      extra[NETHACK_EXTRA_INTRINS] = nle_intrinsics(env->ctx);
+   25,054 ( 0.00%)  => ???:0x000000000010a890 (783x)
+   24,608 ( 0.00%)      extra[NETHACK_EXTRA_ROLEOH + env->role_idx] = 1;
+   24,608 ( 0.00%)      extra[NETHACK_EXTRA_ROLEOH + 13 + env->race_idx] = 1;
+   24,608 ( 0.00%)      extra[NETHACK_EXTRA_ROLEOH + 18 + env->gend_idx] = 1;
+        .           
+        .               int wt, wcap;
+   24,608 ( 0.00%)      nle_weight(env->ctx, &wt, &wcap);
+  665,434 ( 0.05%)  => ???:0x000000000010a640 (783x)
+   18,456 ( 0.00%)      if (wcap < 1) wcap = 1;
+   49,216 ( 0.00%)      extra[NETHACK_EXTRA_WEIGHT + 0] = (int)(100L * wt / wcap);
+    6,152 ( 0.00%)      extra[NETHACK_EXTRA_WEIGHT + 1] = wcap;
+        .           
+        .               // gold/price as a percent, capped at 100 (0 = no purchase available here)
+   18,456 ( 0.00%)      long price = nle_shop_price(env->ctx);
+   38,994 ( 0.00%)  => ???:0x000000000010a810 (783x)
+    6,152 ( 0.00%)      long gold = env->blstats[NLE_BL_GOLD];
+   18,456 ( 0.00%)      extra[NETHACK_EXTRA_SHOP] = nle_inside_shop(env->ctx);
+   17,460 ( 0.00%)  => ???:0x000000000010a830 (783x)
+    6,152 ( 0.00%)      extra[NETHACK_EXTRA_SHOP + 1] = (price > 0)
+   18,456 ( 0.00%)          ? (int32_t)(gold >= price ? 100 : (gold * 100) / price) : 0;
+        .           
+   18,456 ( 0.00%)      unsigned char* ex = ((obs_t*)env->agents[0].observations) + NETHACK_OFF_EXTRA;
+1,439,568 ( 0.11%)      for (int i = 0; i < NETHACK_EXTRA_INTS; i++) {
+        .                   uint32_t v = (uint32_t)extra[i];
+  959,712 ( 0.07%)          ex[4*i + 0] = (unsigned char)(v & 0xffu);
+        .                   ex[4*i + 1] = (unsigned char)((v >> 8) & 0xffu);
+        .                   ex[4*i + 2] = (unsigned char)((v >> 16) & 0xffu);
+        .                   ex[4*i + 3] = (unsigned char)((v >> 24) & 0xffu);
+        .               }
+        .               // slot glyphs; NH_DISC_SWAP=1: discovered identity REPLACES the appearance
+        .               // glyph (stable rep once known; the add-channel below goes silent)
+        .               static int dsw = -1;
+   18,456 ( 0.00%)      if (dsw < 0) {
+        2 ( 0.00%)          const char* e = getenv("NH_DISC_SWAP");
+    2,117 ( 0.00%)  => ???:0x000000000010a800 (1x)
+        5 ( 0.00%)          dsw = e && e[0] && e[0] != '0';
+        .               }
+   18,456 ( 0.00%)      unsigned char* iv = ((obs_t*)env->agents[0].observations) + NETHACK_OFF_INV;
+1,015,080 ( 0.07%)      for (int i = 0; i < NETHACK_INV_SLOTS; i++) {
+1,582,071 ( 0.12%)          uint16_t g = env->inv_oclasses[i] < NETHACK_NUM_OCLASSES
+        .                              ? (dsw && env->inv_true[i] != NETHACK_PAD_GLYPH
+  219,458 ( 0.02%)                        ? (uint16_t)env->inv_true[i] : (uint16_t)env->inv_glyphs[i])
+        .                              : (uint16_t)NETHACK_PAD_GLYPH;
+  448,089 ( 0.03%)          iv[2*i + 0] = (unsigned char)(g & 0xffu);
+  448,089 ( 0.03%)          iv[2*i + 1] = (unsigned char)((g >> 8) & 0xffu);
+        .               }
+        .               // item state
+   12,304 ( 0.00%)      memcpy(((obs_t*)env->agents[0].observations) + NETHACK_OFF_INVST, env->inv_state, sizeof(env->inv_state));
+        .               // discovered-type glyphs (engine pads with NO_GLYPH == NETHACK_PAD_GLYPH)
+   12,304 ( 0.00%)      unsigned char* it = ((obs_t*)env->agents[0].observations) + NETHACK_OFF_INVTRUE;
+1,021,232 ( 0.08%)      for (int i = 0; i < NETHACK_INV_SLOTS; i++) {
+2,039,333 ( 0.15%)          uint16_t g = !dsw && env->inv_oclasses[i] < NETHACK_NUM_OCLASSES
+  109,729 ( 0.01%)                     ? (uint16_t)env->inv_true[i] : (uint16_t)NETHACK_PAD_GLYPH;
+  448,089 ( 0.03%)          it[2*i + 0] = (unsigned char)(g & 0xffu);
+  448,089 ( 0.03%)          it[2*i + 1] = (unsigned char)((g >> 8) & 0xffu);
+        .               }
+        .               // stall watchdog: a key-eating modal (getpos-class) can freeze the game
+        .               // turn while swallowing every action; at 96 frozen steps fire an ESC burst
+        .               // (ESC is a harmless no-op at the main prompt)
+    6,152 ( 0.00%)      long turn = env->blstats[NLE_BL_TIME];
+   13,351 ( 0.00%)      if (turn == env->stall_prev_turn && !env->obs.done) {
+    1,745 ( 0.00%)          if (++env->stall_ctr == 96) {
+        .                       for (int k = 0; k < 8 && !env->obs.done; k++) {
+        .                           env->obs.action = 27;
+        .                           nethack_engine_step(env);
+        .                       }
+        .                       env->stall_ctr = 0; // re-arm; recovery shows as turn advance
+        .                   }
+        .               } else {
+    5,803 ( 0.00%)          env->stall_ctr = 0;
+    5,803 ( 0.00%)          env->stall_prev_turn = turn;
+        .               }
+        .               { // typed level planes: floor-object memory, two token lists
+   18,456 ( 0.00%)          unsigned fl = (unsigned)((env->blstats[NLE_BL_DNUM] << 8) | env->blstats[NLE_BL_DLEVEL]);
+   12,304 ( 0.00%)          unsigned dirty = nle_glyph_dirty_rows(); // only these rows changed since the last pack
+   10,179 ( 0.00%)  => ???:0x000000000010aa40 (783x)
+   12,304 ( 0.00%)          if (fl != env->terr_floor) {
+        .                       memset(env->obj_mem, 0, sizeof(env->obj_mem));
+       54 ( 0.00%)              env->terr_floor = fl;
+       54 ( 0.00%)              dirty = ~0u;
+        .                   }
+   18,456 ( 0.00%)          long hx = env->blstats[NLE_BL_X], hy = env->blstats[NLE_BL_Y];
+   12,304 ( 0.00%)          int mon_cell[256], mon_g[256], nmon = 0;
+   12,304 ( 0.00%)          int it_cell[256], nit = 0; // cells with a remembered object, in cell order (first 256)
+   61,520 ( 0.00%)          long hero_cell = (hx >= 0 && hx < NH_COLS && hy >= 0 && hy < NH_ROWS) ? hy * NH_COLS + hx : -1;
+        .                   // per-cell update on changed rows only (idempotent for unchanged glyphs), keeping row-major
+        .                   // bitmasks of monster-glyph cells and remembered-object cells
+  781,304 ( 0.06%)          for (int row = 0; row < NH_ROWS; row++) {
+  532,572 ( 0.04%)              if (!(dirty & (1u << row))) continue;
+  110,628 ( 0.01%)              unsigned long long mlo = 0, mhi = 0, ilo = 0, ihi = 0;
+6,240,946 ( 0.46%)              for (int col = 0; col < NH_COLS; col++) {
+        .                           int cell = row * NH_COLS + col;
+2,528,640 ( 0.19%)                  int g = env->glyphs[cell];
+3,745,548 ( 0.28%)                  if (g >= NETHACK_GLYPH_CMAP_OFF && g < NETHACK_GLYPH_CMAP_OFF + 96) {
+3,721,002 ( 0.27%)                      if (env->obj_mem[cell]) env->obj_mem[cell] = 0; // bare floor shown: no object here
+   50,352 ( 0.00%)                  } else if (g >= NETHACK_GLYPH_OBJ_LO && g < NETHACK_GLYPH_OBJ_HI) {
+    7,791 ( 0.00%)                      unsigned short nv = (unsigned short)(g - NETHACK_GLYPH_OBJ_LO + 1);
+   15,582 ( 0.00%)                      if (env->obj_mem[cell] != nv) env->obj_mem[cell] = nv;
+   14,391 ( 0.00%)                  } else if (g >= NETHACK_GLYPH_BODY_OFF && g < NETHACK_GLYPH_BODY_HI) {
+    2,464 ( 0.00%)                      unsigned short nv = (unsigned short)(g - NETHACK_GLYPH_BODY_OFF + 454);
+    7,868 ( 0.00%)                      if (env->obj_mem[cell] != nv) env->obj_mem[cell] = nv;
+    4,666 ( 0.00%)                  } else if (g >= 0 && g < NETHACK_GLYPH_BODY_OFF) { // monsters, pets, detected and the hero
+   91,684 ( 0.01%)                      if (col < 64) mlo |= 1ull << col; else mhi |= 1ull << (col - 64);
+        .                               // monster on top: obj_mem stays as last seen
+        .                           }
+   94,579 ( 0.01%)                  if (env->obj_mem[cell]) { if (col < 64) ilo |= 1ull << col; else ihi |= 1ull << (col - 64); }
+        .                       }
+   63,216 ( 0.00%)              env->mon_bits[2 * row] = mlo; env->mon_bits[2 * row + 1] = mhi;
+   47,412 ( 0.00%)              env->it_bits[2 * row] = ilo; env->it_bits[2 * row + 1] = ihi;
+        .                   }
+  535,224 ( 0.04%)          for (int row = 0; row < NH_ROWS; row++) // gather in cell order, same caps as the full pass
+1,291,920 ( 0.09%)              for (int half = 0; half < 2; half++) {
+  516,768 ( 0.04%)                  unsigned long long m = env->mon_bits[2 * row + half];
+  521,578 ( 0.04%)                  while (m) {
+   12,025 ( 0.00%)                      int cell = row * NH_COLS + half * 64 + __builtin_ctzll(m); m &= m - 1;
+   26,439 ( 0.00%)                      if (cell != hero_cell && nmon < 256) { mon_cell[nmon] = cell; mon_g[nmon] = env->glyphs[cell]; nmon++; }
+        .                           }
+        .                       }
+  516,768 ( 0.04%)          for (int row = 0; row < NH_ROWS; row++)
+        .                       for (int half = 0; half < 2; half++) {
+  387,576 ( 0.03%)                  unsigned long long m = env->it_bits[2 * row + half];
+  600,830 ( 0.04%)                  while (m) {
+  510,570 ( 0.04%)                      int cell = row * NH_COLS + half * 64 + __builtin_ctzll(m); m &= m - 1;
+  170,527 ( 0.01%)                      if (nit < 256) it_cell[nit++] = cell;
+        .                           }
+        .                       }
+        .                   // lean token block: lists only, memory planes stay env-internal
+   12,304 ( 0.00%)          unsigned char* mp = ((obs_t*)env->agents[0].observations) + NETHACK_OFF_TOKM;
+        .                   // monster tokens: K nearest by Chebyshev (selection sort)
+        .                   memset(mp, 0, NETHACK_V3_K * NETHACK_V3_MONF);
+   72,577 ( 0.01%)          for (int k = 0; k < NETHACK_V3_K && k < nmon; k++) {
+    7,209 ( 0.00%)              int best = -1, bd = 1 << 30;
+    9,807 ( 0.00%)              for (int i = 0; i < nmon; i++) {
+    9,807 ( 0.00%)                  if (mon_cell[i] < 0) continue;
+   34,032 ( 0.00%)                  int dx = mon_cell[i] % NH_COLS - (int)hx, dy = mon_cell[i] / NH_COLS - (int)hy;
+   22,688 ( 0.00%)                  int d = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+    8,508 ( 0.00%)                  if (d < bd) { bd = d; best = i; }
+        .                       }
+    4,806 ( 0.00%)              if (best < 0) break;
+   14,418 ( 0.00%)              int cell = mon_cell[best], g = mon_g[best]; mon_cell[best] = -1;
+   36,045 ( 0.00%)              int dx = cell % NH_COLS - (int)hx, dy = cell / NH_COLS - (int)hy;
+        .                       int det = g >= NETHACK_GLYPH_DET_OFF;
+    2,403 ( 0.00%)              int pet = g >= NETHACK_GLYPH_PET_OFF && g < NETHACK_GLYPH_DET_OFF;
+   19,224 ( 0.00%)              int sp = g % NETHACK_NUMMONS; // mon/pet/detect ranges all stride NUMMONS
+   28,639 ( 0.00%)              int peace = pet || nle_peaceful_at(env->ctx, cell % NH_COLS + 1, cell / NH_COLS);
+    4,546 ( 0.00%)  => ???:0x000000000010a740 (198x)
+        .                       unsigned char* e = mp + k * NETHACK_V3_MONF;
+   31,239 ( 0.00%)              e[0] = (unsigned char)((sp + 1) & 0xff); e[1] = (unsigned char)(((sp + 1) >> 8) & 0xff);
+        .                       e[2] = (unsigned char)(signed char)dx; e[3] = (unsigned char)(signed char)dy;
+   52,929 ( 0.00%)              e[4] = (unsigned char)((peace ? 0 : 1) | (peace ? 2 : 0) | (det ? 4 : 0) | (pet ? 8 : 0));
+   12,015 ( 0.00%)              e[5] = NH_MON_DIFF[sp]; e[6] = NH_MON_SPEED[sp]; e[7] = 0;
+        .                   }
+        .                   // item tokens from the object memory (includes remembered/occluded items).
+        .                   // K nearest by Chebyshev distance, ties in cell order: a stable order by
+        .                   // distance (counting sort) is exactly what repeated first-minimum
+        .                   // selection produced; falls back to selection if a distance overflows.
+    6,152 ( 0.00%)          unsigned char* ip = ((obs_t*)env->agents[0].observations) + NETHACK_OFF_TOKI;
+        .                   memset(ip, 0, NETHACK_V3_K * NETHACK_V3_ITEMF);
+   18,167 ( 0.00%)          unsigned char it_d[256]; short it_order[256]; int it_cnt[257]; int dmax = 0;
+  138,397 ( 0.01%)          for (int i = 0; i < nit; i++) {
+  546,403 ( 0.04%)              int dx = it_cell[i] % NH_COLS - (int)hx, dy = it_cell[i] / NH_COLS - (int)hy;
+  336,248 ( 0.02%)              int d = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+   84,062 ( 0.01%)              if (d > dmax) dmax = d;
+  168,124 ( 0.01%)              it_d[i] = (unsigned char)(d > 255 ? 255 : d);
+        .                   }
+    5,863 ( 0.00%)          int nord = 0;
+   11,726 ( 0.00%)          if (dmax <= 255) {
+   17,589 ( 0.00%)              memset(it_cnt, 0, sizeof(int) * (dmax + 2));
+  240,626 ( 0.02%)              for (int i = 0; i < nit; i++) it_cnt[it_d[i] + 1]++;
+  899,050 ( 0.07%)              for (int d = 0; d <= dmax; d++) it_cnt[d + 1] += it_cnt[d];
+  367,008 ( 0.03%)              for (int i = 0; i < nit; i++) it_order[it_cnt[it_d[i]]++] = (short)i;
+   17,589 ( 0.00%)              nord = nit;
+        .                   }
+  293,486 ( 0.02%)          for (int k = 0; k < NETHACK_V3_K && k < nit; k++) {
+        .                       int best = -1;
+  149,341 ( 0.01%)              if (nord) best = it_order[k];
+        .                       else {
+        .                           int bd = 1 << 30;
+        .                           for (int i = 0; i < nit; i++) {
+        .                               if (it_cell[i] < 0) continue;
+        .                               int dx = it_cell[i] % NH_COLS - (int)hx, dy = it_cell[i] / NH_COLS - (int)hy;
+        .                               int d = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+        .                               if (d < bd) { bd = d; best = i; }
+        .                           }
+        .                       }
+   83,926 ( 0.01%)              if (best < 0) break;
+  167,852 ( 0.01%)              int cell = it_cell[best]; it_cell[best] = -1;
+   41,963 ( 0.00%)              int row = env->obj_mem[cell];
+  401,119 ( 0.03%)              int dx = cell % NH_COLS - (int)hx, dy = cell / NH_COLS - (int)hy;
+        .                       unsigned char* e = ip + k * NETHACK_V3_ITEMF;
+  503,556 ( 0.04%)              e[0] = (unsigned char)(row & 0xff); e[1] = (unsigned char)((row >> 8) & 0xff);
+        .                       e[2] = (unsigned char)(signed char)dx; e[3] = (unsigned char)(signed char)dy;
+   41,963 ( 0.00%)              e[4] = 0; // oclass placeholder (item row already encodes type)
+  293,741 ( 0.02%)              e[5] = (unsigned char)(((dx == 0 && dy == 0) ? 1 : 0) | (row >= 454 ? 2 : 0));
+   83,926 ( 0.01%)              e[6] = 0; e[7] = 0;
+        .                   }
+        .               }
+        .               // topline
+   12,304 ( 0.00%)      unsigned char* mv = ((obs_t*)env->agents[0].observations) + NETHACK_OFF_MSG;
+   30,760 ( 0.00%)      size_t mlen = strnlen((const char*)env->message, NETHACK_MSG_LEN);
+   18,629 ( 0.00%)  => ???:0x000000000010a910 (783x)
+        .               memcpy(mv, env->message, mlen);
+   30,760 ( 0.00%)      if (mlen < (size_t)NETHACK_MSG_LEN) memset(mv + mlen, 0, NETHACK_MSG_LEN - mlen);
+        .           
+   24,608 ( 0.00%)      if (env->action_mask != NULL) nethack_compute_mask(env);
+   67,672 ( 0.00%)  }
+1,185,813,504 (87.20%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:step_game (775x)
+        .           
+        .           // logging
+        .           
+        .           static void nethack_add_log(Nethack* env, int how) { // how: nle how_done, -1 = truncated
+      156 ( 0.00%)      for (int v = 0; v < NETHACK_NUM_ACTIONS; v++)
+      208 ( 0.00%)          env->log.verb_uses[v] += (float)env->stats.verb_uses[v];
+        .               // perf is normalized depth progress (Gehennom ~50); score stays raw BL_SCORE.
+       14 ( 0.00%)      env->log.perf += (float)env->stats.max_depth / 50.0f;
+        8 ( 0.00%)      env->log.score += (float)env->prev_score;
+       16 ( 0.00%)      env->log.valid_moves += (float)env->stats.valid_moves;
+        4 ( 0.00%)      env->log.illegal_actions += (float)env->stats.illegal_actions;
+        4 ( 0.00%)      env->log.new_tiles += (float)env->stats.new_tiles;
+        .               env->log.max_depth += (float)env->stats.max_depth;
+        8 ( 0.00%)      env->log.floors += (float)env->stats.floors;
+       12 ( 0.00%)      env->log.depth_5 += env->stats.max_depth >= 5 ? 1.0f : 0.0f;
+       20 ( 0.00%)      env->log.depth_10 += env->stats.max_depth >= 10 ? 1.0f : 0.0f;
+       12 ( 0.00%)      env->log.depth_15 += env->stats.max_depth >= 15 ? 1.0f : 0.0f;
+       14 ( 0.00%)      env->log.mines_depth += (float)__builtin_popcountll(env->stats.floors_bits[2]);
+       42 ( 0.00%)  => ???:__popcountdi2 (2x)
+       12 ( 0.00%)      env->log.sokoban_depth += (float)__builtin_popcountll(env->stats.floors_bits[4]);
+       42 ( 0.00%)  => ???:__popcountdi2 (2x)
+        6 ( 0.00%)      env->log.enhances += (float)env->stats.enhances;
+        6 ( 0.00%)      env->log.floor_eats += (float)env->stats.floor_eats;
+        6 ( 0.00%)      env->log.reads_scroll += (float)env->stats.reads_scroll;
+        8 ( 0.00%)      env->log.reads_book += (float)env->stats.reads_book;
+       12 ( 0.00%)      env->log.sells += (float)env->stats.sells;
+        4 ( 0.00%)      env->log.buys += (float)env->stats.buys;
+        8 ( 0.00%)      env->log.role_ix += (float)env->role_idx;
+       14 ( 0.00%)      env->log.discoveries += (float)(nle_discoveries(env->ctx) - env->disc0);
+    4,216 ( 0.00%)  => ???:0x000000000010a6d0 (2x)
+        8 ( 0.00%)      env->log.min_ac += (float)env->stats.min_ac;
+        8 ( 0.00%)      env->log.burdened_frac += env->stats.length > 0
+       18 ( 0.00%)          ? (float)env->stats.burdened_steps / (float)env->stats.length : 0.0f;
+       16 ( 0.00%)      env->log.game_time += (float)env->prev_time;
+        4 ( 0.00%)      env->log.max_xp_level += (float)env->stats.max_xp;
+        8 ( 0.00%)      env->log.gold += (float)(env->stats.last_gold - env->start_gold);
+        4 ( 0.00%)      env->log.exp_points += (float)env->stats.last_exp;
+       10 ( 0.00%)      env->log.episode_return += env->stats.ret;
+        .               env->log.episode_length += env->stats.length;
+        6 ( 0.00%)      if (how == -1) env->log.truncated += 1.0f;
+        8 ( 0.00%)      else if (how == 0) env->log.death_combat += 1.0f;
+        .               else if (how == 3) env->log.death_starved += 1.0f;
+        .               else env->log.death_other += 1.0f;
+        4 ( 0.00%)      if (how >= 0 && env->stats.last_hunger >= NETHACK_HUNGER_WEAK)
+        .                   env->log.death_weak += 1.0f;
+        .               if (how == 0)
+        8 ( 0.00%)          env->log.death_mon_level += (float)env->internal[NETHACK_INTERNAL_KILLER_MLEV];
+       10 ( 0.00%)      if (how >= 0) env->log.death_ac += (float)env->stats.last_ac;
+        4 ( 0.00%)      env->log.n += 1.0f;
+        .           
+        .           }
+        .           
+      110 ( 0.00%)  static void nethack_do_reset(Nethack* env) {
+       30 ( 0.00%)      if (env->ctx != NULL) {
+        2 ( 0.00%)          nle_end(env->ctx);
+   27,780 ( 0.00%)  => ???:0x000000000010a840 (2x)
+        2 ( 0.00%)          env->ctx = NULL;
+        .               }
+        .           
+        .               nethack_bind_obs(env);
+       10 ( 0.00%)      env->obs.how_done = -2; // only really_done() sets it
+        .           
+        .               // discovered types render as true glyphs on the map (engine opt-in)
+       40 ( 0.00%)      setenv("NLE_TRUE_GLYPHS", "1", 1);
+   50,389 ( 0.00%)  => ???:0x000000000010a8f0 (10x)
+        .           
+        .               // seed advance
+       50 ( 0.00%)      env->seed = env->seed * 6364136223846793005UL + 1442695040888963407UL;
+        .               // engine-random character per reset; identity read back after start.
+        .               // Demo NH_ROLE sets nethack_options_override; keep it across deaths.
+        .               if (nethack_options_override) {
+        .                   snprintf(env->settings.options, sizeof(env->settings.options), "@%s",
+        .                            nethack_rc_path(nethack_options_override));
+       40 ( 0.00%)      } else if (env->multi_role != 0.0f) {
+        .                   char rcp[512];
+        .                   snprintf(env->settings.options, sizeof(env->settings.options), "@%s",
+        .                            nethack_rc_path_opts(rcp, sizeof(rcp),
+        .                                "name:Agent,role:random,race:random,gender:random,"
+        .                                "align:random," NETHACK_OPTIONS_TAIL "!status_updates"));
+        .               }
+       30 ( 0.00%)      env->settings.initial_seeds.seeds[0] = env->seed;
+       30 ( 0.00%)      env->settings.initial_seeds.seeds[1] = env->seed ^ 0x9E3779B97F4A7C15UL;
+       10 ( 0.00%)      env->settings.initial_seeds.use_init_seeds = true;
+       10 ( 0.00%)      env->settings.time_seed = env->seed;
+       10 ( 0.00%)      env->settings.time_seed_is_set = true;
+       50 ( 0.00%)      env->ctx = nle_start(&env->obs, NULL, &env->settings);
+  694,466 ( 0.05%)  => ???:0x000000000010aa00 (10x)
+        .           
+       20 ( 0.00%)      nethack_drain_prompts(env);
+    2,167 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_drain_prompts (9x)
+        .               {
+       40 ( 0.00%)          int r = 0, rc = 0, g = 0, a = 0;
+       60 ( 0.00%)          nle_identity(env->ctx, &r, &rc, &g, &a);
+      180 ( 0.00%)  => ???:0x000000000010a5d0 (9x)
+       50 ( 0.00%)          env->role_idx = (r >= 0 && r < 13) ? r : 0;
+       40 ( 0.00%)          env->race_idx = (rc >= 0 && rc < 5) ? rc : 0;
+       40 ( 0.00%)          env->gend_idx = (g == 1) ? 1 : 0;
+        .               }
+       30 ( 0.00%)      nle_obs_refresh(env->ctx, &env->obs); // full fill: prev_* seeds read blstats
+   52,514 ( 0.00%)  => ???:0x000000000010a990 (9x)
+        .               if (nethack_msg_tap) nethack_msg_tap(env); // welcome arrives pre-step
+        .           
+       10 ( 0.00%)      env->prev_score = 0;
+       20 ( 0.00%)      env->prev_exp = env->blstats[NLE_BL_EXP];
+       20 ( 0.00%)      env->start_gold = env->blstats[NLE_BL_GOLD];
+       10 ( 0.00%)      env->prev_gold = 0; // clamped net gold
+       20 ( 0.00%)      env->prev_depth = (int)env->blstats[NLE_BL_DEPTH];
+       20 ( 0.00%)      env->prev_time = env->blstats[NLE_BL_TIME];
+       10 ( 0.00%)      env->prev_action = -1;
+        .               short scratch[2 * NETHACK_PATH_MAX]; // discard boot-walk residue
+       40 ( 0.00%)      nle_path_drain(env->ctx, scratch, NETHACK_PATH_MAX);
+       99 ( 0.00%)  => ???:0x000000000010a730 (9x)
+       40 ( 0.00%)      env->prev_floor = (unsigned)(env->blstats[NLE_BL_DNUM] << 8 | env->blstats[NLE_BL_DLEVEL]);
+       30 ( 0.00%)      env->disc0 = nle_discoveries(env->ctx);
+   18,972 ( 0.00%)  => ???:0x000000000010a6d0 (9x)
+       10 ( 0.00%)      env->engid_tested = 0;
+       10 ( 0.00%)      env->enh_ready = 0;
+       20 ( 0.00%)      env->cant_hold = 0; env->cant_hold_t = 0;
+       20 ( 0.00%)      env->zt_n = 0; env->prev_dir = -1;
+        .               memset(&env->stats, 0, sizeof(env->stats));
+        .               memset(env->obj_mem, 0, sizeof(env->obj_mem));
+       10 ( 0.00%)      env->terr_floor = 0xFFFFFFFFu;
+       20 ( 0.00%)      env->stats.max_depth = env->prev_depth;
+       20 ( 0.00%)      env->stats.max_xp = (int)env->blstats[NLE_BL_XP];
+       30 ( 0.00%)      env->stats.min_ac = (int)env->blstats[NLE_BL_AC];
+        .               env->stats.last_ac = (int)env->blstats[NLE_BL_AC];
+       20 ( 0.00%)      nethack_pack_obs(env);
+  275,477 ( 0.02%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_pack_obs (8x)
+   32,689 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_pack_obs'2 (1x)
+      110 ( 0.00%)  }
+      788 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:puf_step (8x)
+      728 ( 0.00%)  => /puffertank/experiments/nethack-scheduler-20261012/replay_sched.c:step_game'2 (1x)
+        .           
+        .           void puf_reset(Nethack* env) {
+        8 ( 0.00%)      env->pending_reset = 1;
+        .           }
+        .           
+        .           // reward
+        .           
+        .           static void nethack_update_stats(Nethack* env) {
+   12,292 ( 0.00%)      if (env->blstats[NLE_BL_CAP] > 0) env->stats.burdened_steps++;
+   12,284 ( 0.00%)      env->stats.last_hunger = (int)env->blstats[NLE_BL_HUNGER];
+   12,284 ( 0.00%)      env->prev_score = env->blstats[NLE_BL_SCORE];
+   12,284 ( 0.00%)      env->prev_time = env->blstats[NLE_BL_TIME];
+   12,284 ( 0.00%)      env->prev_depth = (int)env->blstats[NLE_BL_DEPTH];
+        .           }
+        .           
+        .           // First-visit scout claim, keyed by (dnum, dlevel): a tile pays once per
+        .           // episode, so revisiting cannot farm it.
+   12,781 ( 0.00%)  static float nethack_tile_claim(Nethack* env, long dn, long dl, long px, long py) {
+   71,210 ( 0.01%)      if (px < 0 || px >= NH_COLS || py < 0 || py >= NH_ROWS) return 0.0f;
+   63,905 ( 0.00%)      if (dn < 0 || dn > 15 || dl < 1 || dl > 64) return 0.0f;
+   25,562 ( 0.00%)      unsigned short key = (unsigned short)(dn << 8 | dl);
+        .               int d = -1;
+   85,604 ( 0.01%)      for (int i = 0; i < env->stats.n_visited_floors; i++) {
+   39,988 ( 0.00%)          if (env->stats.visited_key[i] != key) continue;
+        .                   d = i;
+        .                   break;
+        .               }
+   12,761 ( 0.00%)      if (d < 0) {
+       20 ( 0.00%)          if (env->stats.n_visited_floors >= NETHACK_MAX_DEPTH) return 0.0f;
+       40 ( 0.00%)          d = env->stats.n_visited_floors++;
+       40 ( 0.00%)          env->stats.visited_key[d] = key;
+        .               }
+   25,562 ( 0.00%)      int idx = (int)py * NH_COLS + (int)px;
+   76,686 ( 0.01%)      if (env->stats.visited[d][idx]) return 0.0f;
+    2,738 ( 0.00%)      env->stats.visited[d][idx] = 1;
+    2,738 ( 0.00%)      return 1.0f;
+    2,738 ( 0.00%)  }
+        .           
+   67,584 ( 0.00%)  static float nethack_reward(Nethack* env) {
+        .               // death payout
+   18,436 ( 0.00%)      if (env->obs.done) return env->death_penalty;
+    6,142 ( 0.00%)      long score_before = env->prev_score; // update_stats overwrites prev_score below
+        .               nethack_update_stats(env);
+        .           
+        .               int depth = (int)env->blstats[NLE_BL_DEPTH];
+        .           
+        .               // term order is the record run's summation order: exp gold descent xp
+        .               // scout ac. Float adds are order-sensitive; reordering breaks bit repro.
+    6,142 ( 0.00%)      float r = 0.0f;
+        .           
+        .               // exp, gains only
+    6,142 ( 0.00%)      long exp = env->blstats[NLE_BL_EXP];
+   18,426 ( 0.00%)      if (exp > env->prev_exp)
+    3,906 ( 0.00%)          r += env->exp_coef * (float)(exp - env->prev_exp);
+   24,568 ( 0.00%)      env->prev_exp = exp;
+        .           
+        .               // gold, net of start
+   12,284 ( 0.00%)      long g = env->blstats[NLE_BL_GOLD] - env->start_gold;
+   12,284 ( 0.00%)      if (g < 0) g = 0;
+   36,852 ( 0.00%)      r += env->gold_coef * (float)(g - env->prev_gold);
+        .               env->prev_gold = g;
+        .           
+        .               // floor: pays once per new unique (dnum, dlevel) floor entered (branches count)
+   12,284 ( 0.00%)      long dn = env->blstats[NLE_BL_DNUM], dl = env->blstats[NLE_BL_DLEVEL];
+   30,710 ( 0.00%)      if (dn >= 0 && dn < 16 && dl >= 1 && dl <= 64) {
+   18,426 ( 0.00%)          unsigned long long fb = 1ULL << (dl - 1);
+   24,568 ( 0.00%)          if (!(env->stats.floors_bits[dn] & fb)) {
+       40 ( 0.00%)              env->stats.floors_bits[dn] |= fb;
+       20 ( 0.00%)              env->stats.floors++;
+       40 ( 0.00%)              r += env->floor_coef;
+        .                   }
+        .               }
+        .           
+        .               // descent pays per max-depth delta
+   18,426 ( 0.00%)      if (depth > env->stats.max_depth) {
+       60 ( 0.00%)          r += env->descent_coef * (float)(depth - env->stats.max_depth);
+       10 ( 0.00%)          env->stats.max_depth = depth;
+        .               }
+        .           
+        .               // xp level, max only
+    6,142 ( 0.00%)      int xp = (int)env->blstats[NLE_BL_XP];
+   18,426 ( 0.00%)      if (xp > env->stats.max_xp) {
+      204 ( 0.00%)          r += env->xp_coef * (float)(xp - env->stats.max_xp);
+       34 ( 0.00%)          env->stats.max_xp = xp;
+        .               }
+        .           
+        .               // in-game score delta (the eval metric itself); coef 0 adds exactly 0.0f
+   36,852 ( 0.00%)      r += env->score_coef * (float)(env->blstats[NLE_BL_SCORE] - score_before);
+        .           
+        .               // scout: pay every tile walked this step; a rush resolves many moves in
+        .               // one nle_step, so drain the engine's path rather than crediting only
+        .               // where the hero stopped. A mid-step level change (trapdoor, hole)
+        .               // leaves path coords from the old floor -- skip those.
+   18,426 ( 0.00%)      unsigned floor = (unsigned)(dn << 8 | dl);
+        .               short path[2 * NETHACK_PATH_MAX];
+   30,710 ( 0.00%)      int n = nle_path_drain(env->ctx, path, NETHACK_PATH_MAX);
+  143,093 ( 0.01%)  => ???:0x000000000010a730 (6,142x)
+   12,284 ( 0.00%)      if (floor != env->prev_floor) n = 0;
+       44 ( 0.00%)      env->prev_floor = floor;
+        .           
+    3,390 ( 0.00%)      float fresh = 0.0f;
+        .               int touched = 0;
+   40,588 ( 0.00%)      for (int i = 0; i < n; i++) {
+   50,004 ( 0.00%)          float c = nethack_tile_claim(env, dn, dl, path[2 * i], path[2 * i + 1]);
+  274,302 ( 0.02%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_tile_claim (8,334x)
+    8,334 ( 0.00%)          fresh += c;
+   36,726 ( 0.00%)          touched += (c > 0.0f);
+        .               }
+        .               // no usable path: non-move verbs or never left the tile
+    8,806 ( 0.00%)      if (!n) {
+   26,682 ( 0.00%)          float c = nethack_tile_claim(env, dn, dl,
+  148,071 ( 0.01%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_tile_claim (4,447x)
+        .                                 env->blstats[NLE_BL_X], env->blstats[NLE_BL_Y]);
+   13,341 ( 0.00%)          fresh += c;
+   13,341 ( 0.00%)          touched += (c > 0.0f);
+        .               }
+        .           
+   18,426 ( 0.00%)      if (fresh > 0.0f) {
+    2,997 ( 0.00%)          r += env->scout_coef * fresh;
+    1,998 ( 0.00%)          env->stats.new_tiles += touched;
+        .               }
+        .           
+        .               long ac = env->blstats[NLE_BL_AC];
+   12,284 ( 0.00%)      env->stats.last_ac = (int)ac;
+   12,293 ( 0.00%)      if ((int)ac < env->stats.min_ac) env->stats.min_ac = (int)ac;
+   18,426 ( 0.00%)      if (!env->obs.done) { // death-step blstats are torn down
+    6,142 ( 0.00%)          env->stats.last_gold = env->blstats[NLE_BL_GOLD];
+        .                   env->stats.last_exp = env->blstats[NLE_BL_EXP];
+   18,426 ( 0.00%)          env->stats.last_xlvl = (int)env->blstats[NLE_BL_XP];
+   55,278 ( 0.00%)          env->stats.last_hp = (int)env->blstats[NLE_BL_HP];
+        .                   env->stats.last_hpmax = (int)env->blstats[NLE_BL_HPMAX];
+        .                   env->stats.last_depth = (int)env->blstats[NLE_BL_DEPTH];
+        .               }
+        .           
+        .               return r;
+   73,728 ( 0.01%)  }
+        .           
+        .           // stepping
+        .           
+        .           static void nethack_execute(Nethack* env, int verb, int slot, int dirkey, int* bad_pick) {
+        .               Stats* st = &env->stats;
+   20,587 ( 0.00%)      switch (verb) {
+        .               case NETHACK_ACT_MOVE:
+        .                   nethack_send_key(env, dirkey);
+        .                   break;
+        .               case NETHACK_ACT_RUN:
+    1,659 ( 0.00%)          st->verb_uses[verb]++;
+    4,353 ( 0.00%)          nethack_send_key(env, dirkey - 32); // uppercase = run
+        .                   break;
+        .               case NETHACK_ACT_DOWN:
+        .                   nethack_send_key(env, '>');
+        .                   break;
+        .               case NETHACK_ACT_UP:
+        .                   nethack_send_key(env, '<');
+        .                   break;
+        .               case NETHACK_ACT_KICK:
+-- line 1034 ----------------------------------------
+-- line 1035 ----------------------------------------
+        .                   nethack_send_key(env, 4); // ^D
+        .                   nethack_answer_direction(env, dirkey);
+        .                   break;
+        .               case NETHACK_ACT_SEARCH:
+        .                   st->verb_uses[verb]++;
+        .                   nethack_send_key(env, 's');
+        .                   break;
+        .               case NETHACK_ACT_ELBERETH:
+       27 ( 0.00%)          st->verb_uses[verb]++;
+        .                   nethack_do_elbereth(env);
+        .                   break;
+        .               case NETHACK_ACT_SEARCH20:
+    2,545 ( 0.00%)          st->verb_uses[verb]++;
+        .                   nethack_send_key(env, '2');
+        .                   nethack_send_key(env, '0');
+        .                   nethack_send_key(env, 's');
+        .                   break;
+        .               case NETHACK_ACT_PICKUP: {
+      336 ( 0.00%)          int purchase = nle_shop_price(env->ctx) > 0; // 0 = own/no-charge pile, nothing to pay
+    5,282 ( 0.00%)  => ???:0x000000000010a810 (107x)
+      112 ( 0.00%)          st->verb_uses[verb]++;
+        .                   nethack_send_key(env, ',');
+      224 ( 0.00%)          nethack_answer_menu(env);
+    3,424 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_answer_menu (109x)
+        .                   // shop pickup bills you; settle it now (the mask guarantees we can)
+      224 ( 0.00%)          if (purchase && !env->obs.done) {
+        .                       nethack_send_key(env, 'p');
+        .                       st->buys++;
+        .                   }
+        .                   break;
+        .               }
+        .               case NETHACK_ACT_PRAY:
+       26 ( 0.00%)          st->verb_uses[verb]++;
+        .                   nethack_send_key(env, 0x80 | 'p');
+        .                   break;
+        .               case NETHACK_ACT_WEAR:
+        .                   nethack_wear_takeoff_conflict(env, slot);
+      100 ( 0.00%)          nethack_item_use(env, 'W', "want to wear", NULL, slot, &st->verb_uses[verb], bad_pick);
+       84 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_item_use'2 (1x)
+      168 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_item_use (2x)
+       30 ( 0.00%)          break;
+        .               case NETHACK_ACT_EAT:
+    1,400 ( 0.00%)          nethack_item_use(env, 'e', "want to eat", "eat it", slot, &st->verb_uses[verb], bad_pick);
+   11,340 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_item_use (135x)
+      420 ( 0.00%)          break;
+        .               case NETHACK_ACT_QUAFF:
+       20 ( 0.00%)          nethack_item_use(env, 'q', "want to drink", "rink from the", slot, &st->verb_uses[verb], bad_pick);
+      168 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_item_use (2x)
+        6 ( 0.00%)          break;
+        .               case NETHACK_ACT_THROW:
+    3,051 ( 0.00%)          if (nethack_item_use(env, 't', "want to throw", NULL, slot, &st->verb_uses[verb], bad_pick))
+        .                       nethack_answer_direction(env, dirkey);
+        .                   break;
+        .               case NETHACK_ACT_ZAP:
+    2,356 ( 0.00%)          if (nethack_item_use(env, 'z', "want to zap", NULL, slot, &st->verb_uses[verb], bad_pick))
+   29,232 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_item_use (348x)
+        .                       nethack_answer_direction(env, dirkey);
+        .                   break;
+        .               case NETHACK_ACT_TAKEOFF:
+       10 ( 0.00%)          nethack_item_use(env, 'T', "take off", NULL, slot, &st->verb_uses[verb], bad_pick);
+       84 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_item_use (1x)
+        3 ( 0.00%)          break;
+        .               case NETHACK_ACT_PUTON:
+        .                   nethack_item_use(env, 'P', "put on", NULL, slot, &st->verb_uses[verb], bad_pick);
+        .                   break;
+        .               case NETHACK_ACT_REMOVE:
+        .                   nethack_item_use(env, 'R', "remove", NULL, slot, &st->verb_uses[verb], bad_pick);
+        .                   break;
+        .               case NETHACK_ACT_WIELD:
+        .                   nethack_verb_wield(env, slot, bad_pick);
+-- line 1096 ----------------------------------------
+-- line 1137 ----------------------------------------
+        .                   break;
+        .               case NETHACK_ACT_ENGRAVE_ID:
+        .                   st->verb_uses[verb]++;
+        .                   nethack_do_engrave_id(env);
+        .                   break;
+        .               case NETHACK_ACT_CAST: {
+        .                   // Z, then 'a' = first known spell; directional spells then prompt and
+        .                   // take the (ZAP-masked) direction, self-spells resolve immediately
+       53 ( 0.00%)          st->verb_uses[verb]++;
+        .                   nethack_send_key(env, 'Z');
+        .                   // proceed only if the spell chooser menu actually opened (xwait):
+        .                   // a zero-turn refusal (unmirrored rejectcasting case) leaves the
+        .                   // main prompt, where 'a' would open an apply prompt instead
+      318 ( 0.00%)          if (!env->obs.done && env->misc[NETHACK_MISC_XWAIT]) {
+    6,147 ( 0.00%)              nethack_send_key(env, 'a' + (slot >= 0 && slot < NETHACK_SPELL_SLOTS ? slot : 0));
+        .                       nethack_answer_direction(env, dirkey);
+        .                   }
+        .                   break;
+        .               }
+        .               case NETHACK_ACT_DROP:
+       80 ( 0.00%)          nethack_item_use(env, 'd', "drop", NULL, slot, &st->verb_uses[verb], bad_pick);
+      672 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_item_use (8x)
+       24 ( 0.00%)          break;
+        .               }
+        .           }
+        .           
+        .           // compute_mask writes through this flat alias of agents[0].action_mask
+        .           static void nethack_sync_buffers(Nethack* env) {
+   24,576 ( 0.00%)      env->action_mask = env->agents[0].action_mask;
+   18,440 ( 0.00%)      if (env->agents[0].observations != env->obs_bound) nethack_bind_glyphs(env);
+      144 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_bind_glyphs (8x)
+        .           }
+        .           
+   55,296 ( 0.00%)  void puf_step(Nethack* env) {
+        .               nethack_sync_buffers(env); // agent pointers are re-dealt between epochs
+   18,432 ( 0.00%)      if (env->pending_reset) {
+        8 ( 0.00%)          env->pending_reset = 0;
+       24 ( 0.00%)          nethack_do_reset(env);
+  542,931 ( 0.04%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_do_reset (8x)
+        .               }
+        .           
+   12,288 ( 0.00%)      int verb = (int)env->agents[0].actions[0];
+   24,576 ( 0.00%)      int head = NETHACK_VERBS[verb].head;
+   20,612 ( 0.00%)      int slot = (head >= 0) ? (int)env->agents[0].actions[1 + head] : 0;
+   12,394 ( 0.00%)      if (verb == NETHACK_ACT_CAST) slot = (int)env->agents[0].actions[19];
+        .               int dh = nethack_dir_head(verb);
+   12,812 ( 0.00%)      int dirkey = NETHACK_DIR_KEYS[dh >= 0 ? (int)env->agents[0].actions[13 + dh] : 0];
+        .           
+    6,144 ( 0.00%)      long time_before = env->blstats[NLE_BL_TIME];
+   36,864 ( 0.00%)      long hx0 = env->blstats[NLE_BL_X], hy0 = env->blstats[NLE_BL_Y], hd0 = env->blstats[NLE_BL_DEPTH];
+    6,167 ( 0.00%)      int bad_pick = 0;
+        .               nethack_execute(env, verb, slot, dirkey, &bad_pick);
+        .           
+    6,144 ( 0.00%)      env->prev_action = verb;
+   31,244 ( 0.00%)      env->prev_dir = dh >= 0 ? (int)env->agents[0].actions[13 + dh] : -1;
+   12,288 ( 0.00%)      nethack_track_cant_hold(env); // before prompt handling blanks the message
+  499,886 ( 0.04%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_track_cant_hold (1,157x)
+        .               nethack_handle_prompts(env);
+   42,961 ( 0.00%)      if (!env->obs.done) nle_obs_refresh(env->ctx, &env->obs);
+3,484,441 ( 0.26%)  => ???:0x000000000010a990 (1,098x)
+        .               // zero-time memory: no clock, no move = refused, whatever the message said
+   37,899 ( 0.00%)      if (!env->obs.done && env->blstats[NLE_BL_TIME] == time_before && env->blstats[NLE_BL_X] == hx0
+    1,638 ( 0.00%)          && env->blstats[NLE_BL_Y] == hy0 && env->blstats[NLE_BL_DEPTH] == hd0) {
+    2,612 ( 0.00%)          if (!env->zt_n || !nethack_zt_world_same(env)) { env->zt_n = 0; env->zt_x = hx0; env->zt_y = hy0; env->zt_d = hd0; env->zt_t = time_before; }
+        .                   int dup = 0;
+      556 ( 0.00%)          for (int k = 0; k < env->zt_n; k++)
+       17 ( 0.00%)              if (env->zt_verb[k] == verb && env->zt_slot[k] == slot && env->zt_dir[k] == env->prev_dir) { dup = 1; env->zt_cnt[k]++; }
+    2,384 ( 0.00%)          if (!dup && env->zt_n < 32) { env->zt_verb[env->zt_n] = verb; env->zt_slot[env->zt_n] = slot; env->zt_dir[env->zt_n] = env->prev_dir; env->zt_cnt[env->zt_n] = 1; env->zt_n++; }
+    5,880 ( 0.00%)      } else env->zt_n = 0;
+        .               nethack_auto_enhance(env);
+        .           
+   18,432 ( 0.00%)      if (bad_pick) env->stats.illegal_actions++;
+   18,220 ( 0.00%)      if (env->blstats[NLE_BL_TIME] > time_before) env->stats.valid_moves++;
+    6,144 ( 0.00%)      env->stats.length++;
+        .           
+   12,288 ( 0.00%)      float reward = nethack_reward(env);
+  268,770 ( 0.02%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_reward (1,098x)
+   12,288 ( 0.00%)      env->agents[0].rewards[0] = reward;
+   12,288 ( 0.00%)      env->stats.ret += reward;
+        .           
+   30,716 ( 0.00%)      int done = env->obs.done || env->stats.length >= NETHACK_MAX_EPISODE_STEPS;
+   12,290 ( 0.00%)      env->agents[0].terminals[0] = done ? 1.0f : 0.0f; // truncation reported as terminal too
+        .               if (done) {
+        4 ( 0.00%)          nethack_add_log(env, env->obs.done ? env->obs.how_done : -1);
+        .                   // eager same-thread reset: the terminal step returns the fresh obs
+       10 ( 0.00%)          nethack_do_reset(env);
+2,016,114 ( 0.15%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_do_reset (2x)
+        .               } else {
+   30,710 ( 0.00%)          nethack_pack_obs(env);
+1,198,487,978 (88.13%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_pack_obs (775x)
+6,148,851 ( 0.45%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_pack_obs'2 (323x)
+        .               }
+   43,008 ( 0.00%)  }
+        .           
+        .           void puf_close(Nethack* env) {
+       24 ( 0.00%)      if (env->ctx != NULL) {
+        8 ( 0.00%)          nle_end(env->ctx);
+  785,385 ( 0.06%)  => ???:0x000000000010a840 (8x)
+        8 ( 0.00%)          env->ctx = NULL;
+        .               }
+        8 ( 0.00%)      nethack_rm_vardir(env->vardir);
+        8 ( 0.00%)      env->vardir[0] = '\0';
+        .           }
+        .           
+        .           void puf_render(Nethack* env) {
+        .               if (!nethack_want_chars) { nethack_want_chars = 1; env->obs.chars = env->chars; } // grid fills from the next step
+        .               printf("\x1b[H\x1b[2J");
+        .               for (int r = 0; r < NH_ROWS; r++) {
+        .                   for (int c = 0; c < NH_COLS; c++) {
+        .                       unsigned char ch = env->chars[r * NH_COLS + c];
+-- line 1236 ----------------------------------------
+-- line 1244 ----------------------------------------
+        .                      env->blstats[NLE_BL_SCORE], env->blstats[NLE_BL_TIME]);
+        .               if (env->n_spells > 0)
+        .                   printf("Sp: id%d L%d fail%d%%  x%d\n", env->spell_ids[0],
+        .                          env->spell_levs[0], env->spell_fails[0], env->n_spells);
+        .               printf("Msg: %.*s\n", NLE_MESSAGE_SIZE, env->message);
+        .               fflush(stdout);
+        .           }
+        .           
+       96 ( 0.00%)  void puf_init(Env* env, Dict* kwargs) {
+        8 ( 0.00%)      env->num_agents = 1;
+        8 ( 0.00%)      env->agents[0].policy = 0;
+        8 ( 0.00%)      init(env);
+  526,617 ( 0.04%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:init (8x)
+       40 ( 0.00%)      env->gold_coef = dict_get(kwargs, "gold_coef");
+       40 ( 0.00%)      env->score_coef = dict_get(kwargs, "score_coef");
+       40 ( 0.00%)      env->exp_coef = dict_get(kwargs, "exp_coef");
+       40 ( 0.00%)      env->descent_coef = dict_get(kwargs, "descent_coef");
+       40 ( 0.00%)      env->floor_coef = dict_get(kwargs, "floor_coef");
+       40 ( 0.00%)      env->scout_coef = dict_get(kwargs, "scout_coef");
+       32 ( 0.00%)      env->xp_coef = dict_get(kwargs, "xp_coef");
+       32 ( 0.00%)      env->death_penalty = dict_get(kwargs, "death_penalty");
+       32 ( 0.00%)      env->mask_search20 = dict_get(kwargs, "mask_search20");
+       32 ( 0.00%)      env->mask_run = dict_get(kwargs, "mask_run");
+       24 ( 0.00%)      env->multi_role = dict_get(kwargs, "multi_role");
+       64 ( 0.00%)  }
+        .           
+        .           // Export order: outcomes first (score/depth/reaches/deaths), then action
+        .           // stats, then per-step diagnostics. Dict insertion order is what the
+        .           // dashboard/CSV see.
+        .           void puf_log(Log* log, Dict* out) {
+        .               dict_set(out, "perf", log->perf);
+        .               dict_set(out, "score", log->score);
+        .               dict_set(out, "episode_return", log->episode_return);
+-- line 1275 ----------------------------------------
+
+        2 ( 0.00%)  <counts for unidentified lines in /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h>
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /usr/include/x86_64-linux-gnu/bits/string_fortified.h
+--------------------------------------------------------------------------------
+Ir                 
+
+-- line 21 ----------------------------------------
+        .           #ifndef _STRING_H
+        .           # error "Never use <bits/string_fortified.h> directly; include <string.h> instead."
+        .           #endif
+        .           
+        .           __fortify_function void *
+        .           __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,
+        .           	       size_t __len))
+        .           {
+  897,894 ( 0.07%)    return __builtin___memcpy_chk (__dest, __src, __len,
+        .           				 __glibc_objsize0 (__dest));
+        .           }
+        .           
+        .           __fortify_function void *
+        .           __NTH (memmove (void *__dest, const void *__src, size_t __len))
+        .           {
+        .             return __builtin___memmove_chk (__dest, __src, __len,
+        .           				  __glibc_objsize0 (__dest));
+-- line 37 ----------------------------------------
+-- line 51 ----------------------------------------
+        .           /* The first two tests here help to catch a somewhat common problem
+        .              where the second and third parameter are transposed.  This is
+        .              especially problematic if the intended fill value is zero.  In this
+        .              case no work is done at all.  We detect these problems by referring
+        .              non-existing functions.  */
+        .           __fortify_function void *
+        .           __NTH (memset (void *__dest, int __ch, size_t __len))
+        .           {
+1,082,282 ( 0.08%)    return __builtin___memset_chk (__dest, __ch, __len,
+  961,299 ( 0.07%)  => ???:0x000000000010a680 (9x)
+        .           				 __glibc_objsize0 (__dest));
+        .           }
+        .           
+        .           #ifdef __USE_MISC
+        .           # include <bits/strings_fortified.h>
+        .           
+        .           void __explicit_bzero_chk (void *__dest, size_t __len, size_t __destlen)
+        .             __THROW __nonnull ((1)) __fortified_attr_access (__write_only__, 1, 2);
+-- line 67 ----------------------------------------
+-- line 87 ----------------------------------------
+        .           }
+        .           #endif
+        .           
+        .           
+        .           __fortify_function char *
+        .           __NTH (strncpy (char *__restrict __dest, const char *__restrict __src,
+        .           		size_t __len))
+        .           {
+       44 ( 0.00%)    return __builtin___strncpy_chk (__dest, __src, __len,
+       58 ( 0.00%)  => ???:0x000000000010a670 (1x)
+        .           				  __glibc_objsize (__dest));
+        .           }
+        .           
+        .           #ifdef __USE_XOPEN2K8
+        .           # if __GNUC_PREREQ (4, 7) || __glibc_clang_prereq (2, 6)
+        .           __fortify_function char *
+        .           __NTH (stpncpy (char *__dest, const char *__src, size_t __n))
+        .           {
+-- line 103 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h
+--------------------------------------------------------------------------------
+Ir               
+
+-- line 3 ----------------------------------------
+      .           #pragma once
+      .           
+      .           // helpers
+      .           
+      .           // demo-only: sees the topline after every engine step (macros overwrite it
+      .           // many times per RL step); NULL in training
+      .           static void (*nethack_msg_tap)(Nethack* env);
+      .           
+    752 ( 0.00%)  static void nethack_engine_step(Nethack* env) {
+ 58,074 ( 0.00%)      env->ctx = nle_step(env->ctx, &env->obs);
+ 27,420 ( 0.00%)  => ???:0x000000000010a650 (457x)
+      .               if (nethack_msg_tap) nethack_msg_tap(env);
+  8,863 ( 0.00%)  }
+47,589,150 ( 3.50%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:puf_step (39x)
+5,560,898 ( 0.41%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:puf_step'2 (316x)
+      .           
+      .           static void nethack_send_key(Nethack* env, int key) {
+ 10,637 ( 0.00%)      env->obs.action = key;
+    752 ( 0.00%)      nethack_engine_step(env);
+ 20,865 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_engine_step (321x)
+  1,235 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_engine_step'2 (19x)
+    376 ( 0.00%)  }
+      .           
+      .           // message ends with '?': single-key prompts NLE doesn't expose via misc[]
+      .           static int nethack_msg_is_prompt(const Nethack* env) {
+      .               const unsigned char* m = env->message;
+ 26,828 ( 0.00%)      if (!m[0]) return 0;
+      .               int e = 0;
+596,056 ( 0.04%)      while (e < NLE_MESSAGE_SIZE && m[e]) e++;
+ 23,352 ( 0.00%)      while (e > 0 && m[e-1] == ' ') e--;
+ 15,568 ( 0.00%)      return e > 0 && m[e-1] == '?';
+ 12,288 ( 0.00%)  }
+      .           
+ 31,876 ( 0.00%)  static int nethack_msg_contains(const Nethack* env, const char* needle) {
+      .               char buf[NLE_MESSAGE_SIZE + 1];
+    142 ( 0.00%)      memcpy(buf, env->message, NLE_MESSAGE_SIZE);
+  8,573 ( 0.00%)      buf[NLE_MESSAGE_SIZE] = '\0';
+ 33,940 ( 0.00%)      return strstr(buf, needle) != NULL;
+504,476 ( 0.04%)  => ???:0x000000000010a590 (7,969x)
+ 47,814 ( 0.00%)  }
+      .           
+      .           // parse a getobj bracket list ("[b-d f or ?*]") into cand[]; returns count
+      .           static int nethack_parse_candidates(const Nethack* env, char* cand, int cap) {
+      .               const unsigned char* m = env->message;
+      .               int i = 0;
+100,076 ( 0.01%)      while (i < NLE_MESSAGE_SIZE && m[i] && m[i] != '[') i++;
+  2,305 ( 0.00%)      int n = 0;
+ 21,646 ( 0.00%)      for (i++; i < NLE_MESSAGE_SIZE && m[i] && n < cap; i++) {
+      .                   unsigned char c = m[i];
+  6,600 ( 0.00%)          if (n == 0 && (c == '-' || c == ' ' || c == '$')) continue; // leading "- " (allownone) / "$" (gold)
+  3,884 ( 0.00%)          if (c == '-' && i + 1 < NLE_MESSAGE_SIZE) { // compactified run
+  5,043 ( 0.00%)              for (char x = cand[n-1] + 1; x <= (char)m[i+1] && n < cap; x++)
+    757 ( 0.00%)                  cand[n++] = x;
+    167 ( 0.00%)              i++;
+      .                       continue;
+      .                   }
+ 15,169 ( 0.00%)          if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) cand[n++] = (char)c;
+      .                   else break; // ' ' before "or ?*", ']', '#', ...: end of the letter list
+      .               }
+      .               return n;
+      .           }
+      .           
+      .           // prompts
+      .           
+      .           // dismiss passive prompts (welcome, --More--, getline) until the game is back
+      .           // at the main command prompt
+  2,130 ( 0.00%)  static void nethack_drain_prompts(Nethack* env) {
+  4,506 ( 0.00%)      for (int i = 0; i < NETHACK_AUTODISMISS_MAX && !env->obs.done; i++) {
+      .                   // skill-advance notice can flash by mid-drain; flag the pending auto-claim
+  4,889 ( 0.00%)          if (nethack_msg_contains(env, "more confident in your")) env->enh_ready = 1;
+101,627 ( 0.01%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (870x)
+      .                   int yn = env->misc[NETHACK_MISC_YN];
+  8,019 ( 0.00%)          if (!yn && !env->misc[NETHACK_MISC_GETLIN] && !env->misc[NETHACK_MISC_XWAIT]) break;
+      .                   // alternate return/ESC: getpos-class pickers eat '\r' silently and
+      .                   // only ESC exits them (the t-frozen wedge class)
+  3,269 ( 0.00%)          env->obs.action = yn ? 27 : (i & 1 ? 27 : '\r');
+      .                   nethack_engine_step(env);
+      .               }
+  1,704 ( 0.00%)  }
+37,116,798 ( 2.73%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:puf_step (31x)
+11,307,459 ( 0.83%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:puf_step'2 (365x)
+585,474 ( 0.04%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_do_reset (4x)
+      .           
+      .           // Answer sub-prompts the agent can't: yn prompts commit 'y' EXCEPT the
+      .           // no-return climb (ends the game as ESCAPED) and peaceful-attack confirms
+      .           // (hostilizes Minetown); those and everything else get ESC. Returns 1 if a
+      .           // sub-prompt fired (the illegal_penalty condition).
+      .           static int nethack_handle_prompts(Nethack* env) {
+      .               // direction prompts stay live — the agent's next key answers them
+ 18,666 ( 0.00%)      if (env->misc[NETHACK_MISC_YN] && nethack_msg_contains(env, "n what direction"))
+  2,064 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (15x)
+      .                   return 0;
+      .               // the pray confirm is a deliberate action's own prompt: commit, no penalty
+    273 ( 0.00%)      int praying = env->misc[NETHACK_MISC_YN] && nethack_msg_contains(env, "to pray");
+  2,092 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (15x)
+      .               // ring PUTON asks "Which ring-finger, Right or Left?" ('y' is invalid and
+      .               // aborts): the action's own prompt — answer 'r', no penalty
+    156 ( 0.00%)      int ringq = env->misc[NETHACK_MISC_YN] && nethack_msg_contains(env, "ight or Left");
+  2,052 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (15x)
+ 12,340 ( 0.00%)      int illegal = !praying && !ringq && (env->misc[NETHACK_MISC_YN] || env->misc[NETHACK_MISC_GETLIN]
+ 24,420 ( 0.00%)                 || nethack_msg_is_prompt(env));
+142,764 ( 0.01%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_is_prompt (1,142x)
+      .               if (!illegal && !praying && !ringq) {
+ 19,127 ( 0.00%)          if (env->misc[NETHACK_MISC_XWAIT]) nethack_drain_prompts(env);
+ 18,454 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_drain_prompts (85x)
+    215 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_drain_prompts'2 (1x)
+      .                   return 0;
+      .               }
+    526 ( 0.00%)      for (int i = 0; i < NETHACK_AUTODISMISS_MAX && !env->obs.done; i++) {
+    604 ( 0.00%)          if (nethack_msg_contains(env, "more confident in your")) env->enh_ready = 1;
+  3,857 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (31x)
+      .                   int yn = env->misc[NETHACK_MISC_YN];
+    759 ( 0.00%)          if (!yn && !env->misc[NETHACK_MISC_GETLIN] && !env->misc[NETHACK_MISC_XWAIT]
+    156 ( 0.00%)              && !nethack_msg_is_prompt(env)) break;
+  1,859 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_is_prompt (11x)
+    172 ( 0.00%)          int ring = yn && nethack_msg_contains(env, "ight or Left");
+  2,052 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (15x)
+      .                   // commit 'y' ONLY to rendered y/n choices ("[yn"): getobj also polls
+      .                   // through yn_function but wants a LETTER — auto-'y' loops forever
+    293 ( 0.00%)          int commit = yn && nethack_msg_contains(env, "[yn")
+  1,907 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (15x)
+    190 ( 0.00%)                          && !nethack_msg_contains(env, "no return")
+  2,196 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (15x)
+    160 ( 0.00%)                          && !nethack_msg_contains(env, "eally attack");
+  1,344 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (9x)
+      .                   // shopkeeper's "<Shk> offers N gold pieces for your X.  Sell it?" is
+      .                   // ynaq-rendered, so commit already accepts it — count the conversion
+    160 ( 0.00%)          if (commit && nethack_msg_contains(env, "gold piece")
+  1,332 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (9x)
+      .                              && nethack_msg_contains(env, "Sell"))
+      .                       env->stats.sells++;
+    351 ( 0.00%)          env->obs.action = ring ? 'r' : (commit ? 'y' : 27);
+      .                   nethack_engine_step(env);
+      .               }
+    143 ( 0.00%)      if (illegal) env->stats.illegal_actions++;
+      .               return illegal;
+      .           }
+      .           
+      .           static void nethack_answer_direction(Nethack* env, int key) {
+  3,054 ( 0.00%)      if (!env->obs.done && env->misc[NETHACK_MISC_YN]
+  2,548 ( 0.00%)          && nethack_msg_contains(env, "n what direction"))
+ 63,664 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (346x)
+      .                   nethack_send_key(env, key);
+      .           }
+      .           
+      .           // selection menus (pickup pile, identify) yield inside xwaitforspace: answer
+      .           // select-all + RET; on a plain --More-- the '.' just bells and RET dismisses
+    560 ( 0.00%)  static void nethack_answer_menu(Nethack* env) {
+    939 ( 0.00%)      for (int r = 0; r < 2 && !env->obs.done && env->misc[NETHACK_MISC_XWAIT]; r++) {
+     32 ( 0.00%)          env->obs.action = '.';
+      .                   nethack_engine_step(env);
+    192 ( 0.00%)          if (env->obs.done || !env->misc[NETHACK_MISC_XWAIT]) break;
+     32 ( 0.00%)          env->obs.action = '\r';
+      .                   nethack_engine_step(env);
+      .               }
+    448 ( 0.00%)  }
+5,494,120 ( 0.40%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:puf_step (28x)
+ 32,539 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:puf_step'2 (1x)
+      .           
+      .           // verbs
+      .           
+      .           // item-verb flow: press the command, walk the engine's prompts, choose the
+      .           // slot's letter at the getobj gate (ESC + bad_pick if the engine refuses it);
+      .           // returns 1 on a successful use
+      .           static int nethack_item_use(Nethack* env, int cmd, const char* gate,
+  9,828 ( 0.00%)                              const char* floor, int slot, long* stat, int* bad_pick) {
+      .               nethack_send_key(env, cmd);
+  2,184 ( 0.00%)      for (int i = 0; i < NETHACK_AUTODISMISS_MAX && !env->obs.done; i++) {
+  1,638 ( 0.00%)          if (env->misc[NETHACK_MISC_XWAIT]) env->obs.action = ' ';
+  3,014 ( 0.00%)          else if (env->misc[NETHACK_MISC_YN] && floor && nethack_msg_contains(env, floor)) {
+      .                       // quaff: decline fountain/sink offers so the potion prompt follows;
+      .                       // eat: accept floor food except the cockatrice family
+    336 ( 0.00%)              if (cmd == 'q' || nethack_msg_contains(env, "atrice")) env->obs.action = 'n';
+      .                       else {
+    168 ( 0.00%)                  env->stats.floor_eats++;
+      .                           nethack_send_key(env, 'y');
+    252 ( 0.00%)                  if (stat) (*stat)++;
+  1,090 ( 0.00%)                  return 1;
+      .                       }
+      .                   }
+  2,307 ( 0.00%)          else if (env->misc[NETHACK_MISC_YN] && nethack_msg_contains(env, gate)) {
+      .                       char cand[52];
+      .                       int n = nethack_parse_candidates(env, cand, (int)sizeof(cand));
+    922 ( 0.00%)              char want = (char)env->inv_letters[slot];
+      .                       int ok = 0;
+  4,499 ( 0.00%)              for (int j = 0; j < n; j++) {
+  2,692 ( 0.00%)                  if (cand[j] != want) continue;
+      .                           ok = 1;
+      .                           break;
+      .                       }
+      .                       nethack_send_key(env, ok ? want : 27);
+      .                       if (!ok) {
+      .                           if (bad_pick) *bad_pick = 1;
+      .                           return 0;
+      .                       }
+  1,927 ( 0.00%)              if (stat) (*stat)++;
+      .                       return 1;
+      .                   }
+      1 ( 0.00%)          else return 0;
+      .                   nethack_engine_step(env);
+      .               }
+      .               return 0;
+  7,764 ( 0.00%)  }
+21,007,705 ( 1.54%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:puf_step (517x)
+311,010 ( 0.02%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:puf_step'2 (22x)
+ 17,676 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:puf_step (1x)
+    801 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:puf_step'2 (3x)
+      .           
+      .           // same-slot armor swap: take off the worn piece first so upgrading is atomic
+      .           static void nethack_wear_takeoff_conflict(Nethack* env, int slot) {
+     30 ( 0.00%)      int gn = env->inv_glyphs[slot] - NH_GLYPH_OBJ_OFF;
+     60 ( 0.00%)      int cat_new = (gn >= 0 && gn < NH_NUM_OBJECTS) ? nh_obj_armcat[gn] : -1;
+     20 ( 0.00%)      if (cat_new < 0) return;
+    740 ( 0.00%)      for (int i = 0; i < NETHACK_INV_SLOTS && env->inv_letters[i]; i++) {
+    290 ( 0.00%)          if (!(env->inv_state[i * NLE_INV_STATE_FIELDS + 5] & 1)) continue;
+     30 ( 0.00%)          int gi = env->inv_glyphs[i] - NH_GLYPH_OBJ_OFF;
+     60 ( 0.00%)          int cat_i = (gi >= 0 && gi < NH_NUM_OBJECTS) ? nh_obj_armcat[gi] : -1;
+     32 ( 0.00%)          if (cat_i == cat_new && i != slot) {
+      8 ( 0.00%)              nethack_item_use(env, 'T', "take off", NULL, i, NULL, NULL);
+     84 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_item_use (1x)
+      2 ( 0.00%)              return;
+      .                   }
+      .               }
+      .           }
+      .           
+      .           static void nethack_verb_wield(Nethack* env, int slot, int* bad_pick) {
+      .               // re-selecting the wielded weapon unwields (keeps WIELD reversible)
+    110 ( 0.00%)      if (env->inv_state[slot * NLE_INV_STATE_FIELDS + 5] & 2) {
+      .                   nethack_send_key(env, 'w');
+      .                   if (!env->obs.done && env->misc[NETHACK_MISC_YN]
+      .                       && nethack_msg_contains(env, "wield"))
+      .                       nethack_send_key(env, '-');
+      .                   env->stats.verb_uses[NETHACK_ACT_WIELD]++;
+      .                   return;
+      .               }
+    286 ( 0.00%)      nethack_item_use(env, 'w', "wield", NULL, slot, &env->stats.verb_uses[NETHACK_ACT_WIELD], bad_pick);
+  1,680 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_item_use (20x)
+      .           }
+      .           
+      .           // engrave Elbereth with a fingertip (E, '-', "Elbereth", RET) — the early
+      .           // game's strongest panic button; each stage gated on its expected prompt,
+      .           // aborts fall through to nethack_handle_prompts
+      .           static void nethack_do_elbereth(Nethack* env) {
+     27 ( 0.00%)      env->obs.action = 'E';
+      .               nethack_engine_step(env);
+    162 ( 0.00%)      if (env->obs.done || !env->misc[NETHACK_MISC_YN]
+    135 ( 0.00%)          || !nethack_msg_contains(env, "write with")) return;
+    296 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (2x)
+     27 ( 0.00%)      env->obs.action = '-';
+      .               nethack_engine_step(env);
+      .               // the dust --More-- raises xwait ALONGSIDE the getlin — clear it before
+      .               // typing; decline "add to current engraving?" so the fresh text replaces it
+     27 ( 0.00%)      const char* c = "Elbereth\r";
+  2,493 ( 0.00%)      for (int i = 0; i < NETHACK_AUTODISMISS_MAX && !env->obs.done && *c; i++) {
+    936 ( 0.00%)          if (env->misc[NETHACK_MISC_XWAIT]) env->obs.action = ' ';
+    756 ( 0.00%)          else if (env->misc[NETHACK_MISC_YN]
+    369 ( 0.00%)                   && nethack_msg_contains(env, "current engraving")) env->obs.action = 'n';
+  1,710 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (9x)
+    972 ( 0.00%)          else if (env->misc[NETHACK_MISC_GETLIN]) env->obs.action = (unsigned char)*c++;
+      .                   else break;
+      .                   nethack_engine_step(env);
+      .               }
+      .           }
+      .           
+      .           // engrave-test the first unidentified wand (E, wand letter, ride the
+      .           // dialogue): fire/lightning/digging formally identify (+10 score), the rest
+      .           // print their tell. Throwaway text 'x'; same prompt loop as Elbereth.
+-- line 235 ----------------------------------------
+-- line 261 ----------------------------------------
+      .                   else break;
+      .                   nethack_engine_step(env);
+      .               }
+      .           }
+      .           
+      .           // claim a banked skill advance the moment its notice appears (zero-turn,
+      .           // unconditionally good): #enhance, then 'a' = the first advanceable skill
+      .           static void nethack_auto_enhance(Nethack* env) {
+    263 ( 0.00%)      if (env->obs.done) return;
+ 30,710 ( 0.00%)      if (nethack_msg_contains(env, "more confident in your")) env->enh_ready = 1;
+116,859 ( 0.01%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (1,098x)
+ 18,420 ( 0.00%)      if (!env->enh_ready) return;
+     10 ( 0.00%)      env->enh_ready = 0;
+     10 ( 0.00%)      env->stats.enhances++;
+      .               nethack_send_key(env, '#');
+      .               // the extcmd prompt is NOT getlin-flagged: it renders "# " on the topline
+      .               // and autocompletes; typing past the completion point is accepted
+     80 ( 0.00%)      if (!env->obs.done && nethack_msg_contains(env, "# ")) {
+     99 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_msg_contains (1x)
+    610 ( 0.00%)          for (const char* c = "enhance\r"; !env->obs.done && *c; c++)
+     80 ( 0.00%)              nethack_send_key(env, (unsigned char)*c);
+     30 ( 0.00%)          if (!env->obs.done && env->misc[NETHACK_MISC_XWAIT])
+      .                       nethack_send_key(env, 'a');
+      .               }
+     20 ( 0.00%)      nethack_drain_prompts(env);
+    181 ( 0.00%)  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:nethack_drain_prompts (1x)
+     70 ( 0.00%)      if (!env->obs.done) nle_obs_refresh(env->ctx, &env->obs);
+  8,973 ( 0.00%)  => ???:0x000000000010a990 (1x)
+      .           }
+
+--------------------------------------------------------------------------------
+The following files chosen for auto-annotation could not be found:
+--------------------------------------------------------------------------------
+  ./csu/../csu/libc-start.c
+  ./csu/../sysdeps/nptl/libc_start_call_main.h
+  ./debug/./debug/sprintf_chk.c
+  ./debug/./debug/strcpy_chk.c
+  ./debug/./debug/vsnprintf_chk.c
+  ./elf/../sysdeps/unix/sysv/linux/dl-sysdep.c
+  ./elf/./elf/dl-lookup.c
+  ./elf/./elf/dl-reloc.c
+  ./elf/./elf/rtld.c
+  ./libio/./libio/iovsprintf.c
+  ./libio/./libio/vsnprintf.c
+  ./malloc/./malloc/malloc.c
+  ./nptl/./nptl/pthread_create.c
+  ./stdio-common/../string/bits/string_fortified.h
+  ./stdio-common/./stdio-common/Xprintf_buffer_write.c
+  ./stdio-common/./stdio-common/isoc23_fscanf.c
+  ./stdio-common/./stdio-common/printf-parse.h
+  ./stdio-common/./stdio-common/vfprintf-internal.c
+  ./stdio-common/./stdio-common/vfprintf-process-arg.c
+  ./stdio-common/./stdio-common/vfscanf-internal.c
+  ./stdlib/./stdlib/qsort.c
+  ./string/../sysdeps/x86_64/multiarch/memmove-vec-unaligned-erms.S
+  ./string/../sysdeps/x86_64/multiarch/memset-vec-unaligned-erms.S
+  ./string/../sysdeps/x86_64/multiarch/strchr-avx2.S
+  ./string/../sysdeps/x86_64/multiarch/strcmp-avx2.S
+  ./string/../sysdeps/x86_64/multiarch/strlen-avx2.S
+  ./string/../sysdeps/x86_64/multiarch/strstr-sse2-unaligned.S
+
+--------------------------------------------------------------------------------
+Ir                   
+--------------------------------------------------------------------------------
+104,690,491 ( 7.70%)  events annotated
+
