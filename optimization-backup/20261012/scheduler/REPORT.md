@@ -73,3 +73,15 @@ WHY LESS THAN THE HARNESS (+11%): (1) the ratchet — variable forward latency m
 (2) the slot threads' 512 KB CPU memcpy per forward on the P-core SMT siblings (fixed by zero-copy: P-core steps 61 → 57 us); (3) borrowed cold ticks at
 15-18% of steps (E-core steps 72.5 vs the pool's 71) — borrowing fills idle, so a bigger hot set loses more than it saves; (4) the harness's pool emulation
 was ~5 us/step pessimistic and its hybrid ~5 us optimistic (no real data movement, no PPO, deterministic latency). Per-core: P 57 us (pool 59), E 72.5 (pool 71).
+
+## Engine step map with hardware counters (14 Oct, host-side perf attach; overnight/function_map.txt, perf_rot/results/)
+Rotation cost mechanism: per 1000 instructions from rotation 1 to 16, cycles 350 → 434, conditional-branch mispredicts 2.99 → 5.30 (indirect/return
+flat), resteer cycles 20 → 34.5, L1d misses 2.42 → 2.90, L1i misses 7.2 → 7.8, TLB nil. Branch prediction is ~60% of the rotation cost, data cache ~15%.
+PGO halves I-cache misses (12.8 → 7.2/Kinstr) at the price of +15% mispredicts; net +13% speed per step.
+Function map (cycles / mispredicts / I-cache shares at rotation 16): m_move 23.5 / 28.9 / 15.2; mfndpos_masked 13.8 / 12.8 / 4.9; nethack_pack_obs
+7.4 / 9.1 / 3.5; movemon 5.2 / 4.1 / 3.1; nh_fobj_next 4.5 / 4.5 / 2.3; newsym 4.0 / 2.9 / 3.7; dochug 3.7 / 2.8 / 3.1; isaac64 RNG 3.4 / - / -;
+fill_obs 2.4 / 3.7 / 2.3; moveloop 2.3 / 1.5 / 8.6. Rotation-sensitive (mispredict increase per Kinstr): m_move +0.57, pack_obs +0.31, mfndpos +0.25,
+fill_obs +0.15, nh_fobj_next +0.15. Targets: monster movement (m_move + mfndpos = 37% of cycles, 42% of mispredicts), observation packing (pack_obs +
+fill_obs = 10% / 13%), I-cache layout of m_move + moveloop + flush_screen (27% of I-cache misses).
+Scheduler by population (same-session pool controls, batched gather, cap 12): 1024 +2.9%, 2048 +6-7% (3 pairs), 4096 0%, 8192 −5%, 15M/2048 −2%,
+15M/4096 −2%. Live learning proof (150 epochs, weights updating, 2048 agents, 4 buffers): identical observation hashes every epoch, pool vs scheduler.

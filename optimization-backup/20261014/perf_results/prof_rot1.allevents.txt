@@ -1,0 +1,174 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 89K of event 'cpu_core/cycles/u'
+# Event count (approx.): 253149883483
+#
+# Overhead       Samples  Symbol                                                                                                                                                                                  
+# ........  ............  ........................................................................................................................................................................................
+#
+    23.51%         21126  [.] m_move
+    14.55%         13068  [.] mfndpos_masked.lto_priv.0
+     6.83%          6155  [.] nethack_pack_obs
+     5.72%          5135  [.] movemon
+     4.25%          3821  [.] isaac64_update.lto_priv.0
+     4.22%          3792  [.] newsym
+     4.12%          3698  [.] nh_fobj_next
+     3.88%          3486  [.] dochug
+     2.32%          2086  [.] moveloop
+     2.06%          1862  [.] vision_recalc
+     1.60%          1445  [.] right_side
+     1.51%          1356  [.] left_side
+     1.48%          1332  [.] nethack_rl::NetHackRL::fill_obs(nle_observation*)
+     1.09%           978  [.] minliquid
+     1.07%           966  [.] nethack_rl::NetHackRL::update_blstats()
+     0.99%           891  [.] isaac64_reseed
+     0.89%           804  [.] find_misc
+     0.84%           759  [.] mcalcdistress
+     0.81%           727  [.] flush_screen
+     0.78%           700  [.] find_offensive
+     0.75%           676  [.] dosearch0
+     0.59%           532  [.] in_rooms
+     0.59%           529  [.] mintrap
+     0.55%           491  [.] find_defensive
+     0.53%           477  [.] nethack_zt_mask_on
+     0.51%           465  [.] nh_timeout
+     0.47%           418  [.] nle_weight
+     0.42%           381  [.] searches_for_item
+     0.41%           367  [.] step_game
+
+
+# Samples: 88K of event 'cpu_core/branch-misses/u'
+# Event count (approx.): 2154214334
+#
+# Overhead       Samples  Symbol                                                                                                                                                                                  
+# ........  ............  ........................................................................................................................................................................................
+#
+    32.18%         28667  [.] m_move
+    14.21%         12743  [.] mfndpos_masked.lto_priv.0
+     5.72%          4992  [.] nethack_pack_obs
+     4.87%          4443  [.] movemon
+     3.31%          2769  [.] vision_recalc
+     3.24%          2631  [.] right_side
+     3.00%          2425  [.] left_side
+     2.96%          2577  [.] nh_fobj_next
+     2.92%          2535  [.] newsym
+     2.87%          2664  [.] minliquid
+     2.79%          2506  [.] dochug
+     1.53%          1376  [.] moveloop
+     1.39%          1198  [.] nethack_rl::NetHackRL::fill_obs(nle_observation*)
+     1.35%          1211  [.] nethack_zt_mask_on
+     0.89%           757  [.] flush_screen
+     0.83%           733  [.] find_offensive
+     0.77%           707  [.] find_misc
+     0.60%           543  [.] worm_cross
+     0.44%           399  [.] mintrap
+     0.44%           397  [.] find_defensive
+     0.44%           392  [.] in_rooms
+     0.42%           367  [.] nh_timeout
+     0.40%           341  [.] mapglyph
+
+
+# Samples: 86K of event 'cpu_core/L1-icache-load-misses/u'
+# Event count (approx.): 5179177426
+#
+# Overhead       Samples  Symbol                                                                                                                                                                              
+# ........  ............  ....................................................................................................................................................................................
+#
+    14.42%         13114  [.] m_move
+     8.36%          7228  [.] moveloop
+     4.87%          4379  [.] mfndpos_masked.lto_priv.0
+     4.08%          3298  [.] nethack_pack_obs
+     3.53%          3152  [.] newsym
+     3.53%          3008  [.] flush_screen
+     3.33%          2951  [.] movemon
+     2.94%          2598  [.] dochug
+     2.83%          2585  [.] nethack_rl::NetHackRL::update_blstats()
+     2.54%          2491  [.] nh_fobj_next
+     2.37%          1944  [.] nethack_rl::NetHackRL::fill_obs(nle_observation*)
+     2.01%          1777  [.] nh_timeout
+     1.41%          1165  [.] __printf_buffer
+     1.14%           893  [.] step_game
+     1.13%          1107  [.] isaac64_update.lto_priv.0
+     1.07%           863  [.] vision_recalc
+     1.05%           883  [.] left_side
+     1.03%           846  [.] rhack
+     1.01%           842  [.] right_side
+     0.99%           869  [.] find_misc
+     0.87%           708  [.] __strstr_sse2_unaligned
+     0.87%           721  [.] encumber_msg
+     0.80%           708  [.] dosounds
+     0.77%           625  [.] puf_step
+     0.76%           703  [.] in_rooms
+     0.75%           605  [.] __strchr_avx2
+     0.72%           617  [.] tty_display_nhwindow
+     0.70%           648  [.] dosearch0
+     0.66%           588  [.] pooleffects
+     0.66%           537  [.] __strlen_avx2
+     0.65%           563  [.] inv_weight
+     0.62%           594  [.] mcalcdistress
+     0.62%           525  [.] exerchk
+     0.60%           497  [.] nle_weight
+     0.60%           501  [.] vpline.lto_priv.0
+     0.58%           511  [.] find_defensive
+     0.58%           449  [.] domove_core
+     0.51%           407  [.] 0x0000000000000a09
+     0.49%           433  [.] minliquid
+     0.49%           456  [.] monster_nearby
+     0.49%           383  [.] back_to_glyph
+     0.47%           393  [.] __memmove_avx_unaligned_erms
+     0.46%           371  [.] __strncpy_avx2
+     0.45%           356  [.] worker
+     0.44%           372  [.] mintrap
+     0.42%           354  [.] __strchrnul_avx2
+
+
+# Samples: 86K of event 'cpu_core/L1-dcache-load-misses/u'
+# Event count (approx.): 1755386918
+#
+# Overhead       Samples  Symbol                                                                                                                                                                                  
+# ........  ............  ........................................................................................................................................................................................
+#
+    17.17%         14085  [.] m_move
+    10.07%          8754  [.] mfndpos_masked.lto_priv.0
+     6.97%          6472  [.] nethack_rl::NetHackRL::fill_obs(nle_observation*)
+     5.72%          4698  [.] movemon
+     4.83%          3979  [.] nethack_rl::NetHackRL::update_blstats()
+     3.51%          2894  [.] nh_fobj_next
+     3.19%          2760  [.] dochug
+     3.06%          2593  [.] newsym
+     2.97%          2807  [.] nethack_pack_obs
+     2.78%          2474  [.] isaac64_update.lto_priv.0
+     2.67%          2322  [.] moveloop
+     2.05%          1916  [.] nle_weight
+     1.73%          1428  [.] mcalcdistress
+     1.42%          1229  [.] flush_screen
+     1.36%          1140  [.] minliquid
+     1.07%           871  [.] set_uasmon
+     1.07%           946  [.] vision_recalc
+     0.97%           868  [.] __strchr_avx2
+     0.95%           799  [.] find_misc
+     0.90%           832  [.] __printf_buffer
+     0.84%           774  [.] void std::_Destroy<nethack_rl::NetHackRL::rl_inventory_item*>(nethack_rl::NetHackRL::rl_inventory_item*, nethack_rl::NetHackRL::rl_inventory_item*)
+     0.83%           786  [.] rhack
+     0.75%           702  [.] step_game
+     0.73%           633  [.] dosearch0
+     0.71%           605  [.] right_side
+     0.69%           580  [.] can_carry
+     0.63%           542  [.] mintrap
+     0.57%           477  [.] find_offensive
+     0.52%           461  [.] nh_timeout
+     0.51%           488  [.] __strstr_sse2_unaligned
+     0.51%           461  [.] nethack_rl::NetHackRL::update_inventory_method()
+     0.50%           408  [.] extract_nobj
+     0.49%           422  [.] mapglyph
+     0.48%           378  [.] searches_for_item
+     0.45%           431  [.] pthread_mutex_lock@@GLIBC_2.2.5
+     0.45%           418  [.] __strlen_avx2
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

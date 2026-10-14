@@ -1,0 +1,51 @@
+[01:17:21] === OVERNIGHT-3 START
+[01:18:31] ROT sanity_rot1  sps=36670.74 obs=7a111519e889cf75 
+[01:18:31] PERF sanity_rot1: process id '177376' 113,297,863,300 cpu_core/cycles/ 322,606,452,976 cpu_core/instructions/  bad=11
+[01:18:31] sanity still not counted — check the pid in results/sanity_rot1.txt; aborting
+[01:18:49] === OVERNIGHT-3 START
+[01:19:58] ROT sanity_rot1  sps=36662.17 obs=7a111519e889cf75 
+[01:19:58] PERF sanity_rot1: process id '177716' 113,301,785,033 cpu_core/cycles/ 323,202,523,450 cpu_core/instructions/  bad=11
+[01:19:58] === PHASE A: rotation perf matrix (G1, G3)
+[01:21:07] ROT rot1_G1  sps=36611.55 obs=7a111519e889cf75 
+[01:21:08] PERF rot1_G1: process id '177986' 255,034,014,074 cpu_core/cycles/ 729,109,678,754 cpu_core/instructions/  bad=11
+[01:22:17] ROT rot1_G3  sps=36638.30 obs=7a111519e889cf75 
+[01:22:17] PERF rot1_G3: process id '178122' 254,840,668,131 cpu_core/cycles/ 728,997,802,475 cpu_core/instructions/  bad=0
+[01:23:34] ROT rot4_G1  sps=32609.56 obs=7a111519e889cf75 
+[01:23:34] PERF rot4_G1: process id '178245' 255,029,514,404 cpu_core/cycles/ 651,422,518,692 cpu_core/instructions/  bad=11
+[01:24:52] ROT rot4_G3  sps=32612.75 obs=7a111519e889cf75 
+[01:24:52] PERF rot4_G3: process id '178405' 254,823,971,334 cpu_core/cycles/ 649,398,728,170 cpu_core/instructions/  bad=0
+[01:26:18] ROT rot16_G1  sps=29437.41 obs=7a111519e889cf75 
+[01:26:18] PERF rot16_G1: process id '178566' 254,806,807,042 cpu_core/cycles/ 586,762,916,898 cpu_core/instructions/  bad=11
+[01:27:44] ROT rot16_G3  sps=29460.99 obs=7a111519e889cf75 
+[01:27:44] PERF rot16_G3: process id '178776' 254,706,083,864 cpu_core/cycles/ 587,216,936,589 cpu_core/instructions/  bad=0
+[01:29:14] ROT rot64_G1  sps=28254.78 obs=7a111519e889cf75 
+[01:29:14] PERF rot64_G1: process id '178972' 254,722,888,319 cpu_core/cycles/ 568,727,665,386 cpu_core/instructions/  bad=11
+[01:30:44] ROT rot64_G3  sps=28256.83 obs=7a111519e889cf75 
+[01:30:44] PERF rot64_G3: process id '179196' 254,658,090,400 cpu_core/cycles/ 568,363,449,579 cpu_core/instructions/  bad=0
+[01:30:44] === PHASE B: PGO vs plain engine, rotation 1 and 16
+[01:32:04] ROT plain_rot1_G1  sps=31761.93 obs=7a111519e889cf75 
+[01:32:04] PERF plain_rot1_G1: process id '179414' 255,037,940,401 cpu_core/cycles/ 691,591,426,602 cpu_core/instructions/  bad=11
+[01:33:24] ROT plain_rot1_G3  sps=31795.02 obs=7a111519e889cf75 
+[01:33:24] PERF plain_rot1_G3: process id '179597' 254,967,163,280 cpu_core/cycles/ 692,499,507,982 cpu_core/instructions/  bad=0
+[01:35:00] ROT plain_rot16_G1  sps=26426.22 obs=7a111519e889cf75 
+[01:35:00] PERF plain_rot16_G1: process id '179765' 254,870,900,578 cpu_core/cycles/ 576,035,543,359 cpu_core/instructions/  bad=11
+[01:36:36] ROT plain_rot16_G3  sps=26446.69 obs=7a111519e889cf75 
+[01:36:36] PERF plain_rot16_G3: process id '180001' 254,689,475,595 cpu_core/cycles/ 576,199,488,640 cpu_core/instructions/  bad=0
+[01:36:36] === PHASE G: per-event sampling profiles, engine rotation 1 / 12 / 16
+[01:37:45] ROT prof_rot1  sps=36518.52 obs=7a111519e889cf75 
+[01:37:45] PERF prof_rot1:   bad=1
+[01:39:10] ROT prof_rot12  sps=29973.69 obs=7a111519e889cf75 
+[01:39:10] PERF prof_rot12:   bad=1
+[01:40:36] ROT prof_rot16  sps=29365.56 obs=7a111519e889cf75 
+[01:40:36] PERF prof_rot16:   bad=1
+[01:40:36] === PHASE C: trainer perf pool vs scheduler (5M/2048, 120 epochs) + profiles
+[01:45:37] PERF perf_pool_G1: MISSING
+[01:46:37] PERF perf_pool_G3: daemon not running, skipped
+[01:51:37] PERF perf_pool_G3: MISSING
+[01:56:38] PERF perf_pool_REC: MISSING
+[01:57:38] PERF perf_sched_G1: daemon not running, skipped
+[02:02:38] PERF perf_sched_G1: MISSING
+[02:07:39] PERF perf_sched_G3: MISSING
+[02:08:39] PERF perf_sched_REC: daemon not running, skipped
+[02:13:39] PERF perf_sched_REC: MISSING
+[02:13:39] === OVERNIGHT-3 DONE

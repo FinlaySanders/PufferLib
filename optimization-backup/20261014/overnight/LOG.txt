@@ -1,0 +1,96 @@
+[22:45:16] === OVERNIGHT START (waits for the cap scan)
+[22:45:16] === PHASE D: scheduler map
+DONE map_ctrl_1024 rc 0 sps 344615 wall 34
+DONE map_sched_1024 rc 0 sps 354507 wall 34
+DONE map_ctrl_2048 rc 0 sps 349570 wall 32
+DONE map_sched_2048 rc 0 sps 369514 wall 32
+DONE map_ctrl_4096 rc 0 sps 395398 wall 30
+DONE map_sched_4096 rc 0 sps 396184 wall 32
+DONE map_ctrl_8192 rc 250 sps 0 wall 1
+DONE map_sched_8192 rc 0 sps 429563 wall 34
+DONE map15_ctrl_2048 rc 0 sps 237777 wall 51
+DONE map15_sched_2048 rc 0 sps 233498 wall 53
+DONE map15_ctrl_4096 rc 0 sps 236894 wall 52
+DONE map15_sched_4096 rc 0 sps 232876 wall 54
+DONE maph_ctrl_h64 rc 0 sps 814317 wall 32
+DONE maph_sched_h64 rc 0 sps 799143 wall 32
+DONE maph_ctrl_h256 rc 1 sps 0 wall 34
+DONE maph_sched_h256 rc 1 sps 0 wall 34
+DONE mapw_sched_w20 rc 0 sps 322307 wall 35
+DONE mapw_sched_w26 rc 0 sps 353477 wall 34
+DONE mapw_sched_w28 rc 0 sps 357531 wall 34
+DONE maps_sched_s2 rc 0 sps 308568 wall 43
+DONE maps_sched_s6 rc 0 sps 340679 wall 35
+DONE mapwin_sched_200 rc 0 sps 376097 wall 33
+DONE mapwin_sched_300 rc 0 sps 378854 wall 33
+DONE mappw_sched_1.0 rc 0 sps 375734 wall 33
+DONE mappw_sched_1.5 rc 0 sps 378371 wall 33
+DONE map_ctrl_rep_a rc 0 sps 353679 wall 33
+DONE map_sched_rep_a rc 0 sps 372766 wall 32
+DONE map_ctrl_rep_b rc 0 sps 349738 wall 33
+DONE map_sched_rep_b rc 0 sps 378794 wall 32
+[23:02:14] === PHASE A: rotation perf (daemon up)
+[23:03:23] ROT rot1_G1  sps=36716.04 obs=7a111519e889cf75 
+[23:03:23] PERF rot1_G1: 912,257 cpu_core/cycles/ 191,481 cpu_core/instructions/ 3,746 cpu_core/L1-dcache-load-misses/ 
+[23:04:32] ROT rot1_G3  sps=36694.35 obs=7a111519e889cf75 
+[23:04:32] PERF rot1_G3: 
+[23:05:42] ROT rot1_TD  sps=36681.78 obs=7a111519e889cf75 
+[23:05:42] PERF rot1_TD: 
+[23:06:59] ROT rot4_G1  sps=32682.57 obs=7a111519e889cf75 
+[23:06:59] PERF rot4_G1: 19,842,931 cpu_core/cycles/ 9,361,663 cpu_core/instructions/ 98,101 cpu_core/L1-dcache-load-misses/ 
+[23:08:17] ROT rot4_G3  sps=32672.58 obs=7a111519e889cf75 
+[23:08:17] PERF rot4_G3: 
+[23:09:34] ROT rot4_TD  sps=32683.58 obs=7a111519e889cf75 
+[23:09:34] PERF rot4_TD: 
+[23:11:00] ROT rot16_G1  sps=29527.98 obs=7a111519e889cf75 
+[23:11:00] PERF rot16_G1: 19,434,206 cpu_core/cycles/ 5,357,536 cpu_core/instructions/ 84,498 cpu_core/L1-dcache-load-misses/ 
+[23:12:26] ROT rot16_G3  sps=29534.99 obs=7a111519e889cf75 
+[23:12:26] PERF rot16_G3: 
+[23:13:52] ROT rot16_TD  sps=29527.86 obs=7a111519e889cf75 
+[23:13:52] PERF rot16_TD: 
+[23:15:21] ROT rot64_G1  sps=28323.84 obs=7a111519e889cf75 
+[23:15:21] PERF rot64_G1: 
+[23:16:51] ROT rot64_G3  sps=28302.57 obs=7a111519e889cf75 
+[23:16:51] PERF rot64_G3: 
+[23:18:21] ROT rot64_TD  sps=28308.93 obs=7a111519e889cf75 
+[23:18:21] PERF rot64_TD: 
+[23:19:30] ROT rot1_REC  sps=36710.55 obs=7a111519e889cf75 
+[23:19:30] PERF rot1_REC: 
+[23:20:56] ROT rot16_REC  sps=29528.56 obs=7a111519e889cf75 
+[23:20:56] PERF rot16_REC: 
+[23:20:56] === PHASE B: engine PGO vs plain, rotation 1 and 16
+[23:22:16] ROT plain_rot1_G1  sps=31836.42 obs=7a111519e889cf75 
+[23:22:16] PERF plain_rot1_G1: 
+[23:23:51] ROT plain_rot16_G1  sps=26481.16 obs=7a111519e889cf75 
+[23:23:51] PERF plain_rot16_G1: 
+[23:23:51] === PHASE C: trainer perf pool vs scheduler (5M/2048, 120 epochs)
+DONE perf_pool_G1 rc 0 sps 360589 wall 87
+[23:25:19] PERF perf_pool_G1: 
+DONE perf_pool_G3 rc 0 sps 356049 wall 88
+[23:26:47] PERF perf_pool_G3: 
+DONE perf_pool_TD rc 0 sps 354684 wall 88
+[23:28:15] PERF perf_pool_TD: 
+DONE perf_sched_G1 rc 0 sps 375229 wall 85
+[23:29:40] PERF perf_sched_G1: 
+DONE perf_sched_G3 rc 0 sps 377045 wall 85
+[23:31:05] PERF perf_sched_G3: 
+DONE perf_sched_TD rc 0 sps 375735 wall 85
+[23:32:31] PERF perf_sched_TD: 
+[23:32:31] === PHASE E: live learning pair (pool vs scheduler, 150 epochs, random init, LIVE_PROOF)
+DONE ll_pool rc 0 sps 376382 wall 112
+DONE ll_sched rc 0 sps 415985 wall 101
+[23:36:04] LIVE LEARNING PROOF pool vs sched: IDENTICAL (150 epochs)
+[23:36:04] === PHASE F: PR693 ws32
+[23:36:04] === OVERNIGHT DONE
+[23:36:04] === PHASE G: per-event sampling profiles (daemon up)
+[23:37:13] ROT prof_rot1  sps=36684.58 obs=7a111519e889cf75 
+[23:37:13] PERF prof_rot1: 
+[23:38:37] ROT prof_rot12  sps=30111.64 obs=7a111519e889cf75 
+[23:38:37] PERF prof_rot12: 
+[23:40:03] ROT prof_rot16  sps=29530.66 obs=7a111519e889cf75 
+[23:40:03] PERF prof_rot16: 
+DONE prof_perf_pool rc 0 sps 356848 wall 88
+[23:41:31] PERF prof_perf_pool: 
+DONE prof_perf_sched rc 0 sps 377216 wall 85
+[23:42:57] PERF prof_perf_sched: 
+[23:42:57] === OVERNIGHT2 DONE

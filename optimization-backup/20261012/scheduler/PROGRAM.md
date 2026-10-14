@@ -268,3 +268,44 @@ adaptive k1.5 358.1K (hot set 21: the adaptive rule overshoots now that the forw
 (or adaptive with k≈1.0). Borrow fraction rises as the cap falls (31% at 14, 55% at 8) without hurting throughput — borrowed ticks are cheap when the
 borrowed game sits in a shared E-cluster L2 or was just forwarded. Overnight queue (overnight/overnight.sh, LOG.txt) started 22:45: phase D map →
 A rotation perf matrix (G1/G3/topdown/record) → B PGO vs plain → C trainer perf pool vs sched → E live LEARNING proof pair → F PR693 ws32.
+
+## 2026-10-13 23:40 — overnight queue pass 1 (GPU phases valid; perf phases INVALID: the request files carried the pgrep pattern unquoted, bash
+## treated "128 1 4096" as a command, the pattern was empty and perf attached to pid 1 — all stat/record outputs of that pass moved to results_bad/)
+SCHEDULER MAP (5M unless noted; sched = batched gather, cap12, pw1.25; same-session pool controls):
+agents 1024 (8x128, H256): pool 344.6K, sched 354.5K (+2.9%) | 2048 (16x128, H128): 349.6K vs 369.5K (+5.7%); repeats pool 353.7/349.7 vs sched 372.8/378.8 (+6.9%)
+| 4096 (32x128, H64): 395.4K vs 396.2K (+0.2%) | 8192 (64x128, H32): pool ASSERT (cohort_steps 64 > horizon 32 — config, rerun with steps 32 queued), sched 429.6K
+15M (width 1024): 2048: 237.8K vs 233.5K (−1.8%); 4096: 236.9K vs 232.9K (−1.7%) — the batched gather recovers the 15M case from −9.5% to −2%.
+horizon 64 at 2048: 814K vs 799K (runner reports 2x-inflated SPS at H64; ratio −1.9%); horizon 256: runner KeyError (run_scale.py indexing), no result.
+sched knobs at 2048: workers 20/26/28 → 322K/353K/358K (24 best, ~375K); slots 2/6 → 309K/341K (4 best); window 200/300 us → 376K/379K (flat);
+pweight 1.0/1.5 → 376K/378K (flat with the batched gather). → scheduler = cap12-14, 4 slots, 24 pinned workers, batched gather; nothing else to tune.
+LIVE LEARNING PROOF (150 epochs, weights UNFROZEN, random init, 2048 agents, 4 buffers, live actions): pool vs scheduler observation hashes IDENTICAL for all
+150 epochs → the scheduler changes nothing about training itself, only wall time (live SPS 376K pool vs 416K sched, +10.5%).
+Perf phases rerunning as overnight2.sh (quoted requests; G3/G4 with cpu_core/ raw event names; topdown; per-event records; trainer perf; map 8192 fix).
+
+## 2026-10-14 01:20 — perf queue attempts 2 and 3
+Attempt 2 (quoted requests): every stat attached to one long-lived host-side process (pid 146520) whose command line matched the loose pattern
+'replay_sched6 128 1 4096' (likely a watch/grep on the host) → all "<not counted>"; raw cycle_activity.* names are unknown to this perf for cpu_core
+(G4 dropped); perf stat --topdown prints nan on the hybrid part (dropped). Attempt 3: patterns anchored to the full binary path
+('^/puffertank/.../replay_sched6 128 1 4096 16384'); sanity run attached to a fresh pid with 113 G cycles in 20 s → running phases A (G1+G3), B, G, C.
+MAP fix-up: 8192 agents (64x128, H32), pool with cohort_steps=32: 451.1K vs scheduler 429.6K → the POOL wins at 8192 by 5%. Together with 4096 (0%)
+and 2048 (+6-7%), the scheduler's gain shrinks with population on this box: at 4096+ the pool's cohort config already keeps 16 games/worker resident
+per 64-step turn and the GPU/PPO side starts to bind; the scheduler's per-forward overhead then costs more than its residency buys.
+
+## 2026-10-14 02:20 — HARDWARE-COUNTER MAP OF THE ENGINE STEP (host perf attach, 1 P-core, 128 games; results in perf_rot/results/, function_map.txt)
+Rotation 1 → 4 → 16 → 64, per 1000 instructions (G1+G3): cycles 350 → 392 → 434 → 448; branch misses 2.99 → 4.19 → 5.30 → 5.43 — ALL conditional
+(cond_taken 1.58 → 2.78, cond_ntaken 1.34 → 2.46; indirect 0.03-0.04 and return 0.02 flat); clear_resteer_cycles 20 → 27 → 34.5 → 36; L1d misses
+2.42 → 2.88 → 2.90 → 3.06; L1i misses 7.2 → 7.5 → 7.8 → 7.9; frontend l1i_miss (retired) 2.3 flat; dTLB/iTLB nil until rot64; LLC loads 0.01 → 0.18 → 0.59.
+Mispredicts explain ~60% of the rotation cost (+2.3/Kinstr x ~20-25 cycles incl. resteer ≈ 50 of the +84 cycles/Kinstr), L1d misses ~15%, frontend ~5%.
+PGO vs plain engine (rotation 1 / 16): plain CPI 368 / 442 vs PGO 350 / 434; plain L1i misses 12.8 / 13.9 vs 7.2 / 7.8 per Kinstr (PGO halves them);
+plain branch misses 2.59 / 4.59 vs PGO 2.99 / 5.30 (PGO's layout trades +15% mispredicts for −45% I-cache misses; net PGO is 13% faster per step).
+FUNCTION MAP (sampling, rot16 shares): cycles — m_move 23.5%, mfndpos_masked 13.8%, nethack_pack_obs 7.4%, movemon 5.2%, nh_fobj_next 4.5%, newsym 4.0%,
+dochug 3.7%, isaac64 (RNG) 3.4%, fill_obs 2.4%, moveloop 2.3%, vision_recalc 2.0%, left/right_side 1.6% each. Branch misses — m_move 28.9%, mfndpos 12.8%,
+pack_obs 9.1%, nh_fobj_next 4.5%, movemon 4.1%, fill_obs 3.7%, newsym 2.9%, dochug 2.8%, vision 2.6%, minliquid 2.1%. I-cache misses — m_move 15.2%,
+moveloop 8.6%, mfndpos 4.9%, newsym/flush_screen 3.7% each. L1d misses — m_move 15.7%, mfndpos 8.9%, fill_obs 7.4%, movemon 5.5%, update_blstats 5.1%.
+Rotation-sensitive functions (absolute mispredict increase per Kinstr, rot1 → rot16): m_move +0.57, nethack_pack_obs +0.31, mfndpos +0.26, fill_obs +0.16,
+nh_fobj_next +0.15, movemon/newsym/dochug +0.06-0.07 each. The observation-packing path (pack_obs + fill_obs) loses the most context relative to its size.
+TARGETS this implies: (1) m_move + mfndpos: 37% of cycles, 42% of mispredicts, 20% of I-cache misses — monster movement decision branches on per-monster
+and per-tile state; table-driven / branchless formulations of the position-candidate loop and the flag checks; (2) nethack_pack_obs/fill_obs: 10% of
+cycles, 13% of mispredicts — per-cell glyph classification branches → table lookups; (3) I-cache: m_move + moveloop + flush_screen = 27% of misses —
+hot/cold splitting of the monster-move body. All bit-exact-gated (goldens + corpus hash).
+Phase C (trainer-level perf) found no pid: the anchored trainer pattern did not match the host's view of the cmdline; rerunning with '/binaries/sched_(ctrl|v10) train'.
