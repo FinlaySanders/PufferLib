@@ -444,3 +444,22 @@ whole-run trace (36 games, 57M lines) was what found it. v1.6d: 36-game hash ide
 Plain same-binary, 128 games: NH_MT2=0 28,339/28,342 → NH_MT2=1 33,552/33,519 = +18.3% (v1.5b +16.7%: the near population is ~4% of the
 mature-set step vs 9.9% in the 8-game sample, where v1.6 gave +5 points). Ladder (plain, 128 games): v1 +10.7 | v1.1 +11.1 | v1.2 +13.1 |
 v1.3b +14.6 | v1.4 +17.1 | v1.5b (vision skip, both arms) | v1.6d +18.3. Consolidation = stage_k21.
+
+## WHERE THE ENGINE STANDS AFTER v1.6d (22:55) and what is left under exactness
+Landing-style PGO so far today: fastnle_ade 31,229 → mt2 36,604 (+17.2%, rep1; stage_k21 completing). The monster-turn kernel now covers
+hostile, peaceful, Displaced/Invis/Upolyd hero states, far and near (non-adjacent) monsters, with door/pile/trap windows, the box-cell object
+search and the vision exact skip. The fast move is ~800 self Ir + inherent draws (two rn2(5), track hits) with no line above 31 Ir: it is
+near its exact floor — the decision cannot be cached across turns because every move draws.
+Remaining exact levers (estimates on the 128-game set): packer after C2 ~1.5% | per-monster-per-turn bookkeeping ~1% | fast-path tail
+(display gate sharing, dochug_fast overhead) ~1% | old-path remnants (adjacent melee pre-chain, fleeing, unicorns/dwarves, trapped) ~1-2% |
+vision algorithm (bitmap ray casting + update loop): the one big one, ~3-4%, multi-day | display pipeline ~1-2%.
+Non-exact (user-permitted): mcalcmove dead draws + RNG ≈ 3%.
+
+## v1.6d CONSOLIDATION (22:59, stage_k21; PGO engines/mt2pgo b2f60d15…, PGO quick gates 5/5)
+| landing-style, rotation-16, 128 games | landed fastnle_ade PGO | mt2 v1.6d PGO | gain |
+|---|---:|---:|---:|
+| P-core 2 | 31,229 / 31,225 | 36,604 / 36,591 | +17.2% |
+| E-core 16 | 21,697 | 24,937 | +14.9% |
+Eligible share (CG census, 128 games): 226,983,164 / 281,894,959 = 80.5% of monster moves on the fast path (46% at v1, 61% at v1.3).
+Trainer (information only; 5M/2048 scheduler, one pair): 390,598 → 419,143 (+7.3%); live learning 150 epochs digest 31e2e3deae720ef4 = reference.
+Stack since yesterday's engine (tile_signed): landed A+D+E +4.8%, then today's kernel +17.2% on top → ≈ +23% per step, all bit-exact.
