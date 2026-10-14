@@ -1,1 +1,16 @@
-perf_sched_G3: no pid for PATTERN=^/puffertank/experiments/nethack-24h-20261009/binaries/sched_(ctrl|v10) train
+
+ Performance counter stats for process id '263605':
+
+ 2,550,166,252,973      cpu_core/cycles/                                                        (8.02%)
+ 3,682,633,831,960      cpu_core/instructions/                                                  (12.03%)
+    17,630,245,183      cpu_core/br_misp_retired.all_branches/                                        (16.04%)
+     9,141,049,122      cpu_core/br_misp_retired.cond_taken/                                        (20.05%)
+     8,253,787,158      cpu_core/br_misp_retired.cond_ntaken/                                        (24.06%)
+       166,468,898      cpu_core/br_misp_retired.indirect/                                        (28.07%)
+        73,609,812      cpu_core/br_misp_retired.ret/                                           (32.07%)
+   158,072,150,245      cpu_core/int_misc.clear_resteer_cycles/                                        (36.09%)
+     9,307,639,669      cpu_core/frontend_retired.l1i_miss/                                        (36.09%)
+       136,376,881      cpu_core/frontend_retired.itlb_miss/                                        (4.01%)
+
+      50.003904219 seconds time elapsed
+

@@ -1,1 +1,28 @@
-perf_pool_G1: no pid for PATTERN=^/puffertank/experiments/nethack-24h-20261009/binaries/sched_(ctrl|v10) train
+
+ Performance counter stats for process id '262425':
+
+ 3,380,756,404,910      cpu_atom/cycles/                                                        (35.78%)
+ 2,407,916,084,848      cpu_core/cycles/                                                        (25.68%)
+ 5,456,799,282,823      cpu_atom/instructions/                                                  (41.74%)
+ 3,954,106,541,436      cpu_core/instructions/                                                  (29.36%)
+ 1,532,155,234,399      cpu_atom/L1-dcache-loads/                                               (41.74%)
+ 1,104,454,585,485      cpu_core/L1-dcache-loads/                                               (29.35%)
+   <not supported>      cpu_atom/L1-dcache-load-misses/                                       
+    16,747,619,240      cpu_core/L1-dcache-load-misses/                                         (29.36%)
+    37,320,846,101      cpu_atom/L1-icache-load-misses/                                         (41.73%)
+    34,590,481,482      cpu_core/L1-icache-load-misses/                                         (22.03%)
+       680,870,280      cpu_atom/dTLB-load-misses/                                              (41.74%)
+       554,816,338      cpu_core/dTLB-load-misses/                                              (22.04%)
+     2,667,119,959      cpu_atom/iTLB-load-misses/                                              (41.74%)
+       178,110,034      cpu_core/iTLB-load-misses/                                              (14.69%)
+ 1,170,276,008,060      cpu_atom/branch-instructions/                                           (41.74%)
+   840,606,350,219      cpu_core/branch-instructions/                                           (18.36%)
+    29,277,332,993      cpu_atom/branch-misses/                                                 (41.74%)
+    18,238,495,082      cpu_core/branch-misses/                                                 (22.03%)
+     5,701,188,876      cpu_atom/LLC-loads/                                                     (35.78%)
+     2,662,983,001      cpu_core/LLC-loads/                                                     (22.02%)
+           155,369      cpu_atom/LLC-load-misses/                                               (35.79%)
+       495,357,737      cpu_core/LLC-load-misses/                                               (22.01%)
+
+      50.004886657 seconds time elapsed
+

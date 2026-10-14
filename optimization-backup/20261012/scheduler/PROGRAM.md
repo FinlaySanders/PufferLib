@@ -309,3 +309,35 @@ and per-tile state; table-driven / branchless formulations of the position-candi
 cycles, 13% of mispredicts — per-cell glyph classification branches → table lookups; (3) I-cache: m_move + moveloop + flush_screen = 27% of misses —
 hot/cold splitting of the monster-move body. All bit-exact-gated (goldens + corpus hash).
 Phase C (trainer-level perf) found no pid: the anchored trainer pattern did not match the host's view of the cmdline; rerunning with '/binaries/sched_(ctrl|v10) train'.
+Phase C (trainer perf) failed twice more: the host-side pgrep found no pid for the trainer patterns (anchored path, then '/binaries/sched_(ctrl|v10) train');
+the host perf server also stopped around 02:20 (heartbeat stale). phaseC2.sh is armed with one alternation-free pattern per arm and waits up to 10 h for the
+server: restart it on the host (sudo bash ~/puffertank/perf_rot/host_perf_server.sh) and phase C runs by itself (~15 min).
+Phase C2 (02:37): the server answered the three pool requests within one second with perf's usage text (an invalid -p value), then went quiet; my
+daemon_up check also misreports "not running" whenever the server is busy (it only touches its heartbeat between requests). Trainer-level counters remain
+UNMEASURED. To do interactively in the morning with the host visible: run a trainer, `pgrep -af 'binaries/sched_ctrl train'` on the host to confirm the
+match, then one `perf stat -e <G1> -p <pid> -- sleep 40` per arm. Everything else from the night is complete and committed (e12ca611).
+03:05 ROOT CAUSE of every wrong-pid perf attach tonight: the queue scripts were launched from shells whose own command text (heredocs containing the
+pgrep patterns) stayed alive as the launcher subshell; the host's pgrep -f matched that subshell instead of the trainer/harness. Fix: launch with a
+minimal command (setsid nohup ./script.sh) so no ancestor argv contains the patterns; clear results/ before re-requesting (perf_wait reads stale files).
+Also: this pgrep does not honour regex alternation; one plain pattern per arm.
+04:10 THE REAL phase-C failure: in overnight2/3 the per-group spec files were derived with `sed ... ab_X_G1.json > ab_X_G1.json` (same file for G=G1),
+truncating ab_perf_{pool,sched}_G1.json to empty; every trainer launch in phases C/C2/C3 failed instantly on a JSON error, so there was never a trainer
+to attach to. Spec files regenerated; phaseC4 matches each trainer by its unique run directory in argv.
+
+## 2026-10-14 05:00 — TRAINER-LEVEL PROFILES, pool vs scheduler (perf record on the live 24-worker process, 5M/2048, 120 epochs; perf_rot/results/perf_*_REC.*)
+Engine functions keep the same mispredict distribution under both schedulers (m_move 28.0% → 28.0%, mfndpos 12.9 → 12.8, pack_obs 10.7 → 10.7): the
+scheduler does not change which branches miss, only how often (stat groups pending). Engine share of process cycles falls from 75.7% (pool) to 52.7%
+(scheduler) because the scheduler's own threads burn cycles: sched_slot_main 17.4% of all process cycles (4 slot threads spinning on the inference ring and
+the stream sync, on the P-core SMT siblings 1,3,5,7) and es_worker 3.9% (worker spin loops). Those slot-thread cycles compete with workers 0-3 for their
+physical cores: a sleeping/condvar wait in the slot loop (earlier PUF_SCHED_SLOT_SLEEP_US=20 showed +0.6%) or pinning the slot threads away from P-cores
+is the next scheduler experiment, measured by per-core step cost (P 0-3 vs P 4-7).
+
+## 2026-10-14 05:10 — TRAINER-LEVEL COUNTERS, pool vs scheduler (process-wide: 24 workers + submitter/slot threads + main; 50 s windows at 5M/2048)
+per 1000 instructions: cycles 610 → 692; branch misses 4.67 → 4.74 (cond_taken 2.47 → 2.48, cond_ntaken 2.13 → 2.24); resteer cycles 46.5 → 42.9;
+L1d misses 4.29 → 4.07; L1i 8.86 → 8.90; LLC loads 0.68 → 0.87; instructions in the window 3905G → 3683G while the scheduler did 6% MORE env steps.
+CAVEAT: process-wide rates mix engine threads with bookkeeping: the pool's submitters spin with sched_yield loops (instruction-rich, rarely mispredict),
+the scheduler's slot threads spin with _mm_pause (cycle-rich, instruction-poor) → the scheduler's higher CPI and the near-equal mispredict rate are
+dilution artefacts, not engine effects. Per-thread attribution (perf record --sort tid, or a worker-only stat) is needed to compare the engine's own
+rates; the per-function profiles (same mispredict distribution; slot threads = 17% of cycles) are the usable result from this pass.
+PERF CAMPAIGN CLOSED 05:10. Usable outputs: rotation matrix G1+G3 (rot 1/4/16/64), PGO vs plain, function profiles at rot 1/12/16, trainer profiles
+pool vs sched, trainer process-wide counters. Invalid: everything from passes 1-3 (results_bad*/).

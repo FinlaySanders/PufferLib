@@ -85,3 +85,7 @@ fill_obs +0.15, nh_fobj_next +0.15. Targets: monster movement (m_move + mfndpos 
 fill_obs = 10% / 13%), I-cache layout of m_move + moveloop + flush_screen (27% of I-cache misses).
 Scheduler by population (same-session pool controls, batched gather, cap 12): 1024 +2.9%, 2048 +6-7% (3 pairs), 4096 0%, 8192 −5%, 15M/2048 −2%,
 15M/4096 −2%. Live learning proof (150 epochs, weights updating, 2048 agents, 4 buffers): identical observation hashes every epoch, pool vs scheduler.
+Trainer-level (live 24-worker process): engine mispredict distribution identical under pool and scheduler (m_move 28%, mfndpos 13%, pack_obs 11%);
+the scheduler's slot threads account for 17.4% of process cycles (spinning on P-core SMT siblings) and worker spin loops 3.9% — the next scheduler
+experiment is a sleeping slot wait or a different slot-thread pin, judged by P-core 0-3 vs 4-7 step cost. Process-wide counter rates are diluted by
+each design's spin style and are not an engine comparison.
