@@ -134,3 +134,24 @@ overlap), so each kernel runs inflated; the GEMM replacement (correct, tensor co
 ceiling (+10% at 2048, +12% at 4096, 474K at 8192) remains the measured prize; reaching it needs a resident/persistent inference kernel that the
 training kernels cannot stretch, which is a multi-day build with the contention risk unresolved. PARKED. Kept: all stages are env-gated and off
 by default in the trainer copy; A+B0+stream are bitwise exact (three live digests) and harmless.
+
+## 13:18 — minibatch / replay-ratio probe (5M/2048 pool path, sched_v12 binary, 44 epochs; update time = dashboard Train ms, last 10 epochs)
+mb 4096: 547 ms (113 updates; model 285) | 8192: 447 (56) | 16384: 430 (28) | 32768: 432 (14) → −21% then FLAT from 8192 on.
+replay_ratio 1.0: mb 4096 310 ms (64 updates), mb 32768 249 ms (8 updates) → linear in the ratio (547/1.78 = 307).
+Net SPS fell slightly with larger minibatch (355/358K → 348 → 336 → 331K; epoch wall 0.735 → 0.790 s): bigger training kernels stretch the
+overlapped inference forwards (block-granular preemption), so on this box larger minibatches cost rollout speed while the update is hidden anyway.
+Floor: ~430 ms per epoch at ratio 1.78 ≈ 0.92 us per sample-pass; model (fwd+bwd) ≈ 235 ms, non-model ≈ 195 ms constant per sample (scales with
+the ratio, not with the minibatch count). 4090 GPU-side cap at 5M: ~610K SPS at ratio 1.78; ~850K at ratio 1.0 / mb 4096; ~1.05M at ratio 1.0 /
+mb 32768. For a ~60-core box the cores give ~1M env-side; the 4090 keeps up only at ratio ≈ 1 (sweep's call) or after cutting the ~195 ms
+non-model floor (per-sample update kernels: advantages/loss/scatter-backward — profile target).
+
+## 13:27 — training-phase kernel anatomy at mb 32768 (prof_mb32k, 5M/2048 pool, 14 updates/epoch, ratio 1.78; 467 ms/epoch summed ≈ 432 dashboard)
+Model GEMMs (real FLOPs, ~210 ms = 45%): bf16 gemm 64x128 sliced 41 + 128x64 28 + 64x128 nt 23 + 64x64 19 + 9 + 4 ms, plus 5,993 small cutlass
+kernels at 12.6 us = 76 ms + splitK 10 ms (the encoder's many small matmuls, now FLOP-sized at 32K rows). 14 TFLOP per epoch at ~67 TFLOP/s effective.
+Custom per-sample backward kernels (~150 ms = 32%): nh_relu_bias_bwd 52 ms (218 x 238 us — an elementwise op at ~280 GB/s: the one clear
+inefficiency, ~−40 ms available), nh_min_dv 16, entity_train_fused 15, nh_msg_bwd 12 (917 us per call), dTinv_scatter 9, add 7+4, ptr3 7+4,
+lab_tok/dE 10, decode 5, inv_gather 5, terr 4.
+Recurrent scan (per update, ~50 ms = 11%): mingru_scan_backward 51 x 621 us + forward 51 x 351 us — latency-bound over T=128 (4.9 us per
+time step); halves with each doubling of the minibatch, so this is the part that still responds to mb.
+Reading: the ~430 ms floor is ~half real FLOPs; the levers in order are replay_ratio (linear), the relu_bias backward kernel (−10%), minibatch
+beyond 32K (scan only), then a bigger GPU. GPU-side cap at 5M on the 4090 stays ~610K at ratio 1.78 / ~1.05M at ratio 1.0.
