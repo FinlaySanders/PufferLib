@@ -21,7 +21,7 @@ M3 redundancy census: DONE (find_* / minliquid / newsym / mintrap per move, see 
 M4 game-turn structure: DONE (5.12 turns/step, 9.1 moves/turn; tables below)
 M5 hardware view at production rotation (12) on P and E cores: cycles / mispredicts / L1d / L1i per function (host perf server needed).
                                                                                                            STATUS: pending (server down)
-## Design (written only after M1-M5)
+## Design (DRAFT v0 below; M5 pending the perf server)
 - Prize bound by situation, with the assumption behind each number.
 - Representation (per-cell planes, SoA monster fields) sized to the dominant decisions; who maintains each plane.
 - Validation harness: decision-kernel equivalence over the corpus (candidate set + choice probabilities), specified before engine code.
@@ -83,3 +83,29 @@ A v2 path for that population at 200 cycles/move (3x) saves ~31% of the step →
 saves 16% → +19%. The kernel is: believed hero position (set_apparxy), approach-or-wander intent, acceptable neighbours (mfndpos rules for an
 ordinary non-tunnelling walker), nearest-cell choice with track avoidance, position update, display update only if a cell is visible.
 Everything else (adjacent/visible/special monsters, pets, shopkeepers, items in reach) stays on the old path: 4% of cycles.
+
+## ELIGIBILITY CENSUS (17:45; same run, far (>10) unseen hostile moves = 217.3M of 282M monster moves)
+likes_objs 14.5% | likes_gold 38.0% | likes_gems 4.3% | likes_magic 0.4% | uses_items (non-mindless, non-animal) 51.3% | hides_under 7.2% |
+flyer/floater 7.6% | swimmer/eel 5.6% | amorphous 0.9% | giant 0.0% | nohands/verysmall 80.5% | carries items 45.7% | can_track 98.5% |
+undead/vampshifter 2.7% | unicorn 0.2% | human/minotaur 0.5% | bat/light/stalker (random approach) 4.8% | blinded 0.0% | asleep 13.5% |
+immobile 0.0% | throws_rocks 0.0% | mercenary 0.0% | eating 0.0%.
+READING: there is no small "plain walker" subset to carve out — object interest (~60%), carried items (46%) and track following (98.5%) are
+the norm — so v2 must implement the full ordinary-hostile kernel (status/sleep, distance/fear, item-use early exits, believed hero position,
+approach/wander/track, load and likes, object search, neighbour legality incl. liquids/doors/traps/garlic/scare rules, displacement, selection
+with track avoidance, move execution, visibility-gated display, post-move trap/door/item/hide) rather than a subset; the fallbacks are the
+truly special kinds (pets, shk/priest/guard, covetous, worms, tunnel/passwall, confusion/stun, adjacent or visible monsters) = ~4% of cycles.
+Each listed rule is cheap in a plane/word representation; the cost today is the scattered evaluation, not the rule count.
+
+## DESIGN DRAFT v0 (for review; no code)
+Representation (per level, maintained by the existing setters; most already exist): planes nonrock, occupied (exist), pool, lava, door,
+drawbridge (B), trap-present, pile bits (garlic/boulder/scare), hero-could-see (viz_array exists), hero-track bitmap (new: rebuilt per turn
+from utrack), object-present (NH_SUMMARY exists); per-monster packed word: species bits (SPWQ exists), status bits, flags needed by the kernel.
+Fast path: dochug_fast(m) for eligible monsters = exact re-implementation of dochug + m_move + mfndpos + post-move for the ordinary-hostile
+kernel over planes/words; eligibility test is a single mask on the packed word (+ not adjacent/visible/sensed); ineligible → old code unchanged.
+Validation harness (before the kernel): corpus replay with BOTH paths per eligible decision; the OLD path applies, the NEW path computes and
+must reproduce the deterministic intermediates exactly: believed hero position, appr, candidate set + info flags, track-hit flags, chosen cell
+(approach) or candidate set (wander), post-move state deltas. Zero mismatches over 16,777,216 decisions = gate. Then the usual quick gates,
+native rot-16 A/B, trainer live run, and a paired-seed learning check (RNG realisation differs by construction).
+Milestones: (1) harness + old-path intermediate dumper, with coverage report of the eligible share (go if ≥ 80% of far-unseen-hostile moves);
+(2) kernel for the top properties (no items, no object interest) → mismatch-free + measured per-move cycles (go if ≤ 300); (3) items/object
+interest/hide/track/liquids; (4) post-move + display gating; (5) land. Stop rule: any milestone that cannot reach zero mismatches in a week.
