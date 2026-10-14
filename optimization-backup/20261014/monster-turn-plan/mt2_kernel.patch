@@ -14,7 +14,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' /puffertank/experiments/nethack-e
  E void FDECL(mon_yells, (struct monst *, const char *));
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' /puffertank/experiments/nethack-engine-lines-20261014/engines/fastnle_ade/source/include/hack.h /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/include/hack.h
 --- /puffertank/experiments/nethack-engine-lines-20261014/engines/fastnle_ade/source/include/hack.h	2026-10-10 21:49:24.092973513 +0000
-+++ /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/include/hack.h	2026-10-14 21:20:29.999195705 +0000
++++ /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/include/hack.h	2026-10-14 23:05:22.665637759 +0000
 @@ -545,7 +545,13 @@
  #define SPW_CORRDMG (1ULL << 43)
  #define SPW_WEAPATTK (1ULL << 44)
@@ -29,10 +29,16 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' /puffertank/experiments/nethack-e
  #ifdef NLE_SPW_VERIFY
  #define SPWQ(p, bit, orig) ({ const struct permonst *spw_p_ = (p); int spw_a_ = (nh_spw[spw_p_ - mons] & (bit)) != 0; \
      int spw_b_ = (orig) != 0; if (spw_a_ != spw_b_) fprintf(stderr, "SPW_MISMATCH %s idx=%d\n", #orig, (int) (spw_p_ - mons)); spw_b_; })
-@@ -649,11 +655,20 @@
+@@ -649,11 +655,26 @@
      return FALSE;
  }
  
++/* the terrain minliquid() acts on (its own first test, inlined at the call sites) */
++static inline int
++nh_typ_liquidish(schar typ)
++{
++    return typ == POOL || typ == MOAT || typ == WATER || typ == DRAWBRIDGE_UP || typ == LAVAPOOL || typ == FOUNTAIN;
++}
 +static inline int
 +nh_typ_special(schar typ)
 +{
@@ -245,7 +251,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' /puffertank/experiments/nethack-e
      made_branch = FALSE;
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' /puffertank/experiments/nethack-engine-lines-20261014/engines/fastnle_ade/source/src/mon.c /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c
 --- /puffertank/experiments/nethack-engine-lines-20261014/engines/fastnle_ade/source/src/mon.c	2026-10-14 09:30:39.834174512 +0000
-+++ /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c	2026-10-14 21:23:27.005749607 +0000
++++ /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c	2026-10-14 23:05:22.666144227 +0000
 @@ -1,3 +1,7 @@
 +#ifdef NH_MT2_CG
 +#include <valgrind/callgrind.h>
@@ -254,6 +260,15 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' /puffertank/experiments/nethack-e
  /* NetHack 3.6	mon.c	$NHDT-Date: 1569276991 2019/09/23 22:16:31 $  $NHDT-Branch: NetHack-3.6 $:$NHDT-Revision: 1.297 $ */
  /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
  /*-Copyright (c) Derek S. Ray, 2015. */
+@@ -775,7 +779,7 @@
+         if (mtmp->data->mmove == 0) {
+             if (vision_full_recalc)
+                 vision_recalc(0);
+-            if (minliquid(mtmp))
++            if ((mtmp->data->mlet == S_EEL || nh_typ_liquidish(TYP_AT(mtmp->mx, mtmp->my))) && minliquid(mtmp)) /* minliquid()'s first test, inlined */
+                 continue;
+         }
+ 
 @@ -803,12 +807,18 @@
  }
  
@@ -273,6 +288,15 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' /puffertank/experiments/nethack-e
  
      /*
       * Some of you may remember the former assertion here that
+@@ -873,7 +883,7 @@
+         if (context.bypasses)
+             clear_bypasses();
+         clear_splitobjs();
+-        if (minliquid(mtmp))
++        if ((mtmp->data->mlet == S_EEL || nh_typ_liquidish(TYP_AT(mtmp->mx, mtmp->my))) && minliquid(mtmp)) /* minliquid()'s first test, inlined */
+             continue;
+ 
+         /* after losing equipment, try to put on replacement */
 @@ -921,8 +931,25 @@
                  && fightm(mtmp))
                  continue; /* mon might have died */

@@ -463,3 +463,13 @@ Non-exact (user-permitted): mcalcmove dead draws + RNG ≈ 3%.
 Eligible share (CG census, 128 games): 226,983,164 / 281,894,959 = 80.5% of monster moves on the fast path (46% at v1, 61% at v1.3).
 Trainer (information only; 5M/2048 scheduler, one pair): 390,598 → 419,143 (+7.3%); live learning 150 epochs digest 31e2e3deae720ef4 = reference.
 Stack since yesterday's engine (tile_signed): landed A+D+E +4.8%, then today's kernel +17.2% on top → ≈ +23% per step, all bit-exact.
+
+## VISION COST SPLIT (23:05; per-line, 1.28 recalcs/step before the skip): ray casting (view_from/right_side/left_side q?_path walks)
+≈ 7.6K Ir per recalc, update loop (per-cell could-see/lit/seenv/newsym tests over the row extents) ≈ 6.2K, the rest (light sources,
+memset, newsym calls, recalc_mapseen) ≈ 6K. A bitmap shadow-casting rewrite + a sparse update loop would recover ≈ 2% of the step
+(not the 3-4% estimated earlier). v1.7 (stage_k22): minliquid()'s first test inlined at its two per-monster-per-turn call sites (~1% Ir).
+
+## v1.7 RESULT (23:12, stage_k22) — EXACT (8-game, gates, rotation, corpus 0): minliquid gate ≈ +0.4% on both arms
+NH_MT2=0 28,422/28,553 (v1.6d 28,340), NH_MT2=1 33,708/33,677 (v1.6d 33,535). Kernel ladder vs old path: +18.4%.
+DAY TOTAL (plain same-binary, 128 games): old path 27,792 (morning) → 28,487 (vision skip + minliquid gate on both arms); kernel 33,692 →
++21.2% over this morning's engine on the plain build; landing-style PGO +17.2% at v1.6d (v1.7 adds ~0.4%).
