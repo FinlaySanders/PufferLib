@@ -1,0 +1,98 @@
+
+== movemon / cpu_core/branch-misses/u: 4001 samples = 4.0% of event — top source lines (% of this function)
+ 12.60  mon.c:867 [movemon]
+  8.45  mon.c:860 [movemon]
+  8.05  monmove.c:133 [dochugw < movemon]
+  6.72  mon.c:841 [movemon]
+  6.62  mon.c:848 [movemon]
+  6.45  mon.c:863 [movemon]
+  6.25  mon.c:830 [movemon]
+  4.57  mon.c:871 [movemon]
+-- innermost function: movemon 74.3, dochugw 15.9, dmonsfree 9.3, clear_splitobjs 0.3, movemon.localalias.lto_priv.0 0.1, dist2 0.1
+
+== movemon / cpu_core/cycles/u: 5198 samples = 5.2% of event — top source lines (% of this function)
+ 17.64  monmove.c:133 [dochugw < movemon]
+ 11.70  mon.c:2171 [dmonsfree < movemon]
+  7.71  mon.c:863 [movemon]
+  6.60  mon.c:848 [movemon]
+  5.69  mon.c:830 [movemon]
+  5.35  mon.c:832 [movemon]
+  4.75  monmove.c:138 [dochugw < movemon]
+  4.62  mon.c:867 [movemon]
+-- innermost function: movemon 49.2, dochugw 27.8, dmonsfree 20.7, dist2 1.7, movemon.localalias.lto_priv.0 0.4, clear_splitobjs 0.1
+
+== nh_fobj_next / cpu_core/branch-misses/u: 4453 samples = 4.5% of event — top source lines (% of this function)
+ 18.01  monmove.c:927 [nh_fobj_next]
+ 11.43  monmove.c:932 [nh_fobj_next]
+  9.03  monmove.c:926 [nh_fobj_next]
+  7.46  monmove.c:855 [nh_fobj_next]
+  7.10  emmintrin.h:1377 [_mm_cmpgt_epi8 < nh_fobj_next]
+  5.79  emmintrin.h:624 [_mm_set_epi8 < _mm_set1_epi8 < nh_fobj_next]
+  5.14  monmove.c:925 [nh_fobj_next]
+  4.45  monmove.c:863 [nh_fobj_next]
+-- innermost function: nh_fobj_next 82.3, _mm_cmpgt_epi8 7.1, _mm_set_epi8 5.8, _mm_loadu_si128 2.0, nh_fobj_next.localalias 2.0, _mm_or_si128 0.8
+
+== nh_fobj_next / cpu_core/cycles/u: 4468 samples = 4.5% of event — top source lines (% of this function)
+ 11.30  emmintrin.h:1377 [_mm_cmpgt_epi8 < nh_fobj_next]
+  9.53  monmove.c:927 [nh_fobj_next]
+  8.21  monmove.c:932 [nh_fobj_next]
+  7.41  monmove.c:855 [nh_fobj_next]
+  7.03  emmintrin.h:624 [_mm_set_epi8 < _mm_set1_epi8 < nh_fobj_next]
+  5.98  monmove.c:926 [nh_fobj_next]
+  4.95  emmintrin.h:706 [_mm_loadu_si128 < nh_fobj_next]
+  4.12  emmintrin.h:1329 [_mm_or_si128 < nh_fobj_next]
+-- innermost function: nh_fobj_next 69.6, _mm_cmpgt_epi8 11.3, _mm_set_epi8 7.0, _mm_loadu_si128 4.9, _mm_or_si128 4.1, nh_fobj_next.localalias 2.8, nh_fobj_build 0.2
+
+== dochug / cpu_core/branch-misses/u: 2617 samples = 2.6% of event — top source lines (% of this function)
+  8.22  monmove.c:248 [disturb < dochug]
+  7.15  monmove.c:396 [dochug]
+  6.38  monmove.c:688 [dochug]
+  6.19  monmove.c:670 [dochug]
+  5.16  monmove.c:357 [distfleeck < dochug]
+  4.05  monmove.c:611 [dochug]
+  3.44  monmove.c:466 [dochug]
+  2.94  monmove.c:574 [dochug]
+-- innermost function: dochug 60.3, distfleeck 10.1, disturb 8.3, set_apparxy 7.0, engr_at 5.1, isaac64_next_uint64 3.2, monnear 1.4, dist2 1.3, nle_rng_state 1.1, dochug.localalias.lto_priv.0 0.9, RND 0.8, accessible 0.2
+
+== dochug / cpu_core/cycles/u: 3798 samples = 3.8% of event — top source lines (% of this function)
+  5.34  monmove.c:430 [dochug]
+  5.29  monmove.c:688 [dochug]
+  4.84  monmove.c:479 [dochug]
+  4.66  monmove.c:611 [dochug]
+  4.00  monmove.c:248 [disturb < dochug]
+  3.79  monmove.c:357 [distfleeck < dochug]
+  3.34  engrave.c:255 [engr_at < wipe_engr_at < dochug]
+  2.92  monmove.c:670 [dochug]
+-- innermost function: dochug 55.2, distfleeck 11.3, engr_at 7.0, set_apparxy 6.0, isaac64_next_uint64 5.6, dist2 5.4, disturb 4.1, nle_rng_state 2.0, monnear 1.5, dochug.localalias.lto_priv.0 1.4, RND 0.1, accessible 0.1
+
+== newsym / cpu_core/branch-misses/u: 2807 samples = 2.8% of event — top source lines (% of this function)
+ 10.26  display.c:760 [newsym]
+  9.87  display.c:915 [newsym]
+  9.62  display.c:1616 [show_glyph < newsym]
+  9.05  display.c:1519 [nle_gbuf_blob < show_glyph < newsym]
+  7.16  display.c:864 [newsym]
+  6.70  display.c:903 [newsym]
+-- innermost function: newsym 71.5, show_glyph 11.8, nle_gbuf_blob 9.0, map_background 2.2, t_at 2.1, on_level 1.1, newsym.localalias.lto_priv.0 0.9, isok 0.7, dist2 0.3, visible_region_at 0.2, is_moat 0.0, is_pool 0.0
+
+== newsym / cpu_core/cycles/u: 4031 samples = 4.0% of event — top source lines (% of this function)
+ 15.18  display.c:787 [newsym]
+ 10.25  display.c:903 [newsym]
+  8.51  display.c:1616 [show_glyph < newsym]
+  7.47  display.c:864 [newsym]
+  4.27  display.c:863 [newsym]
+  4.14  display.c:915 [newsym]
+-- innermost function: newsym 78.1, show_glyph 9.7, newsym.localalias.lto_priv.0 3.2, nle_gbuf_blob 2.8, isok 2.2, map_background 1.3, on_level 1.3, t_at 1.2, visible_region_at 0.1, dist2 0.1
+
+== isaac64_update.lto_priv.0 / cpu_core/branch-misses/u: 119 samples = 0.1% of event — top source lines (% of this function)
+ 60.50  isaac64.c:90 [isaac64_update]
+ 20.17  isaac64.c:72 [isaac64_update]
+  6.72  isaac64.c:56 [isaac64_update]
+  5.88  isaac64.c:45 [isaac64_update]
+-- innermost function: isaac64_update 100.0
+
+== isaac64_update.lto_priv.0 / cpu_core/cycles/u: 3269 samples = 3.3% of event — top source lines (% of this function)
+ 11.32  isaac64.c:75 [isaac64_update]
+ 10.74  isaac64.c:86 [isaac64_update]
+ 10.58  isaac64.c:68 [isaac64_update]
+  9.85  isaac64.c:57 [isaac64_update]
+-- innermost function: isaac64_update 92.5, upper_bits 7.5

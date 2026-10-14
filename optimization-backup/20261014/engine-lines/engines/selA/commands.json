@@ -1,0 +1,114 @@
+[
+  {
+    "label": "generate_configure",
+    "command": [
+      "cmake",
+      "-S",
+      "/puffertank/experiments/nethack-engine-lines-20261014/engines/selA/source",
+      "-B",
+      "/puffertank/experiments/nethack-engine-lines-20261014/engines/selA/build",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DNLE_TLS_INITIAL_EXEC=ON",
+      "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON",
+      "-DCMAKE_C_FLAGS=-fno-semantic-interposition -fprofile-generate=/puffertank/experiments/nethack-engine-lines-20261014/engines/selA/profiles -fprofile-update=atomic",
+      "-DCMAKE_CXX_FLAGS=-fno-semantic-interposition -fprofile-generate=/puffertank/experiments/nethack-engine-lines-20261014/engines/selA/profiles -fprofile-update=atomic",
+      "-DFETCHCONTENT_SOURCE_DIR_BZIP2=/puffertank/pufferlib/vendor/fast-nle/build/_deps/bzip2-src",
+      "-DFETCHCONTENT_SOURCE_DIR_DEBOOST_CONTEXT=/puffertank/pufferlib/vendor/fast-nle/build/_deps/deboost_context-src",
+      "-DFETCHCONTENT_SOURCE_DIR_PYBIND11=/puffertank/pufferlib/vendor/fast-nle/build/_deps/pybind11-src"
+    ],
+    "rc": 0,
+    "seconds": 0.8885652659810148
+  },
+  {
+    "label": "generate_build",
+    "command": [
+      "cmake",
+      "--build",
+      "/puffertank/experiments/nethack-engine-lines-20261014/engines/selA/build",
+      "--target",
+      "nethack",
+      "-j8"
+    ],
+    "rc": 0,
+    "seconds": 7.305539638997288
+  },
+  {
+    "label": "score_profile",
+    "command": [
+      "taskset",
+      "-c",
+      "0,2,4,6,8,10,12,14",
+      "/puffertank/experiments/nethack-perf-20260917/harness-v3/score/replay_vec",
+      "time",
+      "8",
+      "20000",
+      "10000",
+      "/puffertank/experiments/nethack-perf-20260917/score-balanced-v2/env00468.trace",
+      "/puffertank/experiments/nethack-perf-20260917/score-balanced-v2/env00310.trace",
+      "/puffertank/experiments/nethack-perf-20260917/score-balanced-v2/env00413.trace",
+      "/puffertank/experiments/nethack-perf-20260917/score-balanced-v2/env00026.trace",
+      "/puffertank/experiments/nethack-perf-20260917/score-balanced-v2/env00093.trace",
+      "/puffertank/experiments/nethack-perf-20260917/score-balanced-v2/env00280.trace",
+      "/puffertank/experiments/nethack-perf-20260917/score-balanced-v2/env00032.trace",
+      "/puffertank/experiments/nethack-perf-20260917/score-balanced-v2/env00160.trace"
+    ],
+    "rc": 0,
+    "seconds": 34.71935180100263
+  },
+  {
+    "label": "depth_profile",
+    "command": [
+      "taskset",
+      "-c",
+      "0,2,4,6,8,10,12,14",
+      "/puffertank/experiments/nethack-perf-20260917/harness-v3/depth/replay_vec",
+      "time",
+      "8",
+      "20000",
+      "10000",
+      "/puffertank/experiments/nethack-perf-20260917/depth-record-v2/env00019.trace",
+      "/puffertank/experiments/nethack-perf-20260917/depth-record-v2/env00508.trace",
+      "/puffertank/experiments/nethack-perf-20260917/depth-record-v2/env00420.trace",
+      "/puffertank/experiments/nethack-perf-20260917/depth-record-v2/env00001.trace",
+      "/puffertank/experiments/nethack-perf-20260917/depth-record-v2/env00090.trace",
+      "/puffertank/experiments/nethack-perf-20260917/depth-record-v2/env00211.trace",
+      "/puffertank/experiments/nethack-perf-20260917/depth-record-v2/env00032.trace",
+      "/puffertank/experiments/nethack-perf-20260917/depth-record-v2/env00160.trace"
+    ],
+    "rc": 0,
+    "seconds": 3.0717146740062162
+  },
+  {
+    "label": "use_configure",
+    "command": [
+      "cmake",
+      "-S",
+      "/puffertank/experiments/nethack-engine-lines-20261014/engines/selA/source",
+      "-B",
+      "/puffertank/experiments/nethack-engine-lines-20261014/engines/selA/build",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DNLE_TLS_INITIAL_EXEC=ON",
+      "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON",
+      "-DCMAKE_C_FLAGS=-fno-semantic-interposition -fprofile-use=/puffertank/experiments/nethack-engine-lines-20261014/engines/selA/profiles -fprofile-correction -Werror=coverage-mismatch",
+      "-DCMAKE_CXX_FLAGS=-fno-semantic-interposition -fprofile-use=/puffertank/experiments/nethack-engine-lines-20261014/engines/selA/profiles -fprofile-correction -Werror=coverage-mismatch",
+      "-DFETCHCONTENT_SOURCE_DIR_BZIP2=/puffertank/pufferlib/vendor/fast-nle/build/_deps/bzip2-src",
+      "-DFETCHCONTENT_SOURCE_DIR_DEBOOST_CONTEXT=/puffertank/pufferlib/vendor/fast-nle/build/_deps/deboost_context-src",
+      "-DFETCHCONTENT_SOURCE_DIR_PYBIND11=/puffertank/pufferlib/vendor/fast-nle/build/_deps/pybind11-src"
+    ],
+    "rc": 0,
+    "seconds": 0.10488382700714283
+  },
+  {
+    "label": "use_build",
+    "command": [
+      "cmake",
+      "--build",
+      "/puffertank/experiments/nethack-engine-lines-20261014/engines/selA/build",
+      "--target",
+      "nethack",
+      "-j8"
+    ],
+    "rc": 0,
+    "seconds": 6.091374173993245
+  }
+]

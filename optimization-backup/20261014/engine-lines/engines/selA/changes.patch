@@ -1,0 +1,56 @@
+diff -ru engines/base_source/include/movement_masks.h engines/selA/source/include/movement_masks.h
+--- engines/base_source/include/movement_masks.h	2026-10-14 08:27:47.824456326 +0000
++++ engines/selA/source/include/movement_masks.h	2026-10-14 08:29:53.455629170 +0000
+@@ -42,6 +42,7 @@
+ {
+     unsigned int dx = (unsigned int) (px - x + 1);
+     unsigned int dy = (unsigned int) (py - y + 1);
+-    return dx < 3 && dy < 3 ? 1U << (3 * dx + dy) : 0U;
++    unsigned int in = (dx < 3U) & (dy < 3U); /* branch-free: an out-of-range position yields 0 */
++    return (1U << ((3U * dx + dy) & 31U)) & (0U - in);
+ }
+ #endif
+diff -ru engines/base_source/src/monmove.c engines/selA/source/src/monmove.c
+--- engines/base_source/src/monmove.c	2026-10-14 08:27:47.863180664 +0000
++++ engines/selA/source/src/monmove.c	2026-10-14 08:29:53.464291670 +0000
+@@ -738,9 +738,9 @@
+                 || (ndist < shortest_with_displacing))
+                 shortest_with_displacing = ndist;
+         } else {
+-            if ((shortest_without_displacing == -1)
+-                || (ndist < shortest_without_displacing))
+-                shortest_without_displacing = ndist;
++            int upd = (shortest_without_displacing == -1) | (ndist < shortest_without_displacing);
++            int m = -upd;
++            shortest_without_displacing = (ndist & m) | (shortest_without_displacing & ~m);
+             count_without_displacing++;
+         }
+     }
+@@ -1321,15 +1321,18 @@
+                             goto nxti;
+             }
+ 
+-            nearer = ((ndist = dist2(nx, ny, gx, gy)) < nidist);
+-
+-            if ((appr == 1 && nearer) || (appr == -1 && !nearer)
+-                || (!appr && !rn2(++chcnt)) || !mmoved) {
+-                nix = nx;
+-                niy = ny;
+-                nidist = ndist;
+-                chi = i;
+-                mmoved = 1;
++            ndist = dist2(nx, ny, gx, gy);
++            nearer = (ndist < nidist);
++            {
++                /* The original predicate without its data-dependent branch: appr 1 takes a nearer cell, -1 a farther one,
++                   0 draws rn2(++chcnt) for every candidate exactly as before, and the first candidate is always taken. */
++                int take = appr ? ((nearer != (appr < 0)) | !mmoved) : (!rn2(++chcnt) | !mmoved);
++                int m = -take;
++                nix = (xchar) ((nx & m) | (nix & ~m));
++                niy = (xchar) ((ny & m) | (niy & ~m));
++                nidist = (ndist & m) | (nidist & ~m);
++                chi = (i & m) | (chi & ~m);
++                mmoved |= (schar) take;
+             }
+  nxti:
+             ;

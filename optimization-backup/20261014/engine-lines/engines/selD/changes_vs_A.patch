@@ -1,0 +1,12 @@
+diff -ru engines/selA/source/src/monmove.c engines/selD/source/src/monmove.c
+--- engines/selA/source/src/monmove.c	2026-10-14 08:29:53.464291670 +0000
++++ engines/selD/source/src/monmove.c	2026-10-14 09:02:53.324902869 +0000
+@@ -700,7 +700,7 @@
+ itsstuck(mtmp)
+ register struct monst *mtmp;
+ {
+-    if (sticks(youmonst.data) && mtmp == u.ustuck && !u.uswallow) {
++    if (mtmp == u.ustuck && !u.uswallow && sticks(youmonst.data)) { /* same predicate; the identity test first skips the attack-table walk */
+         pline("%s cannot escape from you!", Monnam(mtmp));
+         return TRUE;
+     }

@@ -1,0 +1,65 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 99K of event 'cpu_core/cycles/u'
+# Event count (approx.): 281649642355
+#
+# Overhead       Samples  Symbol                                                                                                                                                                              
+# ........  ............  ....................................................................................................................................................................................
+#
+    21.18%         21143  [.] m_move
+    14.12%         14100  [.] mfndpos_masked.lto_priv.0
+     7.67%          7664  [.] nethack_pack_obs
+     5.46%          5449  [.] movemon
+     4.17%          4162  [.] nh_fobj_next
+     4.00%          3997  [.] newsym
+     3.92%          3918  [.] dochug
+     3.61%          3602  [.] isaac64_update.lto_priv.0
+     2.43%          2428  [.] moveloop
+     2.39%          2387  [.] nethack_rl::NetHackRL::fill_obs(nle_observation*)
+     2.11%          2109  [.] vision_recalc
+     1.69%          1693  [.] right_side
+     1.61%          1609  [.] left_side
+     1.16%          1160  [.] nethack_rl::NetHackRL::update_blstats()
+     1.05%          1050  [.] minliquid
+     0.98%           978  [.] mcalcdistress
+     0.94%           934  [.] find_misc
+     0.92%           920  [.] dosearch0
+     0.84%           838  [.] nle_weight
+     0.83%           829  [.] find_offensive
+     0.82%           822  [.] isaac64_reseed
+     0.81%           811  [.] flush_screen
+     0.71%           704  [.] mintrap
+
+
+# Samples: 99K of event 'cpu_core/branch-misses/u'
+# Event count (approx.): 3075891926
+#
+# Overhead       Samples  Symbol                                                                                                                                                                                  
+# ........  ............  ........................................................................................................................................................................................
+#
+    20.80%         20738  [.] m_move
+    13.38%         13356  [.] mfndpos_masked.lto_priv.0
+    10.14%         10068  [.] nethack_pack_obs
+     4.65%          4630  [.] nh_fobj_next
+     4.35%          4348  [.] movemon
+     4.02%          3986  [.] nethack_rl::NetHackRL::fill_obs(nle_observation*)
+     3.26%          3236  [.] newsym
+     3.06%          3021  [.] vision_recalc
+     3.04%          3020  [.] dochug
+     2.99%          2934  [.] right_side
+     2.92%          2880  [.] left_side
+     2.48%          2483  [.] minliquid
+     1.72%          1710  [.] moveloop
+     1.65%          1639  [.] nethack_zt_mask_on
+     1.17%          1163  [.] nle_weight
+     1.06%          1053  [.] find_misc
+     0.94%           939  [.] find_offensive
+     0.76%           753  [.] flush_screen
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#
