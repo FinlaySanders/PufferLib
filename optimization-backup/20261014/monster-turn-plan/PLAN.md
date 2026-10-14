@@ -358,3 +358,60 @@ same-binary, 128 games): v1 +10.7 | v1.1 +11.1 | v1.2 +13.1 | v1.3b +14.6. v1.4 
 NH_MT2=0 28,186/28,173 → NH_MT2=1 32,996/33,006. Ladder (plain, 128 games): v1 +10.7 | v1.1 +11.1 | v1.2 +13.1 | v1.3b +14.6 | v1.4 +17.1.
 Consolidation = stage_k12: PGO build of v1.4, PGO gates, landing-style A/B vs fastnle_ade PGO (P-core 2 and E-core 16), trainer A/B
 (ab_mt2v14.json: fast protocol sched_v22/v12 x2, live digest).
+
+## v1.4 CONSOLIDATION (20:49, stage_k12; PGO build engines/mt2pgo 3f1d12b0…, PGO quick gates 5/5)
+| landing-style, rotation-16, 128 games | landed fastnle_ade PGO | mt2 v1.4 PGO | gain |
+|---|---:|---:|---:|
+| P-core 2 | 31,243 / 31,233 | 36,147 / 36,152 | +15.7% |
+| E-core 16 | 21,693 | 24,876 | +14.7% |
+Trainer A/B (fast protocol, 5M model, 2048 agents, same PGO binary NH_MT2=0/1): sched_v22 388,912/385,196 → 407,603/406,489 (+5.2%);
+sched_v12 (pool) 243,525/239,295 → 257,108/255,353 (+6.1%). Live learning 150 epochs digest 31e2e3deae720ef4 = reference (exact under
+training). Regime grid (5M x 4096/8192 both trainers, 15M x 2048/4096 scheduler; off/on x2) = stage_k13 / ab_mt2v14_grid.json.
+
+## DIRECTIVE (20:58, user): make the env as fast as possible; do not weigh trainer regimes or the 5M/15M transfer for now.
+Measure env-side on the harness (rotation-16, PGO landing-style), keep the exact gates (8-game hash → quick gates → 128-game hash → corpus),
+report trainer transfer only as information. Order of the next programs by size × method fit: vision_recalc (6.8%), near-monster kernel
+(~8%), per-monster-per-turn bookkeeping (~8%), fast-path cached intent (~20% bucket, flat), packer after C2 (4.9%), display/hero (~8%).
+
+## REGIME GRID (21:07, stage_k13; PGO v1.4, same binary NH_MT2=0/1, fast protocol, two reps) — information only (user: env speed is the goal)
+5M/4096 sched +4.5% (404.9K/413.3K → 429.3K/425.5K: at the ~430K GPU cap) | 5M/4096 pool +5.3% | 5M/8192 sched +0.4% (cap) | 5M/8192 pool
++3.1% | 15M/2048 −0.1% | 15M/4096 −0.2% (GPU-bound). Net SPS on this box is GPU-capped except 5M/2048 (+5.2/+6.1%).
+
+## VISION CENSUS (21:15; CG build, hash of every vision_recalc input vs the previous recalc)
+8 games: 232K recalcs = 1.42/step: control 0 (flag-triggered) 122.7K, control 1 (hero move) 108.2K, control 2 1.1K; identical inputs
+46.8K = 20.2% of all (38% of control-0); 52% of recalcs happen with a light source on the level. 128 games: 3.42M = 1.31/step, redundant 19.7%
+(41% of control-0). Excluding seenv/waslit from the criterion (a repeated recalc cannot change them) adds only 0.1 pt → 59% of flag-triggered
+recalcs have genuinely changed inputs (monster-opened doors, carried lights, pits/teleports). EXACT SKIP value: 0.26 recalc/step x ~20K Ir ≈
+1.4% of the step, via epochs (opacity: block/unblock_point/vision_reset; typ: nh_move_typ_set; lit: read.c litroom, dig.c:79, vault.c:137;
+seenv assignments; light sources: positions recomputed at the check; hero tuple compared) with the CG full-hash as the verify oracle.
+Making the recalc itself cheaper (update loop ~8K + ray casting ~10K per call) applies to all 1.3/step: ~2% per 30% speedup — harder.
+Decision pending the v1.4 re-rank (stage_k14: whole-step + old-path-only profiles).
+
+## RE-RANK WITH v1.4 (21:20; whole-step 8 games): 345,963 Ir/step (v1.2 380K, pre-kernel ~420K)
+monster turn 61.5%: fast path 17% (69% of moves, ~800 self/move), old path m_move 4.1% + mfndpos 4.3% + dochug 3.4% (old-path-only profile:
+31% of moves at 2,086 Ir = 20% of the step; by function: m_move 458, mfndpos 367, dochug 148, fobj cursor 95+17, nh_newsym_moved 59, select_rwep
+40, isaac 39, mt2_eligible 38, searches_for_item 33, find_misc 30, find_defensive 22, linedup 21), bookkeeping ~14% (movemon 8.8K, mcalcmove
+6.6K + RNG 11K, minliquid 5.3K, mcalcdistress 4.7K, mt2_eligible 7K); vision 12.6%; packer 5-6%; display/hero/libc ~13%.
+Per-reason old-path profiles (near vs asleep) = stage_k16.
+
+## v1.5 VISION SKIP — verify caught it (21:22): 684,902 skips / 5,846 VIOLATIONS (0.85%) on 128 games → chain stopped before any gate
+Audit: persistent direct writers of viz_array outside vision.c exist (dig.c mkcavepos, hack.c boulder-into-pit kludge) — invisible to an
+input-hash oracle because viz_array is an output; and seenv additions outside vision.c (display.c:2438) are harmless to a recalc but count as
+input changes. Fix v1.5b: epoch bumps at the two direct writers; oracle replaced by the no-op check (CG build: when the skip logic says
+'same', snapshot viz_array/rmin/rmax/seenv/waslit/glyph, run the full recalc anyway, count any difference) — the gold standard for "skipping
+is exact". stage_k17 = per-component violation counts of the old oracle; stage_k18 = the no-op oracle on 8 games.
+
+## VISION SKIP ORACLE (21:35-21:45)
+Per-component diagnosis of the input-hash violations: 359/359 (8 games) and 5,829/5,829 (128 games) were the SEENV component alone (hero,
+opacity, typ, lit, lights: 0) → seen-vector additions outside vision.c (display.c:2438, SVALL sets), harmless by the |= argument.
+No-op oracle (CG build: on 'same', snapshot viz/rmin/rmax/seenv/waslit/glyph, run the full recalc, compare): 8 games 47,445 skips → 0
+differences in every field; 128 games 684,902 skips → viz 0, rminmax 0, seenv 0, waslit 0, GLYPH 66 (0.01%): the x-ray loop calls newsym
+unconditionally for every cell in range, so a repeat recalc redisplays world changes there. Fix: never skip while u.xray_range >= 0.
+Also fixed on the way: the two persistent direct writers of viz_array outside vision.c (dig.c mkcavepos, hack.c boulder-into-pit) bump the epoch.
+Sleeper profile (K16 why=4): 156 Ir per sleeping-monster move = 0.6% of the step — nothing to gain there.
+Near-monster profile (K16 why=9): 8.6% of moves at 3,791 Ir = 9.9% of the step; m_move 833, mfndpos 670+98+31, dochug 209, select_rwep 131,
+display gates 128, cursor 129, mt2_eligible 75, movemon 71, find_misc 62, RNG 62, linedup 54 + lined_up 34, mattacku 42 + getmattk 30,
+place_monster 39, find_defensive 38, can_carry 37, mintrap 34, find_offensive 34 → the far kernel's shape again; combat itself < 3%.
+v1.6 (apply_mt2_v16_near.py, written): distmin >= 2 and could-see monsters join the fast path with the range-dependent originals kept
+(distfleeck, find_defensive/find_misc within dist2 36, wield + castmu blocks verbatim, lined_up for in_line, should_see for appr/track,
+hero/image cell in the 3x3 → mfndpos fallback, ALLOW_U / hero-cell / image-cell blocks verbatim after selection). Expected +5-6%.
