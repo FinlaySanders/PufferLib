@@ -87,3 +87,12 @@ BOLT post-link layout (instrumentation mode; needs -Wl,-q relocations in the lin
 Native rot16 (cpu 2): base 29,518 / 29,512 | C 29,895 / 29,919 (+1.3%) | C2 30,672 / 30,639 (+3.9% over base, +2.5% over C); obs hash unchanged.
 Trainer (sched_v22 = v12 + C2 header): live digest 31e2e3deae720ef4 EXACT (150 epochs, weights updating); fast 5M/2048: v12 380.8K / 380.1K vs
 v22 385.8K / 385.1K (+1.3%, both reps). Landed in the pufferlib backup worktree on top of C (patch handoff/C2_over_C_header.patch).
+
+## 17:12 — candidate F (rn2 accessor inline, scary reorder, Displaced hoist): NULL. selE 30,918 / 30,936 vs selF 30,934 / 30,955 (+0.05%);
+exact (quick 5/5, corpus 0 diff) but inside the 0.1% repeatability → not landed (keeps the engine commit minimal). Micro-items are exhausted.
+
+## 17:30 — BOLT post-link layout on top of PGO: NEGATIVE, closed. fastnle_ade 31,246 / 31,233 | same source rebuilt with -Wl,-q (fresh PGO
+profile) 30,966 / 30,966 (−0.9%: profile/layout jitter between PGO builds) | BOLT (ext-tsp blocks, hfsort+ functions, split functions/cold,
+icf, instrumentation profile from the rot-16 harness) 30,132 / 30,141 (−3.5% vs ade, −2.7% vs its own input); E-core 21,708 → 21,092 (−2.8%).
+Exact (quick 5/5, corpus 0 diff). BOLT's layout undoes PGO's on this code; lite mode profiled 2,309 of 4,683 functions. Not pursued further.
+Codegen levers now exhausted: PGO (kept), LTO (kept), -mtune (null), BOLT (negative).
