@@ -296,3 +296,65 @@ the corpus hash. Added to the per-slice routine. S3's own gain looked small on t
 128-game rotation, plain same-binary: NH_MT2=0 28,100/28,085 → NH_MT2=1 31,844/31,738 (+13.1%); quick gates 5/5; corpus hash 16,777,216
 decisions 0 diffs. PGO (engines/mt2pgo rebuilt): landed fastnle_ade 31,221/31,226 → mt2 v1.2 35,036/35,030 = +12.2%, hash identical, PGO
 gates 5/5. Cumulative ladder vs the landed engine (PGO): v1 — | v1.1 +9.5% | v1.2 +12.2%.
+
+## HOTSPOT MAP WITH THE KERNEL ON (20:02; whole-step callgrind, kernel v1.2, 8 mature games x 20,480 steps = 380K Ir/step; shares of ALL Ir)
+| bucket | share | detail |
+|---|---:|---|
+| monster turn | 65.1% | fast path ≈ 20% (7.9M eligible x 1,600 Ir; was 3,107) · OLD path m_move inclusive 25.7% (6.4M calls = 54% of moves still ineligible) · per-monster-per-turn: mcalcmove 3.0% incl (28M calls, the rn2(12) speed draw ≈ most of the RNG refills), movemon body 2.3%, minliquid 1.4% (23M calls), mt2_eligible 1.9%, dochug self 3.6%, mfndpos_masked 8.1% (6.2M calls from the OLD m_move, 0.46M from the fast fallback) |
+| vision | 6.8% | vision_recalc 210K calls = 1.28/step at ~20K Ir each (3 call sites), left/right_side recursion |
+| observation packing (env header) | 6.5% | pack_obs 24.7K Ir/step: inventory-slot loops ≈ 4.8K, nethack_zt_mask_on() 1.5K (getenv-cached static called ~500x/step), cant_hold/item_classes verb tests ≈ 2.8K, grid pass ≈ 2.4K |
+| RNG refills | 2.9% | isaac64_update: ≈ 1 refill/step, mostly mcalcmove draws (RNG-freedom item) |
+| display pipeline | ~4% | newsym 1.5% (3.65M calls), show_glyph 0.5, flush_screen 0.6, mapglyph/rl_print_glyph 0.5, topline 0.3, blstats 0.4 |
+| hero bookkeeping | ~4% | nh_timeout 1.1, dosearch 1.3 (the agent's search spam), moveloop 0.9, settrack 0.6, weight_cap 0.6 (4M calls = 25/step) + inv_weight/nle_weight 0.5 |
+| libc/other | ~4% | strcmp/strchr/strstr 0.8, memset/memcpy 0.4, were_change 0.3 (per monster per turn), in_rooms 0.3, sortloot 0.1 |
+Eligible-only v1.2: 1,600 Ir/move; m_move_fast self 736 is a long tail (no line > 31 Ir: track-hit compare 31, hero-state test 28, bad-mask 23,
+gbuf compare 22, dist2 40, poss writes 23, box loops 25); display gates 2 x 50; eligibility ~50; dochug_fast 84; refills 48; fallback 46.
+RANKED NEXT (exact unless marked): (1) old-path populations — why-census per failing clause (CG build, running after K7) then extend the
+kernel to the big ones (v1.3 = peaceful 4.9% of step); (2) header pack_obs: hoist nethack_zt_mask_on, restructure the inventory loops
+(+1.5-2%); (3) per-monster-per-turn bookkeeping: minliquid call gate, movemon body order, were_change (+1-1.5%); (4) fast-path tail: hero
+word (v1.3), display gate (+1%); (5) vision 6.8% and display pipeline 4%: algorithmic, big, later; (6) RNG 2.9%: non-exact (user-permitted),
+last.
+
+## v1.3 RESULT (20:12) — rotation EXACT and +14.3%, corpus hash FAILED (15.07M/16.78M): a THREADING slip, fixed as v1.3b
+128-game rotation (single worker): NH_MT2=0 28,312/28,324 → NH_MT2=1 32,371/32,361 = +14.3%, obs hash identical; 8-game hash identical;
+quick gates 5/5. Corpus replay (replay_hash 512 games on 24 THREADS): 90% of decisions differ. Cause: the cached hero-state word
+(nh_mt2_hero_stale/nh_mt2_hero_bad) was a plain process global, shared across the games running on different threads; every single-thread
+check passes, the multi-thread corpus (and the trainer) would not. Fix v1.3b: per-env fields in nh_ctx_gen.h (nh_mt2_hero_valid, 0 = stale at
+context creation). LESSON for the gate routine: the corpus hash is the only multi-thread check in the chain — keep it mandatory for every
+slice, and audit every new global for per-env state (kernel globals now: nh_mt2_fast/s3/s7 read-only switches; CG counters and the trace
+file are instrumentation only). Revalidation = stage_k10 (behind the C2-harness profile).
+
+## WHY-CENSUS (20:22; v1.3 predicate, 128-game rotation, first failing clause, % of ALL monster moves): eligible 61.3%
+asleep 12.5 (cheap early exits) | HERO STATE 10.9 → Displaced 70.6% of those, Invis 26.0%, Upolyd 3.1%, Hallucination 0.1% | near (distmin
+<= 9) 7.6 | species_nofast 2.6 → unicorns 55% (white 34, gray 13, black 8), dwarf 35 + dwarf lord 3 (tunnellers), shrieker 3 | status 2.1 |
+shk/priest/guard 1.4 | couldsee 0.8 | fleeing 0.7.
+READING: the agent wears a cloak of displacement most of the time; Displaced/Invis only change the believed hero position, which the
+original set_apparxy() computes — calling it (twice, as the original) instead of assuming the exact position makes both exact; Upolyd adds
+the lined_up() rn2(25) draw in two places. That is v1.4 (apply_mt2_v14.py, stage_k11): ~7% of all moves move from the old path (~2,700 Ir)
+to the fast path (~1,600) ≈ +3% SPS expected. Near monsters (7.6%) are the combat kernel = a different, later program; unicorns/dwarves
+(1.4%/1%) not worth their rules yet.
+## C2-HEADER PROFILE (20:16; replay_sched6_C2 = landed mask code, kernel v1.2): 366,864 Ir/step (base header 380,334: C2 = -3.5%)
+pack_obs 4.9% (17.8K Ir/step) and flat: per-cell bounds accessor 1.3K, grid pass + glyph classification 2.4K, lazy accessor nh_lazy[40]
+0.9K, C2 slot writes 0.6K, throw-target ordering 0.9K. Maybe +1.5% with effort; below the monster items in priority.
+
+## AFTER v1.4 — remaining exact levers, sized from the kernel-on map (each ~1-2% of the step; the big ones are hard)
+| lever | est. | notes |
+|---|---:|---|
+| mfndpos mask path for NEAR monsters (inside mfndpos(): plain window + hero/mux cells run the original per-cell code incl. Elbereth) | +1.5% | 6.2M old-path mfndpos calls/163K steps; near hostiles are 7.6% of moves at ~2,500 Ir |
+| packer after C2: per-cell bounds accessor, lazy accessor, glyph classification | +1.5% | 17.8K Ir/step, flat |
+| per-monster-per-turn bookkeeping: minliquid call gate, movemon body order, dochug prelude for sleepers | +1% | ~8% of step spread thin |
+| fast-path tail: display gate, eligibility, dochug_fast | +1% | 1,600 Ir/move, flat |
+| unicorns (NOTONL/avoid/rloc rules) + dwarves (ALLOW_DIG) | +0.5% | 2.6% of moves |
+| vision_recalc 6.8%, display pipeline 4%, near-monster combat ~8% | big | algorithmic programs, not slices |
+| RNG 3% (mcalcmove dead draws, cheaper generator) | +3% | NON-exact (user-permitted), breaks the exact gates → last |
+DECISION: after v1.4 validates, consolidate (PGO build, landing-style A/B, trainer A/B of the final kernel, commit, handoff patch) and report
+the ladder; then pick between the near-monster mfndpos path and the vision program with the user.
+
+## v1.3b RESULT (20:24) — EXACT: corpus hash 16,777,216 / 0 diffs (per-env hero word), rotation hash identical, +14.6%
+Clean pair: NH_MT2=0 28,064 → NH_MT2=1 32,167 (rep1 old-path 22,848 is contaminated by a concurrent census run, discarded). Ladder (plain
+same-binary, 128 games): v1 +10.7 | v1.1 +11.1 | v1.2 +13.1 | v1.3b +14.6. v1.4 (Displaced/Invis/Upolyd) in stage_k11.
+
+## v1.4 RESULT (20:31) — EXACT (8-game, gates, rotation, corpus 0 diffs), +17.1% plain same-binary
+NH_MT2=0 28,186/28,173 → NH_MT2=1 32,996/33,006. Ladder (plain, 128 games): v1 +10.7 | v1.1 +11.1 | v1.2 +13.1 | v1.3b +14.6 | v1.4 +17.1.
+Consolidation = stage_k12: PGO build of v1.4, PGO gates, landing-style A/B vs fastnle_ade PGO (P-core 2 and E-core 16), trainer A/B
+(ab_mt2v14.json: fast protocol sched_v22/v12 x2, live digest).

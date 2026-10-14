@@ -1,0 +1,99 @@
+total 60,107,059,808 Ir over 163840 steps = 366,864 Ir/step
+
+monster turn (+RNG)                 66.4%   243,440 Ir/step
+    10.07%    36,939  m_move_fast.lto_priv.0
+     8.10%    29,725  m_move
+     7.70%    28,244  mfndpos_masked.lto_priv.0
+     3.69%    13,521  dochug'2
+     3.02%    11,063  isaac64_update.lto_priv.0
+     2.40%     8,798  movemon'2
+     1.98%     7,277  mt2_eligible
+     1.79%     6,577  mcalcmove
+     1.54%     5,644  nh_fobj_next
+     1.45%     5,327  minliquid
+     1.42%     5,213  nh_newsym_moved_far
+     1.42%     5,191  m_move_fast.lto_priv.0
+
+vision+display+status               11.8%    43,460 Ir/step
+     2.78%    10,212  vision_recalc.part.0
+     1.61%     5,918  right_side.lto_priv.0'2
+     1.57%     5,759  newsym
+     1.40%     5,131  left_side.lto_priv.0'2
+     0.64%     2,334  flush_screen.part.0
+     0.48%     1,772  show_glyph
+     0.47%     1,714  left_side.lto_priv.0
+     0.47%     1,713  right_side.lto_priv.0
+     0.25%       926  rl_print_glyph(int,
+     0.21%       765  update_blstats()
+     0.19%       704  update_blstats()
+     0.19%       685  tty_curs
+
+hero turn + bookkeeping + level gen   6.5%    23,930 Ir/step
+     1.12%     4,095  nh_timeout
+     1.00%     3,670  dosearch
+     0.80%     2,925  moveloop'2
+     0.64%     2,339  settrack
+     0.44%     1,608  weight_cap
+     0.23%       855  weight_cap
+     0.22%       797  nh_display_sense_recalc
+     0.19%       695  dosearch
+     0.18%       649  inv_weight
+     0.13%       463  moveloop'2
+     0.12%       447  dosearch
+     0.12%       434  dosounds
+
+other                                6.5%    23,823 Ir/step
+     0.33%     1,203  __strcmp_avx2
+     0.29%     1,064  were_change
+     0.28%     1,018  in_rooms.constprop.0
+     0.23%       836  __strchr_avx2
+     0.23%       829  __strstr_sse2_unaligned
+     0.22%       801  mapglyph
+     0.21%       763  __memset_avx2_unaligned_erms
+     0.16%       596  redotoplin
+     0.16%       595  __memcpy_avx_unaligned_erms
+     0.16%       577  addtopl
+     0.14%       515  update_inventory_method()
+     0.14%       497  sortloot_cmp.lto_priv.0
+
+harness+obs header                   4.9%    17,835 Ir/step
+     3.93%    14,403  nethack_pack_obs'2
+     0.53%     1,954  nethack_pack_obs
+     0.09%       343  worker'2
+     0.07%       269  nethack_pack_obs'2
+     0.04%       141  nethack_reward
+     0.03%       127  nethack_msg_is_prompt
+     0.02%        81  nethack_track_cant_hold
+     0.02%        61  nethack_item_use
+     0.02%        57  puf_step'2
+     0.01%        50  nethack_tile_claim
+     0.01%        49  worker
+     0.01%        48  nethack_msg_contains
+
+obs/nle glue                         2.7%     9,903 Ir/step
+     1.40%     5,120  fill_obs(nle_observation*)
+     0.34%     1,266  nle_weight
+     0.28%     1,010  nle_weight
+     0.11%       387  nle_weight
+     0.08%       309  nle_fflush
+     0.08%       305  fill_obs(nle_observation*)
+     0.08%       283  fill_obs(nle_observation*)
+     0.05%       185  fill_obs(nle_observation*)
+     0.04%       153  nle_fill_fixed_tm
+     0.03%       118  fill_obs(nle_observation*)
+     0.03%       113  jump_fcontext'2
+     0.02%        90  nle_step
+
+libc/alloc/format/names              1.2%     4,474 Ir/step
+     0.25%       925  __printf_buffer_write
+     0.24%       872  __printf_buffer
+     0.22%       822  __printf_buffer
+     0.05%       174  x_monnam
+     0.04%       149  _int_malloc
+     0.04%       143  vpline.part.0.lto_priv.0
+     0.04%       139  _int_free
+     0.03%       123  __printf_buffer_done
+     0.03%       105  malloc
+     0.03%        95  xname_flags.lto_priv.0
+     0.02%        78  __printf_buffer
+     0.02%        71  __printf_buffer_write
