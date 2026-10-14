@@ -1,0 +1,189 @@
+SELF Ir per eligible move (function, file:function; threshold 5/move):
+   632.1  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:m_move_fast
+   162.0  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c:mfndpos_masked.lto_priv.0
+   133.1  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:nh_fobj_next
+   125.6  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/include/movement_masks.h:m_move_fast
+   101.1  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/display.c:nh_newsym_moved_far
+    99.0  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:mt2_eligible
+    83.6  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:dochug'2
+    72.2  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:movemon'2
+    47.6  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/isaac64.c:isaac64_update.lto_priv.0
+    41.3  /usr/lib/gcc/x86_64-linux-gnu/13/include/emmintrin.h:nh_fobj_next
+    24.3  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/include/hack.h:m_move_fast
+    23.5  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/engrave.c:wipe_engr_at
+    22.8  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/include/movement_masks.h:mfndpos_masked.lto_priv.0
+    22.0  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c:movemon'2
+    21.2  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c:can_carry
+    21.1  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/include/extern.h:m_move_fast
+    19.1  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/muse.c:find_offensive_far
+    17.0  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/muse.c:searches_for_item
+    15.4  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/hacklib.c:m_move_fast
+    13.4  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:onscary
+    13.0  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/hacklib.c:distmin
+    10.3  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/priest.c:in_your_sanctuary
+     9.6  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/isaac64.c:dochug'2
+     9.0  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c:m_move_fast
+     9.0  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/artifact.c:touch_artifact
+     8.4  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/dungeon.c:m_move_fast
+     7.8  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/display.c:newsym
+     7.2  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/rnd.c:m_move_fast
+     7.0  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/hacklib.c:mfndpos_masked.lto_priv.0
+     6.7  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/hacklib.c:dochug'2
+     5.7  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/include/extern.h:movemon'2
+     5.6  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/invent.c:m_move_fast
+     5.2  /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/isaac64.c:m_move_fast
+
+LINES >= 5 Ir per eligible move:
+
+== include/movement_masks.h  (listed lines total 137/move)
+   13.3 |      return ((((left << 1) >> y) & 7U)
+   15.3 |              | ((((middle << 1) >> y) & 7U) << 3)
+   26.9 |              | ((((right << 1) >> y) & 7U) << 6)) & 0x1efU;
+   14.1 |      unsigned int dx = (unsigned int) (px - x + 1);
+   14.1 |      unsigned int dy = (unsigned int) (py - y + 1);
+   25.6 |      unsigned int in = (dx < 3U) & (dy < 3U); /* branch-free: an out-of-range position yields 0 */
+   27.8 |      return (1U << ((3U * dx + dy) & 31U)) & (0U - in);
+
+== include/extern.h  (listed lines total 32/move)
+   17.5 |      int dx = x0 - x1, dy = y0 - y1;
+   14.9 |      return dx * dx + dy * dy;
+
+== /usr/lib/gcc/x86_64-linux-gnu/13/include/emmintrin.h  (listed lines total 41/move)
+   13.5 |    return __extension__ (__m128i)(__v16qi){
+    6.4 |    return (__m128i) ((__v2du)__A | (__v2du)__B);
+   21.4 |    return (__m128i) ((__v16qs)__A > (__v16qs)__B);
+
+== src/rnd.c  (listed lines total 6/move)
+    6.2 |      return &nh_cur->g_rnd_c_rng_state[idx];
+
+== src/invent.c  (listed lines total 7/move)
+    6.9 |      for (otmp = level.objs[x][y]; otmp; otmp = otmp->nexthere)
+
+== src/monmove.c  (listed lines total 2912/move)
+    6.0 |      int x = mtmp->mx, y = mtmp->my;
+   51.2 |      boolean already_saw_mon = !occupation ? 0 : canspotmon(mtmp);
+ 1864.9 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:dochug (866,659x)
+   10.6 |      if (occupation && !rd && !Confusion && (!mtmp->mpeaceful || Hallucination)
+   12.0 |  {
+    7.0 |      if (nh_mt2_fast && mt2_eligible(mtmp))
+   11.0 |  }
+    6.0 |  {
+    7.0 |      if (m->mtame || m->mpeaceful || m->isshk || m->ispriest || m->isgd || m->iswiz || m->wormno || m->mstrategy)
+   12.0 |      if (m->mconf || m->mstun || m->mtrapped || m->meating || !m->mcanmove || m->msleeping || !m->mcansee || m->mflee
+   12.0 |          || m->mundetected || M_AP_TYPE(m) != M_AP_NOTHING || m->cham != NON_PM || m == u.ustuck)
+    8.0 |      if (nh_spw[p - mons] & SPW_MT2_NOFAST)
+   28.0 |      if (u.uswallow || Underwater || Invis || Displaced || Hallucination || Conflict || Upolyd || Reflecting
+    9.0 |      if (distmin(m->mx, m->my, u.ux, u.uy) <= 9)
+   13.0 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/hacklib.c:distmin (17,951,504x)
+    5.0 |      if (viz_array[m->my][m->mx] & COULD_SEE)
+    7.0 |  }
+    5.7 |      unsigned int rows = (2U << hy) - (1U << ly), acc = 0;
+   16.9 |      for (x = lx; x <= hx; x++) acc |= level.move_columns[x + 1].obj;
+    8.0 |  {
+    8.0 |      unsigned long long spw = nh_spw[ptr - mons];
+    6.0 |      int omx = mtmp->mx, omy = mtmp->my;
+    7.0 |      struct nh_move_column *cols = &level.move_columns[omx];
+    6.6 |      if ((spw & SPW_HIDESUNDER) && NH_SUMMARY(omx, omy).move_obj_present && rn2(10))
+   13.5 |      if (((uwep && uwep->oartifact == ART_EXCALIBUR) || (spw & SPW_HASEYES)) && nh_track_near[omx][omy]) {
+    5.4 |              minr = 1;
+   66.4 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:nh_fobj_next (2,233,292x)
+    9.2 |                   otmp = nh_fobj_next(&cursor, otmp, lmx, oomx, lmy, oomy)) {
+  108.0 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:nh_fobj_next (9,097,232x)
+    6.9 |                  MT2C(C_SEARCHOBJ);
+    7.2 |                  if (xx >= lmx && xx <= oomx && yy >= lmy && yy <= oomy) {
+    9.0 |                      if ((mtoo = m_at(xx, yy)) != 0
+    7.5 |                           || (likeobjs && index(practical, otmp->oclass)
+    7.5 |                           || (uses_items && searches_for_item(mtmp, otmp))
+   16.4 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/muse.c:searches_for_item (3,453,394x)
+    8.9 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/artifact.c:touch_artifact (2,285,946x)
+   22.3 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c:can_carry (2,285,883x)
+   18.0 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:onscary (1,628,398x)
+   10.0 |          unsigned int bad = nh_move_neighbours(cols[0].special | cols[0].pile | cols[0].trap | cols[0].gas,
+    8.0 |          plain = !bad && !(((cols[1].special | cols[1].gas) >> omy) & 1U) && !level.lflags.has_temple && !Sokoban;
+    7.7 |              unsigned int squeeze_n = (r1 & r3) | ((r1 & r5) << 2) | ((r7 & r3) << 6) | ((r7 & r5) << 8);
+    6.8 |          while (cand) {
+    6.1 |              int b = __builtin_ctz(cand), nx, ny, dx, dy;
+    7.5 |              nx = omx - 1 + b / 3;
+    5.6 |              ny = omy - 1 + b % 3;
+   32.3 |              info[cnt] = (!dx || !dy || dx == dy || dx == -dy) ? NOTONL : 0L; /* monseeu && onlineu() */
+   13.4 |          for (i = 0; i < cnt; i++) {
+   11.9 |              if (appr != 0 && (trackmask & nh_move_position_bit(omx, omy, nx, ny))) {
+   31.0 |                      hits |= (unsigned int) ((j < jcnt) & (nx == mtrk[j].x) & (ny == mtrk[j].y)) << j;
+   13.0 |                  int take = appr ? ((nearer != (appr < 0)) | !mmoved) : (!rn2(++chcnt) | !mmoved);
+   10.4 |                  nix = (xchar) ((nx & m) | (nix & ~m));
+    5.2 |                  niy = (xchar) ((ny & m) | (niy & ~m));
+    8.7 |                  nidist = (ndist & m) | (nidist & ~m);
+    6.5 |          remove_monster(omx, omy);
+   47.9 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/display.c:nh_newsym_moved_far (6,379,125x)
+   12.1 |              if (NH_SUMMARY(mtmp->mx, mtmp->my).move_trap_present) { /* mintrap() without a trap only clears mtrapped (already 0) */
+   53.9 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/display.c:nh_newsym_moved_far (6,378,957x)
+    8.7 |          if (SPWQ(ptr, SPW_HIDESUNDER, hides_under(ptr)) || ptr->mlet == S_EEL) {
+   10.1 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/display.c:newsym (476,671x)
+   12.0 |  }
+   45.3 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c:m_move_fast (330,743x)
+    6.0 |          if (dist2(mtmp->mx, mtmp->my, mtmp->mux, mtmp->muy) > (BOLT_LIM * BOLT_LIM))
+    9.5 |          if (!nearby && (SPWQ(mdat, SPW_RANGED, ranged_attk(mdat))
+    5.6 |                          || (distmin(mtmp->mx, mtmp->my, mtmp->mux, mtmp->muy) >= BOLT_LIM
+   15.7 |  {
+   11.4 |      if (lx >= -128 && hx <= 127 && ly >= -128 && hy <= 127
+    5.7 |          && lx <= hx && ly <= hy) {
+    6.7 |          if (cursor->mask && cursor->lx == lx && cursor->hx == hx
+   14.5 |          while (cursor->index + 16 <= nh_fobj_lo + nh_fobj_count) {
+    8.1 |      while (cursor->index < nh_fobj_lo + nh_fobj_count) {
+    9.5 |          if (nh_fobj_x[i] >= lx && nh_fobj_x[i] <= hx
+   11.4 |  }
+
+== include/hack.h  (listed lines total 15/move)
+    9.3 |      return x >= 1 && x <= COLNO - 1 && y >= 0 && y <= ROWNO - 1;
+    5.9 |      ltyp = NH_TILE(x, y).typ;
+
+== src/muse.c  (listed lines total 17/move)
+    6.5 |      if (!nh_cur->nh_lazy[25]) /* slot 25: muse.c struct musable */
+   10.3 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/priest.c:in_your_sanctuary (1,899,373x)
+
+== src/hacklib.c  (listed lines total 42/move)
+   13.7 |          dx = -dx;
+   13.7 |          dy = -dy;
+    7.5 |      return (dx < dy) ? dy : dx;
+    7.0 |      return (boolean) (!dy || !dx || dy == dx || dy == -dx);
+
+== ocean/nethack/nethack.h  (listed lines total 1936/move)
+ 1806.6 |  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_do_reset (1x)
+  128.9 |  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:nethack_pack_obs (2,325x)
+
+== src/engrave.c  (listed lines total 18/move)
+    7.4 |      while (ep) {
+    5.6 |  {
+    5.0 |  }
+
+== ocean/nethack/macros.h  (listed lines total 141/move)
+   90.2 |  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:puf_step'2 (11,429x)
+   50.9 |  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/nethack.h:puf_step (8,039x)
+
+== src/mon.c  (listed lines total 235/move)
+   13.0 |              if (elig && !nh_mt2_on) { CALLGRIND_TOGGLE_COLLECT; nh_mt2_on = 1; }
+    6.0 |              if (elig && nh_mt2_on) { CALLGRIND_TOGGLE_COLLECT; nh_mt2_on = 0; }
+    7.3 |          || (!Is_juiblex_level(&u.uz) && (c->typ == MOAT
+    5.1 |      mover.monseeu = mon->mcansee && (!Invis || SPWQ(mdat, SPW_PERCEIVES, perceives(mdat)));
+  203.2 |  => /puffertank/experiments/nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c:mfndpos_masked.lto_priv.0 (1,827,471x)
+
+== src/dungeon.c  (listed lines total 13/move)
+   12.9 |                        && lev1->dlevel == lev2->dlevel);
+
+== src/nle.c  (listed lines total 3669/move)
+ 1806.6 |  => ???:jump_fcontext (1x)
+ 1862.1 |  => /puffertank/experiments/nethack-engine-scaling-20261010/harness_cohort/source/ocean/nethack/macros.h:puf_step (1,413x)
+
+== src/display.c  (listed lines total 76/move)
+   16.1 |      if (!(s & NH_SENSE_VALID) || (s & NH_SENSE_SPECIAL) || cansee(x, y))
+    6.4 |      if ((s & ~NH_SENSE_VALID) && (mon = m_at(x, y)) != 0) {
+   15.3 |      if ((!lev->waslit || (flags.dark_room && iflags.use_color))
+   16.1 |          && ((lev->glyph == cmap_to_glyph(S_litcorr) && lev->typ == CORR)
+   22.5 |      if (!gb || gb->glyph[y][x] != lev->glyph)
+
+== src/isaac64.c  (listed lines total 15/move)
+    8.8 |    if(!_ctx->n)isaac64_update(_ctx);
+    6.5 |    return _ctx->r[--_ctx->n];
+
+== src/botl.c  (listed lines total 1864/move)
+ 1864.4 |  events annotated
