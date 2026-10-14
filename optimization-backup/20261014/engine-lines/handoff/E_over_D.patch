@@ -1,0 +1,65 @@
+--- a/src/monmove.c	2026-10-14 09:02:53.324902869 +0000
++++ b/src/monmove.c	2026-10-14 09:18:46.042633328 +0000
+@@ -1314,11 +1314,17 @@
+                 && !(info[i] & ALLOW_M) && !better_with_displacing)
+                 continue;
+             if (appr != 0 && (trackmask & nh_move_position_bit(omx, omy, nx, ny))) {
++                /* same draws in the same order: one rn2 per matching track entry, ascending, until the first nonzero */
++                unsigned int hits = 0;
+                 mtrk = &mtmp->mtrack[0];
+-                for (j = 0; j < jcnt; mtrk++, j++)
+-                    if (nx == mtrk->x && ny == mtrk->y)
+-                        if (rn2(4 * (cnt - j)))
+-                            goto nxti;
++                for (j = 0; j < MTSZ; j++)
++                    hits |= (unsigned int) ((j < jcnt) & (nx == mtrk[j].x) & (ny == mtrk[j].y)) << j;
++                while (hits) {
++                    j = __builtin_ctz(hits);
++                    hits &= hits - 1;
++                    if (rn2(4 * (cnt - j)))
++                        goto nxti;
++                }
+             }
+ 
+             ndist = dist2(nx, ny, gx, gy);
+--- a/src/mon.c	2026-10-14 08:27:47.866909105 +0000
++++ b/src/mon.c	2026-10-14 09:18:46.052426805 +0000
+@@ -1807,7 +1807,8 @@
+ 
+     boolean wantpool, poolok, lavaok, nodiag;
+     boolean rockok = FALSE, treeok = FALSE, thrudoor;
+-    unsigned int candidates, occupied;
++    unsigned int candidates, occupied, nonrock_n, squeeze_n;
++    boolean simple_rock;
+     struct nh_move_column *cols;
+     int bit;
+     boolean poisongas_ok, in_poisongas;
+@@ -1871,6 +1872,14 @@
+     if (!mon->mcansee)
+         flag |= ALLOW_SSM;
+     cols = &level.move_columns[x];
++    nonrock_n = nh_move_neighbours(cols[0].nonrock, cols[1].nonrock, cols[2].nonrock, y);
++    /* tight squeeze: for movers without tunnelling, wall-passing or Sokoban rules bad_rock is exactly rock terrain, so the diagonals
++       whose two orthogonal cells are both rock come straight from the nonrock mask; other movers test every diagonal exactly */
++    simple_rock = !mover.sokoban && !SPWQ(mdat, SPW_TUNNELS, tunnels(mdat)) && !SPWQ(mdat, SPW_PASSWALL, passes_walls(mdat));
++    {
++        unsigned int r1 = !((nonrock_n >> 1) & 1U), r3 = !((nonrock_n >> 3) & 1U), r5 = !((nonrock_n >> 5) & 1U), r7 = !((nonrock_n >> 7) & 1U);
++        squeeze_n = simple_rock ? ((r1 & r3) | ((r1 & r5) << 2) | ((r7 & r3) << 6) | ((r7 & r5) << 8)) : 0x145U;
++    }
+     if (!(flag & ALLOW_WALL) && !rockok && !treeok)
+         candidates = nh_move_neighbours(cols[0].nonrock, cols[1].nonrock,
+                                         cols[2].nonrock, y);
+@@ -2007,9 +2016,10 @@
+                         continue;
+                     info[cnt] |= NOTONL;
+                 }
+-                /* check for diagonal tight squeeze */
+-                if (nx != x && ny != y && nh_mover_bad_rock(&mover, x, ny)
+-                    && nh_mover_bad_rock(&mover, nx, y) && nh_mover_squeeze(&mover))
++                /* check for diagonal tight squeeze (squeeze_n: see above) */
++                if ((squeeze_n & (1U << bit))
++                    && (simple_rock || (nh_mover_bad_rock(&mover, x, ny) && nh_mover_bad_rock(&mover, nx, y)))
++                    && nh_mover_squeeze(&mover))
+                     continue;
+                 /* The monster avoids a particular type of trap if it's
+                  * familiar with the trap type.  Pets get ALLOW_TRAPS

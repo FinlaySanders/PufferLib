@@ -50,3 +50,13 @@ for j<jcnt ... rn2(4*(cnt-j)): 10% + 2.6% + 1.7%), rn2 refill 6%, the trackmask 
 (skid) ~14%, trap-presence load 6.6%, rock test 5.5%, worm-cross guard 4.4%, bad_rock (tight squeeze) 3.7%, Displaced test 3.7%.
 D (= A + itsstuck identity-first reorder): base 29,495 / 29,496 | selA 30,663 / 30,658 | selD 30,689 / 30,687 → D +4.05%, A +3.95% (harness
 repeatability 0.01%). Full corpus selD 16,777,216 decisions 0 different; quick gates 5/5.
+
+## 2026-10-14 09:19 — stage 6: live learning proof (weights updating, live sampled actions, 150 epochs, 2048 agents, 4 buffers, sched_v12 / v13)
+LIVE_PROOF per-epoch observation hashes: see stage6.log (base vs selD vs selD + C header). Live SPS 421.4K / 421.5K / 418.5K (young-game regime).
+
+## 2026-10-14 09:29 — stage 7: candidate E (= D + track-match mask in m_move + squeeze mask in mfndpos)
+base 29,514 / 29,495 | selD 30,687 / 30,692 | selE 30,915 / 30,905 → E +4.77% per step (D +4.05%, A +3.95%); obs hash identical; quick gates
+5/5; full corpus 16,777,216 decisions 0 different. E is the keeper; landed (amended) in the fast-nle backup worktree.
+Live learning proof (stage 6, D + C): per-epoch observation hashes identical to base for all 150 epochs (digest 31e2e3deae720ef4).
+Diminishing returns reached: remaining m_move/mfndpos items in the line map are each < 1% (object-search loop, monhaskey, trap/pile summary
+loads, loop-exit mispredicts), several were parked null by the 2026-10-08 campaign (trap bitmaps, glyph memo). Stop here for the engine.
