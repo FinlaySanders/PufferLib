@@ -272,3 +272,27 @@ existing nh_fobj_placed/removed/build; -150) | S7 door-aware window (doors are 1
 Live learning (150 epochs, --update, PUF_LIVE_PROOF, kernel on): digest 31e2e3deae720ef4 = reference → exact under training too.
 Transfer ≈ 55% of the +10.7% native per-step gain at 5M/2048 (C2 precedent was ~33%); expected to approach the native figure at 4096/8192
 where collection dominates. Remaining landing step: one live 1B seed under gdb on the PGO build (stage_k4 builds engines/mt2pgo).
+
+## v1.1 RESULT + LANDING-STYLE PGO COMPARISON (19:23, stage_k4)
+v1.1 plain same-binary: NH_MT2=0 28,059/28,132 → NH_MT2=1 31,206/31,245 = +11.1%; corpus hash 16,777,216 decisions 0 diffs; the dochugw gate
+alone lifts the OLD path +1.0% (27,792 → 28,059). PGO builds (engines/mt2pgo via build_pgo.py, same profile workloads as the landed engine):
+| landed fastnle_ade PGO 31,218/31,209 | mt2 PGO kernel off 31,247/31,241 | mt2 PGO kernel on 34,190/34,187 | → +9.5% vs the landed engine,
+hash identical, PGO quick gates 5/5. PGO narrows the plain-build gap (it had already optimised the old hot loops).
+Live 1B seed deferred to the final landing (user 19:25: focus on optimisations); stage_k5 = v1.2 apply → gates → A/B → hash → PGO → PGO A/B.
+
+## v1.2 SLIP AND FIX (19:33-19:50)
+v1.2 passed the quick gates (young goldens have few doors/objects) but changed the rotation hash and 7.5M/16.7M corpus decisions.
+Per-slice runtime switches (NH_MT2_S3 / NH_MT2_S7) on an 8-game run isolated S7 (door windows); S3 (object search by box cells) is exact.
+trace_diff on the 8-game harness (trace lines now carry the 3x3 window state) gave the first divergence directly: turn 29480, monster 1361 at
+(44,6) heading west; the original offered 3 candidates, the new path 4, admitting (43,6) = an OPEN DOORWAY (typ 22, flags D_ISOPEN) holding a
+scroll of scare monster (pile bit 4) — onscary() rejects it, my window test had subtracted door cells from the "bad" set wholesale, dropping
+their pile/trap/gas bits. (The agent drops scare scrolls in doorways: a learned habit, hence common.) Fix: exempt only the door-ness
+(special & ~door), keep pile|trap|gas for door cells. Re-check: 8-game hash restored, traces identical over 7,891,183 decisions, 8-game
+speed 30,369 → 34,012 (+12.0%; v1.1 was ~+10% on this set). Full chain (stage_k5: 128-game A/B, corpus hash, PGO) relaunched.
+LESSON: the quick gates alone are not sufficient for window-rule changes; the 8-game rotation hash (6 s) is the right first check, then
+the corpus hash. Added to the per-slice routine. S3's own gain looked small on the 8-game set (+0.4%): measure on the 128-game rotation.
+
+## v1.2 RESULT (19:56, stage_k5 after the door-mask fix) — EXACT, +13.1% plain / +12.2% vs the landed PGO engine
+128-game rotation, plain same-binary: NH_MT2=0 28,100/28,085 → NH_MT2=1 31,844/31,738 (+13.1%); quick gates 5/5; corpus hash 16,777,216
+decisions 0 diffs. PGO (engines/mt2pgo rebuilt): landed fastnle_ade 31,221/31,226 → mt2 v1.2 35,036/35,030 = +12.2%, hash identical, PGO
+gates 5/5. Cumulative ladder vs the landed engine (PGO): v1 — | v1.1 +9.5% | v1.2 +12.2%.

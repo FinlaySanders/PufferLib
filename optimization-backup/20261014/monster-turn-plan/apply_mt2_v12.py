@@ -15,7 +15,8 @@ def match_brace(text, j):
             if depth==0: return k
         k+=1
 # ---- S3: per-object fobj index ------------------------------------------------------------------------------------
-rep('include/obj.h', "    struct oextra *oextra; /* pointer to oextra struct */\n};", "    struct oextra *oextra; /* pointer to oextra struct */\n    int nh_fidx; /* position in the floor-object index (monmove.c nh_fobj_*), valid while nh_fobj_valid */\n};")
+_o=rd('include/obj.h'); _a="    struct oextra *oextra; /* pointer to oextra struct */\n};"; assert _o.count(_a)==2 and _o.index(_a) < _o.index("struct obj_legacy")
+wr('include/obj.h', _o.replace(_a, "    struct oextra *oextra; /* pointer to oextra struct */\n    int nh_fidx; /* position in the floor-object index (monmove.c nh_fobj_*), valid while nh_fobj_valid */\n};", 1)) # struct obj only; obj_legacy keeps its layout
 for f,old in (('include/obj_save.h','_Static_assert(sizeof(struct obj)==88,"compact object size");'),
               ('src/save.c','_Static_assert(sizeof(struct obj)   ==   88, "save.c: sizeof(struct obj) drifted");'),
               ('src/restore.c','_Static_assert(sizeof(struct obj)   ==   88, "restore.c: sizeof(struct obj) drifted");')):
