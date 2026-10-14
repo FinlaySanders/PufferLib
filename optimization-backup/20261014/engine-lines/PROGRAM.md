@@ -60,3 +60,7 @@ base 29,514 / 29,495 | selD 30,687 / 30,692 | selE 30,915 / 30,905 → E +4.77% 
 Live learning proof (stage 6, D + C): per-epoch observation hashes identical to base for all 150 epochs (digest 31e2e3deae720ef4).
 Diminishing returns reached: remaining m_move/mfndpos items in the line map are each < 1% (object-search loop, monhaskey, trap/pile summary
 loads, loop-exit mispredicts), several were parked null by the 2026-10-08 campaign (trap bitmaps, glyph memo). Stop here for the engine.
+
+## 2026-10-14 09:32 — stage 8: landed fast-nle source (backup worktree commit e038efa41 = A+D+E on mt7+dv4+tile_signed) built LTO and gated
+fastnle_check gates rc=0 6 passes HASHES lines_fastnle_check 16777216 0 09:31:44
+Campaign closed. Keepers: engine A+D+E (+4.8% per step, fast-nle backup commit e038efa41), mask header C (+1.3%, pufferlib backup commit 1803a82c).
