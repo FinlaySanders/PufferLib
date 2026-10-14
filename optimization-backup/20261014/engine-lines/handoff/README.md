@@ -20,5 +20,5 @@ Evidence and method: ../PROGRAM.md (ledger), perf_rot/results/annot16b.* and ann
 - Trainer fast protocol 5M/2048, 44 epochs: BATCH_PROOF observation hashes identical across base / A / B / B+C (8 arms).
 - Live learning (weights updating, live sampled actions, 150 epochs, D + C): identical per-epoch hashes for all 150 epochs.
 
-## Landing checklist (per the mt7 landmine): one live 1B seed under gdb before the engine change ships; rebuild PGO with the standard
+## Landing checklist: DONE 2026-10-14 13:13 — seed 3001, 1B steps, champion config, under gdb on the landed commit (PGO build): exited normally, 80 min, inline 10,039.6 (champion10_20261011/ade). Still: rebuild PGO with the standard
 profile workloads (build_pgo.py reproduces the tile_signed_pgo recipe).

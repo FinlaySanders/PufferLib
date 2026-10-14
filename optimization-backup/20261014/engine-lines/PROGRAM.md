@@ -64,3 +64,8 @@ loads, loop-exit mispredicts), several were parked null by the 2026-10-08 campai
 ## 2026-10-14 09:32 — stage 8: landed fast-nle source (backup worktree commit e038efa41 = A+D+E on mt7+dv4+tile_signed) built LTO and gated
 fastnle_check gates rc=0 6 passes HASHES lines_fastnle_check 16777216 0 09:31:44
 Campaign closed. Keepers: engine A+D+E (+4.8% per step, fast-nle backup commit e038efa41), mask header C (+1.3%, pufferlib backup commit 1803a82c).
+
+## 2026-10-14 13:13 — LIVE 1B SEED under gdb on the landed engine (fast-nle e038efa41 = A+D+E, PGO build engines/fastnle_ade): seed 3001, champion
+config and stack (cohort_d8), exited normally after 80 min / 3814 epochs, last inline score 10,039.6 (same seed on tile_signed_pgo: 9,714.6, 81 min;
+inline eval noise ±1000 and biased low). Quick gates 5/5 on the PGO build. The mt7-landmine rule is satisfied; the engine change can ship.
+Artifacts: /puffertank/docker/champion10_20261011/ade/s3001_ade/{run.log,gdb.log,checkpoints}, PROVENANCE.txt.

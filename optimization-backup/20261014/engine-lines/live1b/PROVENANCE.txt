@@ -1,0 +1,3 @@
+adf6236aa501cb1e9eb762f5f027ffe8de29510efb239225ef1b77a7986cde00  /puffertank/experiments/nethack-24h-20261009/binaries/cohort_d8
+26224768556145359fba2a9e7c549415115769ca9f0338a963321287b0087a0b  /puffertank/experiments/nethack-engine-lines-20261014/engines/fastnle_ade/build/libnethack.so
+e038efa41 engine: branch-free candidate selection in m_move (same predicate and rn2 draw order), branch-free position bit and should_displace min, itsstuck identity test first, track-avoidance matches as a 4-wide mask (same draws), tight-squeeze orthogonals from the nonrock mask for ordinary movers; bit-exact over the 16.7M-decision corpus, +4.8% per step at rotation 16
