@@ -1,0 +1,59 @@
+diff -ru engines/selE/source/src/mon.c engines/selF/source/src/mon.c
+--- engines/selE/source/src/mon.c	2026-10-14 09:18:46.052426805 +0000
++++ engines/selF/source/src/mon.c	2026-10-14 16:34:48.870932190 +0000
+@@ -1782,7 +1782,7 @@
+     if (m->scary_immune) return FALSE;
+     if (!x && !y) return TRUE;
+     f = nh_move_cell(x, y);
+-    if (IS_ALTAR(TYP_AT(x, y)) && (m->data->mlet == S_VAMPIRE || is_vampshifter(mon))) return TRUE;
++    if ((m->data->mlet == S_VAMPIRE || is_vampshifter(mon)) && IS_ALTAR(TYP_AT(x, y))) return TRUE; /* monster test first: the terrain load is rarely needed */
+     if (NH_SUMMARY(x, y).move_pile & 4U) return TRUE;
+     return (((u.ux == x && u.uy == y)
+              || (Displaced && mon->mux == x && mon->muy == y))
+@@ -1808,7 +1808,7 @@
+     boolean wantpool, poolok, lavaok, nodiag;
+     boolean rockok = FALSE, treeok = FALSE, thrudoor;
+     unsigned int candidates, occupied, nonrock_n, squeeze_n;
+-    boolean simple_rock;
++    boolean simple_rock, disp_see;
+     struct nh_move_column *cols;
+     int bit;
+     boolean poisongas_ok, in_poisongas;
+@@ -1823,6 +1823,7 @@
+     mover.rogue = Is_rogue_level(&u.uz);
+     mover.sokoban = Sokoban;
+     mover.monseeu = mon->mcansee && (!Invis || SPWQ(mdat, SPW_PERCEIVES, perceives(mdat)));
++    disp_see = Displaced && mover.monseeu; /* loop-invariant part of the displaced-image test */
+ 
+     nodiag = NODIAG(mdat - mons);
+     wantpool = (mdat->mlet == S_EEL);
+@@ -1944,7 +1945,7 @@
+                 /* Displacement also displaces the Elbereth/scare monster,
+                  * as long as you are visible.
+                  */
+-                if (Displaced && monseeu && mon->mux == nx
++                if (disp_see && mon->mux == nx
+                     && mon->muy == ny) {
+                     dispx = u.ux;
+                     dispy = u.uy;
+diff -ru engines/selE/source/src/rnd.c engines/selF/source/src/rnd.c
+--- engines/selE/source/src/rnd.c	2026-10-14 08:27:47.862069650 +0000
++++ engines/selF/source/src/rnd.c	2026-10-14 16:34:21.093370500 +0000
+@@ -89,7 +89,7 @@
+ static int
+ RND(int x)
+ {
+-    int r = (int) (isaac64_next_uint64(nle_rng_state(CORE)) % x);
++    int r = (int) (isaac64_next_uint64(&nh_cur->g_rnd_c_rng_state[CORE]) % x);
+ 
+     return nle_rng_trace("RND", x, r);
+ }
+@@ -101,7 +101,7 @@
+ rn2_on_display_rng(x)
+ register int x;
+ {
+-    return (isaac64_next_uint64(nle_rng_state(DISP)) % x);
++    return (isaac64_next_uint64(&nh_cur->g_rnd_c_rng_state[DISP]) % x);
+ }
+ 
+ #else   /* USE_ISAAC64 */

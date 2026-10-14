@@ -11,6 +11,8 @@ Evidence and method: ../PROGRAM.md (ledger), perf_rot/results/annot16b.* and ann
   the two orthogonal cells from the nonrock mask for movers without tunnelling/wall-passing/Sokoban rules. +0.7% on top of D (total +4.8%).
 - C_header.patch — pufferlib ocean/nethack/nethack.h: zero-time block set as per-verb slot bitmasks computed once per step; the per-slot
   WIELD weld rescan removed (the caller's gate implies it). Native +1.3% per step. Applies to the working tree and the backup branch.
+- C2_over_C_header.patch — action mask from per-slot facts + per-verb 64-bit mask ops (applies on top of C). +3.9% per step natively (+2.5% over C),
+  +1.3% trainer SPS; live-learning digest unchanged. Landed in the pufferlib backup worktree.
 - (parked) candidate B mask prefilters in mfndpos: null increment, see PROGRAM.md.
 
 ## Proofs

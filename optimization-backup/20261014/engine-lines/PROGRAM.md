@@ -69,3 +69,21 @@ Campaign closed. Keepers: engine A+D+E (+4.8% per step, fast-nle backup commit e
 config and stack (cohort_d8), exited normally after 80 min / 3814 epochs, last inline score 10,039.6 (same seed on tile_signed_pgo: 9,714.6, 81 min;
 inline eval noise ±1000 and biased low). Quick gates 5/5 on the PGO build. The mt7-landmine rule is satisfied; the engine change can ship.
 Artifacts: /puffertank/docker/champion10_20261011/ade/s3001_ade/{run.log,gdb.log,checkpoints}, PROVENANCE.txt.
+
+## 2026-10-14 16:35 — engine round 2 (user: "keep pushing engine speed")
+Leads: (1) isaac64_reseed 0.7% is per-episode init (isaac64_init / nlernd time_rng), not per step — nothing there; nle_rng_state() is an
+exported accessor called per rn2 (not inlined by LTO) → F inlines the ctx read in rn2/rn2_on_display_rng. (2) E-core tune: PGO builds with
+-mtune=gracemont / -mtune=alderlake vs default tune, rotation-16 harness on cpu 16 (E) and cpu 2 (P), 2 reps (tune.sh / tune.log). (3) Action
+mask C2: per-slot facts once per step + per-verb 64-bit mask ops instead of per-(verb, slot) predicate calls (apply_C2.py; headers/*; harness
+replay_sched6_C2; trainer sched_v22) — exact by construction; validated by the live digest 31e2e3deae720ef4 and native rot16 vs C.
+(4) F = E + rn2 accessor inline + nh_mover_scary vampire-before-altar reorder + Displaced&&monseeu hoisted out of the candidate loop (exact).
+
+## 16:52 — core-type tune: NULL. Rotation-16 harness, landed engine (fastnle_ade) PGO builds: E-core (cpu 16) default 21,668 / 21,683,
+-mtune=gracemont 21,668 / 21,674, -mtune=alderlake 21,619 / 21,640; P-core (cpu 2) default 31,242 / 31,244, gracemont 31,142 / 31,139,
+alderlake 31,122 / 31,127. PGO fixes the layout; the tune flag changes nothing useful. Per-core-type engine dispatch: closed. Next codegen lever:
+BOLT post-link layout (instrumentation mode; needs -Wl,-q relocations in the link) on top of PGO.
+
+## 17:05 — C2 (action mask restructure) KEEPER, landed
+Native rot16 (cpu 2): base 29,518 / 29,512 | C 29,895 / 29,919 (+1.3%) | C2 30,672 / 30,639 (+3.9% over base, +2.5% over C); obs hash unchanged.
+Trainer (sched_v22 = v12 + C2 header): live digest 31e2e3deae720ef4 EXACT (150 epochs, weights updating); fast 5M/2048: v12 380.8K / 380.1K vs
+v22 385.8K / 385.1K (+1.3%, both reps). Landed in the pufferlib backup worktree on top of C (patch handoff/C2_over_C_header.patch).

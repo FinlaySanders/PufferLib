@@ -6,7 +6,7 @@ R=Path(__file__).resolve().parent; OLD=Path('/puffertank/experiments/nethack-per
 clean={k:v for k,v in os.environ.items() if not k.startswith(('NH_','NLE_','OMP_','GOMP_','CPU_','PUF_','PUFFER_')) and k not in ('LD_LIBRARY_PATH','LD_PRELOAD','NETHACKOPTIONS','CPUPROFILE')}
 clean.update(NETHACKDIR=str(OLD/'dat'),NH_ZT_MASK='0',OMP_PROC_BIND='true',OMP_PLACES='cores')
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
-name=sys.argv[1]; d=R/'engines'/name; s=d/'source'; b=d/'build'; prof=d/'profiles'; assert s.exists(), s
+name=sys.argv[1]; extra_flags=' '.join(sys.argv[2:]); d=R/'engines'/name; s=d/'source'; b=d/'build'; prof=d/'profiles'; assert s.exists(), s
 if b.exists(): shutil.rmtree(b)
 if prof.exists(): shutil.rmtree(prof)
 prof.mkdir(); commands=[]
@@ -17,7 +17,7 @@ def invoke(label,cmd,extra=None):
     (d/'commands.json').write_text(json.dumps(commands,indent=2)); assert rc==0, out[-4000:]
     print('DONE',name,label,round(time.monotonic()-t0,1),flush=True); return out
 def build(phase,flags):
-    cmd=['cmake','-S',s,'-B',b,'-DCMAKE_BUILD_TYPE=Release','-DNLE_TLS_INITIAL_EXEC=ON','-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON','-DCMAKE_C_FLAGS=-fno-semantic-interposition '+flags,'-DCMAKE_CXX_FLAGS=-fno-semantic-interposition '+flags]
+    cmd=['cmake','-S',s,'-B',b,'-DCMAKE_BUILD_TYPE=Release','-DNLE_TLS_INITIAL_EXEC=ON','-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON','-DCMAKE_C_FLAGS=-fno-semantic-interposition '+flags+' '+extra_flags,'-DCMAKE_CXX_FLAGS=-fno-semantic-interposition '+flags+' '+extra_flags]
     for dep in ('bzip2','deboost_context','pybind11'): cmd+=['-DFETCHCONTENT_SOURCE_DIR_'+dep.upper()+'=/puffertank/pufferlib/vendor/fast-nle/build/_deps/'+dep+'-src']
     invoke(phase+'_configure',cmd); return invoke(phase+'_build',['cmake','--build',b,'--target','nethack','-j8'])
 build('generate','-fprofile-generate='+str(prof)+' -fprofile-update=atomic')

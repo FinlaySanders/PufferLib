@@ -244,7 +244,7 @@ static void nethack_zt_blocked_slots(const Nethack* env, unsigned long long* blk
         if (env->zt_cnt[k] >= 2 && v >= 0 && v < NETHACK_NUM_ACTIONS && s >= 0 && s < 64) blk[v] |= 1ULL << s;
     }
 }
-static int nethack_slot_usable(const Nethack* env, const Verb* verb, int i, unsigned long long zt_blk) {
+static int __attribute__((unused)) nethack_slot_usable(const Nethack* env, const Verb* verb, int i, unsigned long long zt_blk) {
     if (env->cant_hold && (verb == &NETHACK_VERBS[NETHACK_ACT_WIELD] || verb == &NETHACK_VERBS[NETHACK_ACT_THROW]
                            || verb == &NETHACK_VERBS[NETHACK_ACT_WEAR])) return 0;
     if ((zt_blk >> i) & 1ULL) return 0;
@@ -414,6 +414,35 @@ static void nethack_compute_mask(Nethack* env) {
             && env->inv_state[j * NLE_INV_STATE_FIELDS + 0] == 1) { welded = 1; break; }
     unsigned long long zt_blk[NETHACK_NUM_ACTIONS];
     nethack_zt_blocked_slots(env, zt_blk);
+    // per-slot facts, gathered once (bit i = slot i; inv_n <= NETHACK_INV_SLOTS < 64)
+    unsigned long long class_m[NETHACK_NUM_OCLASSES]; memset(class_m, 0, sizeof class_m);
+    unsigned long long worn_m = 0, cursed_m = 0, cont_m = 0, book_fresh_m = 0;
+    signed char cat_of[NETHACK_INV_SLOTS];
+    for (int i = 0; i < inv_n; i++) {
+        unsigned long long bit = 1ULL << i; int oc = env->inv_oclasses[i];
+        class_m[oc] |= bit;
+        if (env->inv_state[i * NLE_INV_STATE_FIELDS + 5] & 1) worn_m |= bit;
+        if (env->inv_state[i * NLE_INV_STATE_FIELDS + 0] == 1) cursed_m |= bit;
+        int gn = env->inv_glyphs[i] - NH_GLYPH_OBJ_OFF;
+        cat_of[i] = (signed char)((gn >= 0 && gn < NH_NUM_OBJECTS) ? nh_obj_armcat[gn] : -1);
+        if (gn >= 189 /* LARGE_BOX */ && gn <= 194 /* BAG_OF_HOLDING */) cont_m |= bit;
+        if (oc == 10 && env->inv_true[i] != NETHACK_PAD_GLYPH) {
+            int otyp = env->inv_true[i] - NH_GLYPH_OBJ_OFF;
+            for (int j = 0; j < NETHACK_SPELL_SLOTS; j++)
+                if (env->spell_ids[j] == otyp && env->spell_knows[j] > 2000) { book_fresh_m |= bit; break; }
+        }
+    }
+    // worn armour categories (same slot walk as the WEAR layering rule: every lettered slot)
+    unsigned int worn_cats = 0, worn_cursed_cats = 0;
+    for (int j = 0; j < NETHACK_INV_SLOTS && env->inv_letters[j]; j++) {
+        if (!(env->inv_state[j * NLE_INV_STATE_FIELDS + 5] & 1)) continue;
+        int gj = env->inv_glyphs[j] - NH_GLYPH_OBJ_OFF;
+        int cj = (gj >= 0 && gj < NH_NUM_OBJECTS) ? nh_obj_armcat[gj] : -1;
+        if (cj < 0) continue;
+        worn_cats |= 1u << cj;
+        if (env->inv_state[j * NLE_INV_STATE_FIELDS + 0] == 1) worn_cursed_cats |= 1u << cj;
+    }
+    int blind = (env->blstats[NLE_BL_CONDITION] & 0x20L) != 0;
     for (int a = 0; a < NETHACK_NUM_ACTIONS; a++) {
         const Verb* verb = &NETHACK_VERBS[a];
         if (verb->head < 0) continue; // direct verb, no item argument
@@ -421,13 +450,27 @@ static void nethack_compute_mask(Nethack* env) {
         memset(slots, 0, NETHACK_INV_SLOTS);
         int has_usable = 0;
         if ((verb->item_classes & inv_classes)
-            && !(a == NETHACK_ACT_WIELD && welded)) {
-            for (int i = 0; i < inv_n; i++) {
-                if (nethack_slot_usable(env, verb, i, zt_blk[a])) {
-                    slots[i] = 1;
-                    has_usable = 1;
-                }
+            && !(a == NETHACK_ACT_WIELD && welded)
+            && !(env->cant_hold && (a == NETHACK_ACT_WIELD || a == NETHACK_ACT_THROW || a == NETHACK_ACT_WEAR))) {
+            unsigned long long cand = 0;
+            for (unsigned int cl = verb->item_classes & ((1u << NETHACK_NUM_OCLASSES) - 1u); cl; cl &= cl - 1) cand |= class_m[__builtin_ctz(cl)];
+            cand &= ~zt_blk[a];
+            if (a == NETHACK_ACT_APPLY) cand &= ~cont_m;
+            if (verb->item_classes == ((1u << 9) | (1u << 10))) { if (blind) cand = 0; else cand &= ~book_fresh_m; }
+            if (a == NETHACK_ACT_TAKEOFF || a == NETHACK_ACT_REMOVE) cand &= ~cursed_m;
+            if (verb->wornreq == WORN_ONLY) cand &= worn_m;
+            else if (verb->wornreq == UNWORN_ONLY) {
+                cand &= ~worn_m;
+                if (verb->item_classes == (1u << 3)) // WEAR layering: suit/shirt under a cloak, shirt under a suit, known-cursed same-slot swap
+                    for (unsigned long long c = cand; c; c &= c - 1) {
+                        int i = __builtin_ctzll(c), cat = cat_of[i];
+                        if (cat < 0) continue;
+                        if (((cat == 0 || cat == 6) && (worn_cats & (1u << 5))) || (cat == 6 && (worn_cats & 1u)) || (worn_cursed_cats & (1u << cat)))
+                            cand &= ~(1ULL << i);
+                    }
             }
+            for (unsigned long long c = cand; c; c &= c - 1) slots[__builtin_ctzll(c)] = 1;
+            has_usable = cand != 0;
         }
         if (has_usable) continue;
         // no usable item: verb off unless EAT has actual floor food underfoot
