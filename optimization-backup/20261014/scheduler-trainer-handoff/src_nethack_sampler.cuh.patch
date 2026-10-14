@@ -1,0 +1,17 @@
+--- /puffertank/experiments/nethack-engine-scaling-20261010/trainer_cohort/source/src/nethack_sampler.cuh	2026-10-11 09:22:01.161711484 +0000
++++ /puffertank/experiments/nethack-scheduler-20261012/trainer/source/src/nethack_sampler.cuh	2026-10-14 10:55:25.310894560 +0000
+@@ -2,12 +2,13 @@
+ __global__ void sample_logits_heads(Prec dec_out, Prec logstd, int* act_sizes,
+         float* actions, float* env_actions, precision_t* logprobs,
+         precision_t* value_out, curandStatePhilox4_32_10_t* rng_states,
+-        precision_t* action_mask, int mask_stride
++        precision_t* action_mask, int mask_stride, const int* row_valid
+ #ifdef NETHACK_IDENTIFY_HEAD
+         , float* identify_logprobs
+ #endif
+         ) {
+     static_assert(NUM_ATNS <= 32, "one lane per action head");
++    if (row_valid && row_valid[blockIdx.x] < 0) return; /* padded scheduler row */
+     int idx = blockIdx.x, h = threadIdx.x;
+     __shared__ float uniforms[NUM_ATNS], head_lp[NUM_ATNS];
+     __shared__ int chosen[NUM_ATNS];

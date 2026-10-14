@@ -1,0 +1,345 @@
+// ===== Stage A (14 Oct 2026): fused observation-only encoder front, inference only (NH_FRONT_FUSED=1) =====
+// One block per row; the 17 per-row decode/gather kernels below run as sequential stages with the same element-wise arithmetic.
+static int nh_front_fused = getenv("NH_FRONT_FUSED") ? atoi(getenv("NH_FRONT_FUSED")) : 0;
+#ifdef NH_NOPASS
+#define NH_FRONT_NOPASS 7
+#else
+#define NH_FRONT_NOPASS 0
+#endif
+__device__ __forceinline__ void nh_front_labtok(precision_t* __restrict__ tok, float* __restrict__ gid,
+    const nh_obs_t* __restrict__ ob, int b, const precision_t* __restrict__ e_eff, const unsigned char* __restrict__ haz,
+    int list_off, int is_mon, int el) {
+    int d = el % NH_LAB_IN, k = el / NH_LAB_IN, bk = b * NH_LABK + k;
+    const nh_obs_t* e = ob + list_off + k * NH_V3_MONF;
+    int row = (int)nh_obs_float(e[0]) | ((int)nh_obs_float(e[1]) << 8);
+    int g = row <= 0 ? -1 : is_mon ? row - 1 : (row < 454 ? NH_OBJ_LO + row - 1 : NH_BODY_OFF + row - 454);
+    if (d == 0) gid[bk] = (float)g;
+    precision_t* o = tok + (int64_t)bk * NH_LAB_IN;
+    if (d < NH_EMBED_DIM) { o[d] = g >= 0 ? e_eff[(int64_t)g * NH_EMBED_DIM + d] : from_float(0.0f); return; }
+    if (d >= 46) { o[d] = from_float(0.0f); return; }
+    int dx = (int)nh_obs_float(e[2]); if (dx >= 128) dx -= 256;
+    int dy = (int)nh_obs_float(e[3]); if (dy >= 128) dy -= 256;
+    int f4 = (int)nh_obs_float(e[4]), f5 = (int)nh_obs_float(e[5]), f6 = (int)nh_obs_float(e[6]);
+    int cheb = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+    float v = 0.0f;
+    switch (d) {
+    case 32: v = g >= 0 ? fmaxf(fminf((float)dx * (1.0f / 40.0f), 1.0f), -1.0f) : 0.0f; break;
+    case 33: v = g >= 0 ? fmaxf(fminf((float)dy * (1.0f / 11.0f), 1.0f), -1.0f) : 0.0f; break;
+    case 34: v = g >= 0 ? fminf((float)cheb, 15.0f) * (1.0f / 15.0f) : 0.0f; break;
+    case 35: v = g >= 0 ? (float)k * (1.0f / 15.0f) : 0.0f; break;
+    case 36: v = is_mon ? (g >= 0 && (f4 & 1) ? 1.0f : 0.0f) : (g >= 0 && (f5 & 1) ? 1.0f : 0.0f); break;
+    case 37: v = is_mon ? (g >= 0 && (f4 & 8) ? 1.0f : 0.0f) : (g >= 0 && (f5 & 2) ? 1.0f : 0.0f); break;
+    case 38: v = is_mon && g >= 0 && (f4 & 4) ? 1.0f : 0.0f; break;
+    case 39: v = is_mon && g >= 0 && cheb <= 1 ? 1.0f : 0.0f; break;
+    case 40: v = is_mon && g >= 0 ? fminf((float)f5 * 0.04f, 1.0f) : 0.0f; break;
+    case 41: v = is_mon && g >= 0 ? fminf((float)f6 * (1.0f / 24.0f), 1.0f) : 0.0f; break;
+    case 42: case 43: case 44: case 45: {
+        int hb = is_mon && row > 0 && haz != NULL ? (int)haz[(row - 1) % 381] : 0;
+        v = (hb & (1 << (d - 42))) ? 1.0f : 0.0f; break;
+    }
+    }
+    o[d] = from_float(v);
+}
+__global__ void __launch_bounds__(256) nh_front_kernel(
+    float* __restrict__ glyph_idx, float* __restrict__ crop, precision_t* __restrict__ x_local,
+    const precision_t* __restrict__ locc_w, const unsigned char* __restrict__ locc_lut,
+    precision_t* __restrict__ tf, const unsigned char* __restrict__ terrc_lut, const unsigned char* __restrict__ sblut,
+    float* __restrict__ inv_idx, float* __restrict__ invt_idx, precision_t* __restrict__ sfeat,
+    precision_t* __restrict__ inv_out, const precision_t* __restrict__ inv_T, const precision_t* __restrict__ inv_b1,
+    const precision_t* __restrict__ inv_ws, const precision_t* __restrict__ invt_T,
+    precision_t* __restrict__ bl_out,
+    float* __restrict__ msg_ids, precision_t* __restrict__ msg_out, const precision_t* __restrict__ msg_w,
+    precision_t* __restrict__ lm_tok, float* __restrict__ lm_gid, precision_t* __restrict__ li_tok, float* __restrict__ li_gid,
+    const precision_t* __restrict__ e_eff, const unsigned char* __restrict__ haz,
+    precision_t* __restrict__ spk_keys, precision_t* __restrict__ sp_in, float* __restrict__ sp_idx, const precision_t* __restrict__ spk_w,
+    precision_t* __restrict__ concat, float* __restrict__ ide_idx,
+    const precision_t* __restrict__ role_w, const precision_t* __restrict__ race_w,
+    const precision_t* __restrict__ gend_w, const precision_t* __restrict__ algn_w,
+    int nopass, int passoff, const nh_obs_t* __restrict__ obs, int B) {
+    int b = blockIdx.x;
+    if (b >= B) return;
+    const nh_obs_t* ob = obs + (int64_t)b * NH_OBS_SIZE;
+    __shared__ int sec[8 * 4 * 17];
+    __shared__ unsigned int lmkey[12];
+    __shared__ int ide[4];
+    __shared__ unsigned int pmasks[6];
+    __shared__ int paccessory[NH_INV], powner[4];
+    /* ---- stage 1: decodes that read only the observation ---- */
+    for (int cell = threadIdx.x; cell < NH_MGRID; cell += blockDim.x) { /* nh_decode_kernel */
+        const nh_obs_t* src = ob + 2 * cell;
+        int g = (int)nh_obs_float(src[0]) | ((int)nh_obs_float(src[1]) << 8);
+        glyph_idx[(int64_t)b * NH_MGRID + cell] = (float)max(0, min(g, NH_GLYPH_VOCAB - 1));
+    }
+    for (int s = threadIdx.x; s < NH_INV; s += blockDim.x) { /* nh_inv_decode_kernel x2, nh_inv_sfeat_kernel */
+        const nh_obs_t* s1 = ob + NH_INV_OFF + 2 * s;
+        int g1 = (int)nh_obs_float(s1[0]) | ((int)nh_obs_float(s1[1]) << 8);
+        inv_idx[(int64_t)b * NH_INV + s] = (float)max(0, min(g1, NH_GLYPH_VOCAB - 1));
+        const nh_obs_t* s2 = ob + NH_INVTRUE_OFF + 2 * s;
+        int g2 = (int)nh_obs_float(s2[0]) | ((int)nh_obs_float(s2[1]) << 8);
+        invt_idx[(int64_t)b * NH_INV + s] = (float)max(0, min(g2, NH_GLYPH_VOCAB - 1));
+        const nh_obs_t* src = ob + NH_INVST_OFF + s * NH_ST_RAW;
+        int st[NH_ST_RAW];
+        for (int j = 0; j < NH_ST_RAW; j++) { int v = (int)nh_obs_float(src[j]); st[j] = v >= 128 ? v - 256 : v; }
+        precision_t* f = sfeat + ((int64_t)b * NH_INV + s) * NH_SFEAT;
+        for (int c = 0; c < 4; c++) f[c] = from_float(st[0] == c ? 1.0f : 0.0f);
+        int spe_known = st[1] != -128;
+        f[4] = from_float((float)spe_known);
+        f[5] = from_float(spe_known ? fmaxf(fminf((float)st[1], 7.0f), -7.0f) * (1.0f / 7.0f) : 0.0f);
+        f[6] = from_float(fminf(fmaxf((float)st[2], 0.0f), 30.0f) * (1.0f / 30.0f));
+        f[7] = from_float((float)st[3] * (1.0f / 3.0f));
+        f[8] = from_float((float)st[4] * (1.0f / 3.0f));
+        for (int c = 0; c < 7; c++) f[9 + c] = from_float((float)((st[5] >> c) & 1));
+        f[16] = from_float((float)st[6]);
+        int g = (int)nh_obs_float(s1[0]) + ((int)nh_obs_float(s1[1]) << 8);
+        int ot = g - NH_GLYPH_OBJ_OFF;
+        int cat = (ot >= 0 && ot < NH_NUM_OBJECTS) ? nh_obj_armcat_dev[ot] : -1;
+        for (int c = 0; c < 7; c++) f[17 + c] = from_float(cat == c ? 1.0f : 0.0f);
+    }
+    { /* nh_blstats_kernel */
+        const nh_obs_t* src = ob + NH_BL_OFF; const nh_obs_t* ex = src + 4 * NH_BL_RAW;
+        precision_t* dst = bl_out + (int64_t)b * NH_BL_FEAT;
+        for (int j = threadIdx.x; j < NH_BL_FEAT; j += blockDim.x) {
+            float f;
+            if (j < NH_F_HUNGER) {
+                int i = j + (j >= 21) + (j >= 24);
+                int v = nh_bl_read_i32(src + 4*i);
+                f = NH_BL_ISLOG[i] ? log1pf(fmaxf((float)v, 0.0f)) * NH_BL_SCALE[i] : (float)v * NH_BL_SCALE[i];
+            } else if (j < NH_F_COND) {
+                int v = nh_bl_read_i32(src + 4*NH_BL_HUNGER);
+                f = (j - NH_F_HUNGER == max(0, min(v, 6))) ? 1.0f : 0.0f;
+            } else if (j < NH_F_PREV) {
+                unsigned int cond = (unsigned int)nh_bl_read_i32(src + 4*NH_BL_CONDITION);
+                f = (float)((cond >> (j - NH_F_COND)) & 1u);
+            } else if (j < NH_F_INV) {
+                f = (j - NH_F_PREV == nh_bl_read_i32(ex + 4)) ? 1.0f : 0.0f;
+            } else if (j < NH_F_FRAC) {
+                f = (float)nh_bl_read_i32(ex + 4*(2 + j - NH_F_INV)) * 0.125f;
+            } else if (j < NH_F_DNUM) {
+                int base = (j == NH_F_FRAC) ? NH_BL_HP : NH_BL_ENE;
+                int cur = nh_bl_read_i32(src + 4*base);
+                int mx = nh_bl_read_i32(src + 4*(base + 1));
+                f = fminf(fmaxf((float)cur / (float)(mx > 1 ? mx : 1), 0.0f), 1.0f);
+            } else if (j < NH_F_ENGR) {
+                int v = nh_bl_read_i32(src + 4*NH_BL_DNUM);
+                f = (j - NH_F_DNUM == max(0, min(v, 7))) ? 1.0f : 0.0f;
+            } else if (j < NH_F_SHOP) {
+                int v = nh_bl_read_i32(ex);
+                f = (j == NH_F_ENGR) ? (v >= 1 ? 1.0f : 0.0f) : (v >= 2 ? 1.0f : 0.0f);
+            } else if (j < NH_F_SPELL) {
+                int v = nh_bl_read_i32(ex + 4*(NH_EXTRA_SHOP + (j - NH_F_SHOP)));
+                f = (j == NH_F_SHOP) ? (float)v : (float)v * 0.01f;
+            } else if (j < NH_F_WEIGHT) {
+                int v = nh_bl_read_i32(ex + 4*(NH_EXTRA_SHOP + 2));
+                f = (float)v * 0.125f;
+            } else if (j < NH_F_ROLE) {
+                int v = nh_bl_read_i32(ex + 4*(NH_EXTRA_SHOP + 2 + 1 + 4 * NH_SPELL_SLOTS + (j - NH_F_WEIGHT)));
+                if (j == NH_F_WEIGHT) { float d = (float)v * 0.01f - 1.0f; f = d / (1.0f + fabsf(d)); }
+                else f = (float)v * 0.001f;
+            } else if (j < NH_F_INTRINS) {
+                f = 0.0f;
+            } else {
+                f = (float)((nh_bl_read_i32(ex + 4*NH_EX_INTRINS) >> (j - NH_F_INTRINS)) & 1);
+            }
+            dst[j] = from_float(fminf(fmaxf(f, -1.0f), 1.0f));
+        }
+    }
+    for (int t = threadIdx.x; t < NH_MSG_LEN; t += blockDim.x) { /* nh_msg_ids_kernel */
+        float* out = msg_ids + (int64_t)b * NH_MSG_LEN;
+        if (t > NH_MSG_LEN - 3) { out[t] = -1.0f; continue; }
+        const nh_obs_t* m = ob + NH_MSG_OFF;
+        int c0 = (int)nh_obs_float(m[t]), c1 = (int)nh_obs_float(m[t + 1]), c2 = (int)nh_obs_float(m[t + 2]);
+        if (c0 == 0 || c1 == 0 || c2 == 0) { out[t] = -1.0f; continue; }
+        out[t] = (float)nh_msg_hash(nh_msg_lc(c0), nh_msg_lc(c1), nh_msg_lc(c2));
+    }
+    for (int el = threadIdx.x; el < NH_LABK * NH_LAB_IN; el += blockDim.x) { /* nh_lab_tok_kernel (monsters, items) */
+        nh_front_labtok(lm_tok, lm_gid, ob, b, e_eff, haz, NH_TOKM_OFF, 1, el);
+        nh_front_labtok(li_tok, li_gid, ob, b, e_eff, NULL, NH_TOKI_OFF, 0, el);
+    }
+    for (int el = threadIdx.x; el < NH_SPELL_SLOTS * NH_SPKEY; el += blockDim.x) { /* nh_spkey_kernel */
+        int r = el % NH_SPKEY, s = el / NH_SPKEY, bs = b * NH_SPELL_SLOTS + s;
+        const nh_obs_t* src = ob + NH_BL_OFF + 4 * (NH_BL_RAW + NH_EXTRA_SHOP + 2 + 1 + 4 * s);
+        int id = (int)nh_obs_float(src[0]) | ((int)nh_obs_float(src[1]) << 8);
+        int g = id > 0 ? min(id + 1906, NH_GLYPH_VOCAB - 1) : -1;
+        float in[NH_SPIN];
+        for (int d = 0; d < NH_EMBED_DIM; d++) in[d] = g >= 0 ? to_float(e_eff[(int64_t)g * NH_EMBED_DIM + d]) : 0.0f;
+        int lev = (int)nh_obs_float(src[4]) | ((int)nh_obs_float(src[5]) << 8);
+        int fail = (int)nh_obs_float(src[8]) | ((int)nh_obs_float(src[9]) << 8);
+        int know = (int)nh_obs_float(src[12]) | ((int)nh_obs_float(src[13]) << 8) | ((int)nh_obs_float(src[14]) << 16);
+        in[NH_EMBED_DIM + 0] = id > 0 ? 1.0f : 0.0f;
+        in[NH_EMBED_DIM + 1] = fminf((float)lev * 0.142857f, 1.0f);
+        in[NH_EMBED_DIM + 2] = fminf((float)fail * 0.01f, 1.0f);
+        in[NH_EMBED_DIM + 3] = fminf((float)know * 0.00005f, 1.0f);
+        if (r == 0) {
+            sp_idx[(int64_t)bs] = (float)g;
+            precision_t* inb = sp_in + (int64_t)bs * NH_SPIN;
+            for (int c = 0; c < NH_SPIN; c++) inb[c] = from_float(in[c]);
+        }
+        float acc = 0.0f;
+        for (int c = 0; c < NH_SPIN; c++) acc += to_float(spk_w[r * NH_SPIN + c]) * in[c];
+        spk_keys[(int64_t)bs * NH_SPKEY + r] = from_float(fmaxf(acc, 0.0f));
+    }
+    for (int el = threadIdx.x; el < 4; el += blockDim.x) { /* nh_sp_doorstep_kernel */
+        int d = 2 * NH_SPM + el;
+        const nh_obs_t* ex = ob + NH_BL_OFF + NH_BL_RAW * 4;
+        int mf = 100, ml = 0, n = 0, mr = 20000;
+        for (int s = 0; s < NH_SPELL_SLOTS; s++) {
+            const nh_obs_t* q = ex + 4 * (NH_EXTRA_SHOP + 2 + 1 + 4 * s);
+            int sid = nh_bl_read_i32(q);
+            if (sid <= 0) continue;
+            n++;
+            int lv = nh_bl_read_i32(q + 4), fl = nh_bl_read_i32(q + 8), kn = nh_bl_read_i32(q + 12);
+            if (fl < mf) mf = fl;
+            if (lv > ml) ml = lv;
+            if (kn < mr) mr = kn;
+        }
+        int j = d - 2 * NH_SPM;
+        float v = j == 0 ? (float)mf * 0.01f : j == 1 ? (float)ml * (1.0f / 7.0f) : j == 2 ? (float)(n > 8 ? 8 : n) * 0.125f : (float)mr * 0.00005f;
+        v = fminf(fmaxf(v, 0.0f), 1.0f);
+        concat[(int64_t)b * NH_CONCAT + NH_SPELL_CONCAT_OFF + d] = from_float(v);
+    }
+    if (threadIdx.x == 0) { /* nh_idemb: indices */
+        const nh_obs_t* bl = ob + NH_BL_OFF; const nh_obs_t* ex = bl + 4 * NH_BL_RAW;
+        int r = 0, rc = 0, g = 0;
+        for (int i = 0; i < 13; i++) if (nh_bl_read_i32(ex + 4 * (NH_EX_ROLEOH + i))) r = i;
+        for (int i = 0; i < 5; i++) if (nh_bl_read_i32(ex + 4 * (NH_EX_ROLEOH + 13 + i))) rc = i;
+        for (int i = 0; i < 2; i++) if (nh_bl_read_i32(ex + 4 * (NH_EX_ROLEOH + 18 + i))) g = i;
+        int al = 1 - nh_bl_read_i32(bl + 4 * 26);
+        al = al < 0 ? 0 : al > 2 ? 2 : al;
+        ide_idx[b * 4 + 0] = (float)r; ide_idx[b * 4 + 1] = (float)rc; ide_idx[b * 4 + 2] = (float)g; ide_idx[b * 4 + 3] = (float)al;
+        ide[0] = r; ide[1] = rc; ide[2] = g; ide[3] = al;
+    }
+    __syncthreads();
+    { /* nh_idemb: table rows into the concat tail */
+        precision_t* c = concat + (int64_t)b * NH_CONCAT + NH_IDE_CONCAT_OFF;
+        for (int d = threadIdx.x; d < NH_IDE_ROLE; d += blockDim.x) c[d] = role_w[ide[0] * NH_IDE_ROLE + d];
+        c += NH_IDE_ROLE;
+        for (int d = threadIdx.x; d < NH_IDE_RACE; d += blockDim.x) c[d] = race_w[ide[1] * NH_IDE_RACE + d];
+        c += NH_IDE_RACE;
+        for (int d = threadIdx.x; d < NH_IDE_GEND; d += blockDim.x) c[d] = gend_w[ide[2] * NH_IDE_GEND + d];
+        c += NH_IDE_GEND;
+        for (int d = threadIdx.x; d < NH_IDE_ALGN; d += blockDim.x) c[d] = algn_w[ide[3] * NH_IDE_ALGN + d];
+    }
+    /* ---- stage 2: consumers of glyph_idx / msg_ids / inventory indices ---- */
+    for (int p = threadIdx.x; p < NH_CGRID; p += blockDim.x) { /* nh_crop_kernel */
+        const nh_obs_t* bl = ob + NH_BL_OFF;
+        int r = nh_bl_read_i32(bl + 4) - NH_CHALF + p / NH_CROP;
+        int c = nh_bl_read_i32(bl)     - NH_CHALF + p % NH_CROP;
+        crop[(int64_t)b * NH_CGRID + p] = (r < 0 || r >= NH_MAPH || c < 0 || c >= NH_MAPW)
+            ? (float)NH_PAD_GLYPH : glyph_idx[b * NH_MGRID + r * NH_MAPW + c];
+    }
+    { /* nh_terr_feat_kernel (block-level, as before) */
+        for (int i = threadIdx.x; i < 8 * 4 * 17; i += blockDim.x) sec[i] = 0;
+        if (threadIdx.x < 12) lmkey[threadIdx.x] = 0xFFFFFFFFu;
+        __syncthreads();
+        const nh_obs_t* bl = ob + NH_BL_OFF;
+        int hx = nh_bl_read_i32(bl), hy = nh_bl_read_i32(bl + 4);
+        int hcell = hy * NH_MAPW + hx;
+        for (int cell = threadIdx.x; cell < NH_MGRID; cell += blockDim.x) {
+            int g = (int)glyph_idx[(int64_t)b * NH_MGRID + cell];
+            int tc = cell == hcell ? 13 : (int)terrc_lut[g];
+            if (tc == 255) continue;
+            int dy = cell / NH_MAPW - hy, dx = cell % NH_MAPW - hx;
+            if (tc < 12) {
+                int ady = dy < 0 ? -dy : dy, adx = dx < 0 ? -dx : dx;
+                int cheb = adx > ady ? adx : ady;
+                atomicMin(&lmkey[tc], ((unsigned int)cheb << 11) | (unsigned int)cell);
+            }
+            atomicAdd(&sec[(int)sblut[(dy + 20) * 157 + (dx + 78)] * 17 + tc], 1);
+        }
+        __syncthreads();
+        precision_t* o = tf + (int64_t)b * NH_TERRF;
+        if (threadIdx.x < 12) {
+            int t = threadIdx.x;
+            unsigned int key = lmkey[t];
+            if (key == 0xFFFFFFFFu) {
+                o[t * 4 + 0] = from_float(0.0f); o[t * 4 + 1] = from_float(0.0f);
+                o[t * 4 + 2] = from_float(0.0f); o[t * 4 + 3] = from_float(0.0f);
+            } else {
+                int cell = (int)(key & 2047u);
+                int cheb = (int)(key >> 11);
+                int dy = cell / NH_MAPW - hy, dx = cell % NH_MAPW - hx;
+                o[t * 4 + 0] = from_float(1.0f);
+                o[t * 4 + 1] = from_float((float)dx * (1.0f / 78.0f));
+                o[t * 4 + 2] = from_float((float)dy * (1.0f / 20.0f));
+                o[t * 4 + 3] = from_float((float)(cheb < 30 ? cheb : 30) * (1.0f / 30.0f));
+            }
+        }
+        float inv_log = 1.0f / logf(1660.0f);
+        for (int i = threadIdx.x; i < 8 * 4 * 17; i += blockDim.x)
+            o[48 + i] = from_float(log1pf((float)sec[i]) * inv_log);
+    }
+    for (int d = threadIdx.x; d < NH_MSG_HID; d += blockDim.x) { /* nh_msg_pool_kernel */
+        const float* mi = msg_ids + (int64_t)b * NH_MSG_LEN;
+        int count = 0; float acc = 0.0f;
+        for (int t = 0; t < NH_MSG_LEN; t++) {
+            int id = (int)mi[t];
+            if (id < 0) break;
+            count++;
+            acc += to_float(msg_w[(int64_t)id * NH_MSG_HID + d]);
+        }
+        msg_out[(int64_t)b * NH_MSG_HID + d] = from_float(acc * rsqrtf((float)count + 1.0f));
+    }
+    for (int r = threadIdx.x; r < NH_INV_FLAT; r += blockDim.x) { /* nh_inv_gather_kernel */
+        int s = r / NH_INV_HID, k = r % NH_INV_HID;
+        int g = (int)inv_idx[b * NH_INV + s];
+        float v = to_float(inv_T[g * NH_INV_HID + k]) + to_float(inv_b1[k]);
+        int gt = (int)invt_idx[b * NH_INV + s];
+        if (gt != NH_GLYPH_VOCAB - 1) v += to_float(invt_T[gt * NH_INV_HID + k]);
+        const precision_t* f = sfeat + ((int64_t)b * NH_INV + s) * NH_SFEAT;
+        for (int j = 0; j < NH_SFEAT; j++) v += to_float(inv_ws[k * NH_SFEAT + j]) * to_float(f[j]);
+        inv_out[(int64_t)b * NH_INV_FLAT + r] = from_float(v > 0.0f ? v : 0.0f);
+    }
+    __syncthreads();
+    /* ---- stage 3: consumers of crop / inv_out ---- */
+    for (int j = threadIdx.x; j < NH_LOC_IN; j += blockDim.x) { /* nh_loc3_gather_kernel */
+        int p = j / NH_LOCC_DIM, d = j % NH_LOCC_DIM;
+        int g = (int)crop[(int64_t)b * NH_CGRID + p];
+        int cls = p == (NH_CGRID / 2) ? 7 : (int)locc_lut[g];
+        x_local[(int64_t)b * NH_LOC_IN + j] = locc_w[cls * NH_LOCC_DIM + d];
+    }
+    { /* nh_pass_fast_kernel */
+        if (nopass == 7) {
+            for (int d = threadIdx.x; d < NH_PASS_DIM; d += blockDim.x) concat[(int64_t)b * NH_CONCAT + passoff + d] = from_float(0.0f);
+            return;
+        }
+        nh_pass_metadata<false>(sfeat, inv_idx, b, pmasks, paccessory, powner);
+        for (int d = threadIdx.x; d < NH_PASS_DIM; d += blockDim.x) {
+            precision_t* dst = concat + (int64_t)b * NH_CONCAT + passoff + d;
+            *dst = from_float(0.0f);
+#ifndef NH_NO_APANEL
+            if (d >= 80 + NH_PWORN_DIM) {
+                if (nopass & 4) continue;
+                int part = d - 80 - NH_PWORN_DIM;
+                int which = part / (NH_INV_HID + NH_SFEAT), e = part % (NH_INV_HID + NH_SFEAT);
+                int k = powner[which];
+                if (k < NH_INV) {
+                    const precision_t* f = sfeat + ((int64_t)b * NH_INV + k) * NH_SFEAT;
+                    const precision_t* v = inv_out + ((int64_t)b * NH_INV + k) * NH_INV_HID;
+                    *dst = e < NH_INV_HID ? v[e] : f[e - NH_INV_HID];
+                }
+                continue;
+            }
+#endif
+            int region = d < 40 ? 0 : d < 80 ? 1 : 2;
+            int j = region == 0 ? d : region == 1 ? d - 40 : d - 80;
+            if (nopass & (1 << region)) continue;
+            unsigned long long selected = nh_pass_mask(pmasks, region);
+            int count = __popcll(selected);
+            float sum = 0.0f;
+            precision_t value = from_float(0.0f);
+            while (selected) {
+                int k = __ffsll((long long)selected) - 1;
+                selected &= selected - 1;
+                const precision_t* f = sfeat + ((int64_t)b * NH_INV + k) * NH_SFEAT;
+                const precision_t* v = inv_out + ((int64_t)b * NH_INV + k) * NH_INV_HID;
+                if (region == 2) sum += to_float(v[j]);
+                else {
+                    float x = j < NH_INV_HID ? to_float(v[j]) : to_float(f[j - NH_INV_HID]);
+                    value = from_float(to_float(value) + x);
+                }
+            }
+            if (region == 2) { if (count > 0) *dst = from_float(sum / (float)count); }
+            else *dst = value;
+        }
+    }
+}
