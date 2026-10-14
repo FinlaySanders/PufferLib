@@ -433,3 +433,14 @@ includes monseeu (the old path leaves the bit unset when the monster cannot see 
 entry, after m_move and at dochugw exit — the bracketing that found slip (2) in two runs.
 8-game check: hash 948bc4a0d1ab2b7b restored, traces identical (39.96M lines), 30,979 → 36,342 (+17.3%; v1.2 on this set was +12.0%).
 Full chain = stage_k19 (gates, 128-game A/B, corpus).
+(3) appr hard-coded to 1: the original computes appr from mflee at m_move time, and mflee can be set INSIDE the same dochug (distfleeck's
+monflee when the believed position is adjacent and scary); game 35/env 27 turn 39248 showed appr -1 vs 1 with identical candidates.
+Fix v1.6d: appr = mflee ? -1 : 1 and the original mconf/swallowed branch structure. Localisation needed two more tools: the harness
+asserts steps % SEG == 0 (use SCHED_SEG=steps for short runs); game bisection on the aggregate hash (ngames 16/24/32/40/48 → 32..40 → 35),
+and a per-env trace filter (NH_MT2_TRACE_ENV=lo:hi with the env serial printed) — env serials are creation order, not game index, so the
+whole-run trace (36 games, 57M lines) was what found it. v1.6d: 36-game hash identical, all traces identical. Chain relaunched 22:50.
+
+## v1.6d RESULT (22:45, stage_k19) — near kernel EXACT: 8-game, gates 5/5, rotation hash identical, corpus 16,777,216 / 0
+Plain same-binary, 128 games: NH_MT2=0 28,339/28,342 → NH_MT2=1 33,552/33,519 = +18.3% (v1.5b +16.7%: the near population is ~4% of the
+mature-set step vs 9.9% in the 8-game sample, where v1.6 gave +5 points). Ladder (plain, 128 games): v1 +10.7 | v1.1 +11.1 | v1.2 +13.1 |
+v1.3b +14.6 | v1.4 +17.1 | v1.5b (vision skip, both arms) | v1.6d +18.3. Consolidation = stage_k21.
