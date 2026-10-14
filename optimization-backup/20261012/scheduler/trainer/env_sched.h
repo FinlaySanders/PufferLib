@@ -55,6 +55,7 @@ struct EnvSched {
     ESRing* ready_parked;   // per worker: own games whose actions are back but not yet active this segment
     int* active_count;
     ESRing infer;           // global: games whose observation is ready for inference (timed)
+    pthread_mutex_t infer_mu; pthread_cond_t infer_cv; int infer_waiters;  // slot threads can sleep until the first push into an empty ring
     volatile long done_count;
     volatile int running, stop;
     void (*step)(void*, int); void* ctx;
@@ -76,7 +77,8 @@ static inline void es_step_agent(EnvSched* s, int w, int a, int borrowed) {
     int t = ++g->t;
     s->inrot_sum[w] += s->inrot[g->owner];
     if (t >= s->horizon) { if (g->active) __atomic_fetch_sub(&s->inrot[g->owner], 1, __ATOMIC_RELAXED); __atomic_fetch_add(&s->done_count, 1, __ATOMIC_ACQ_REL); }
-    else { double now = es_now(); g->sent = now; es_push(&s->infer, a, now); }
+    else { double now = es_now(); g->sent = now; int was_empty = __atomic_load_n(&s->infer.count, __ATOMIC_RELAXED) == 0; es_push(&s->infer, a, now);
+           if (was_empty && __atomic_load_n(&s->infer_waiters, __ATOMIC_RELAXED)) { pthread_mutex_lock(&s->infer_mu); pthread_cond_broadcast(&s->infer_cv); pthread_mutex_unlock(&s->infer_mu); } }
 }
 
 static void* es_worker(void* arg) {
@@ -121,7 +123,7 @@ static EnvSched* es_create(int workers, int agents, int horizon, void (*step)(vo
       if (pw != 1.0) fprintf(stderr, "SCHED ownership: P-core workers own %d games each, E-core workers %d\n", given[0], given[workers - 1]); }
     s->ready_active = (ESRing*)calloc(workers, sizeof(ESRing)); s->ready_parked = (ESRing*)calloc(workers, sizeof(ESRing));
     for (int w = 0; w < workers; w++) { es_ring_init(&s->ready_active[w], agents + 1, 0); es_ring_init(&s->ready_parked[w], agents + 1, 0); }
-    es_ring_init(&s->infer, agents + 1, 1);
+    es_ring_init(&s->infer, agents + 1, 1); pthread_mutex_init(&s->infer_mu, NULL); pthread_cond_init(&s->infer_cv, NULL); s->infer_waiters = 0;
     s->active_count = (int*)calloc(workers, sizeof(int));
     s->steps_own = (long*)calloc(workers, sizeof(long)); s->steps_borrow = (long*)calloc(workers, sizeof(long)); s->activations = (long*)calloc(workers, sizeof(long));
     s->busy = (double*)calloc(workers, sizeof(double)); s->idle = (double*)calloc(workers, sizeof(double));
@@ -152,6 +154,15 @@ static void es_segment_start(EnvSched* s) {
 static int es_segment_done(EnvSched* s) { return __atomic_load_n(&s->done_count, __ATOMIC_ACQUIRE) == s->agents; }
 static void es_segment_finish(EnvSched* s) { while (!es_segment_done(s)) { struct timespec ts = {0, 50000}; nanosleep(&ts, NULL); } __atomic_store_n(&s->running, 0, __ATOMIC_RELEASE); }
 
+/* Slot thread: sleep until something is pushed into the empty inference ring, or until timeout_ns elapses. */
+static void es_infer_wait(EnvSched* s, long timeout_ns) {
+    struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts); ts.tv_nsec += timeout_ns; while (ts.tv_nsec >= 1000000000L) { ts.tv_nsec -= 1000000000L; ts.tv_sec++; }
+    pthread_mutex_lock(&s->infer_mu); __atomic_fetch_add(&s->infer_waiters, 1, __ATOMIC_RELAXED);
+    if (__atomic_load_n(&s->infer.count, __ATOMIC_RELAXED) == 0) pthread_cond_timedwait(&s->infer_cv, &s->infer_mu, &ts);
+    __atomic_fetch_sub(&s->infer_waiters, 1, __ATOMIC_RELAXED); pthread_mutex_unlock(&s->infer_mu);
+}
+/* Age of the oldest pending observation in seconds (negative if the ring is empty). */
+static double es_infer_oldest_age(EnvSched* s) { ESRing* r = &s->infer; if (!__atomic_load_n(&r->count, __ATOMIC_RELAXED)) return -1; return es_now() - r->times[r->head]; }
 /* Inference side: take up to max ready observations; when fewer than max are ready, take them all once the oldest has waited window_s. */
 static int es_infer_pop(EnvSched* s, int* ids, int max, double window_s) {
     ESRing* r = &s->infer;
@@ -184,6 +195,7 @@ static void es_destroy(EnvSched* s) {
 static void es_print_stats(EnvSched* s, FILE* f, const char* tag) {
     long own = 0, bor = 0, act = 0, pb = 0; double busy = 0, idle = 0, bmin = 1e30, bmax = 0, rot = 0, rt = 0, se = 0; long capsum = 0;
     for (int w = 0; w < s->workers; w++) { own += s->steps_own[w]; bor += s->steps_borrow[w]; act += s->activations[w]; busy += s->busy[w]; idle += s->idle[w]; rot += s->inrot_sum[w]; pb += s->parked_back[w]; s->parked_back[w] = 0; rt += s->rt_ewma[w]; se += s->step_ewma[w]; capsum += s->cap[w] > 100000 ? 0 : s->cap[w]; if (s->busy[w] < bmin) bmin = s->busy[w]; if (s->busy[w] > bmax) bmax = s->busy[w]; s->steps_own[w] = s->steps_borrow[w] = s->activations[w] = 0; s->busy[w] = s->idle[w] = 0; s->inrot_sum[w] = 0; }
+    { char line[512]; int o = snprintf(line, sizeof line, "SCHED_PCORES %s", tag); for (int w = 0; w < s->workers && w < 8; w++) { long n = s->steps_own_w[w] + s->steps_borrow_w[w]; o += snprintf(line + o, sizeof line - o, " w%d=%.1f", w, n ? 1e6 * s->busy_w[w] / n : 0.0); } fprintf(f, "%s\n", line); }
     { double pb_=0,pe_=0; long pn=0,en=0,pbor=0,ebor=0,pfrom=0,efrom=0; for (int w = 0; w < s->workers; w++) { long n = s->steps_own_w[w] + s->steps_borrow_w[w]; int isP = s->pin && s->workers == 24 && w < 8; if (isP) { pb_ += s->busy_w[w]; pn += n; pbor += s->steps_borrow_w[w]; pfrom += s->borrowed_from_w[w]; } else { pe_ += s->busy_w[w]; en += n; ebor += s->steps_borrow_w[w]; efrom += s->borrowed_from_w[w]; } s->steps_own_w[w] = s->steps_borrow_w[w] = 0; s->busy_w[w] = 0; s->borrowed_from_w[w] = 0; }
       fprintf(f, "SCHED_CORES %s P_us_per_step=%.1f E_us_per_step=%.1f P_steps=%ld E_steps=%ld P_borrows=%ld E_borrows=%ld taken_from_P=%ld taken_from_E=%ld\n", tag, pn ? 1e6 * pb_ / pn : 0.0, en ? 1e6 * pe_ / en : 0.0, pn, en, pbor, ebor, pfrom, efrom); }
     fprintf(f, "SCHED_STATS %s steps_own=%ld steps_borrow=%ld borrow_pct=%.1f activations=%ld parked_back=%ld cap_mean=%.1f rt_us=%.0f step_us=%.1f hot_set_mean=%.1f us_per_step=%.1f busy_mean=%.3f busy_min=%.3f busy_max=%.3f idle_mean=%.3f\n",

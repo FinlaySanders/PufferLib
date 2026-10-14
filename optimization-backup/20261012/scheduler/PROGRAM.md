@@ -341,3 +341,18 @@ dilution artefacts, not engine effects. Per-thread attribution (perf record --so
 rates; the per-function profiles (same mispredict distribution; slot threads = 17% of cycles) are the usable result from this pass.
 PERF CAMPAIGN CLOSED 05:10. Usable outputs: rotation matrix G1+G3 (rot 1/4/16/64), PGO vs plain, function profiles at rot 1/12/16, trainer profiles
 pool vs sched, trainer process-wide counters. Invalid: everything from passes 1-3 (results_bad*/).
+
+## 2026-10-14 08:05 — slot-thread wait experiment (sched_v11; 5M/2048 cap12 batched gather; pool 368.8K / 350.1K)
+spin on P siblings 1,3,5,7 (current): 393.5K / 378.5K | spin on siblings 9,11,13,15: 368.1K / 378.1K | condvar sleep (wake on first push, sleep out the
+window): 365.9K / 362.9K | condvar + alt pin: 353.6K / 354.8K.
+Per-P-core step cost: the four workers sharing a physical core with a spinning slot thread run ~5 us/step slower (48-52 vs 42-51; the penalty follows the pin
+to 4-7 when the slot threads move). Sleeping removes most of that gap but adds wake latency: round trip 370 → 410 us, borrow 38 → 43%, E-core steps 63 → 68
+→ net −6%. Latency beats the ~2% of P-core time the spinning costs. Next: tpause (WAITPKG user-level wait, present on this CPU) — parks the hardware thread
+for the sibling with ~1-5 us wake, no OS involvement.
+
+## 2026-10-14 08:12 — tpause slot wait (sched_v12, PUF_SCHED_SLOT_WAIT=tpause, PUF_SCHED_TPAUSE_US) — CLOSED: no lever in the slot wait
+pool ctrl 351.1K / 352.4K | spin 379.1K / 367.8K | tpause 5 us 380.2K / 368.8K | tpause 20 us 372.6K / 377.4K (interleaved a/b series).
+Per-P-core step cost identical under spin and tpause (w0-w4 ≈ 48-52 us, w5-w7 ≈ 41-46 us), round trip 376-393 us, borrow 37.5-38.1% in all six.
+Reading: parking the slot thread's hardware thread (C0.1) does not relieve the sibling worker, so the sibling penalty measured on 13-14 Oct is the slot
+threads' real work (gather copies, pinned-buffer writes, launch calls) sharing the core's L1/L2, not the spin instructions. Sleeping (cv) only adds
+latency. Slot-wait design closed: keep spin. Scheduler at 2048 stays +7-8% over the pool (same-session); binaries sched_v11/v12 both carry it.

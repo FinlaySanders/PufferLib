@@ -87,5 +87,11 @@ Scheduler by population (same-session pool controls, batched gather, cap 12): 10
 15M/4096 −2%. Live learning proof (150 epochs, weights updating, 2048 agents, 4 buffers): identical observation hashes every epoch, pool vs scheduler.
 Trainer-level (live 24-worker process): engine mispredict distribution identical under pool and scheduler (m_move 28%, mfndpos 13%, pack_obs 11%);
 the scheduler's slot threads account for 17.4% of process cycles (spinning on P-core SMT siblings) and worker spin loops 3.9% — the next scheduler
-experiment is a sleeping slot wait or a different slot-thread pin, judged by P-core 0-3 vs 4-7 step cost. Process-wide counter rates are diluted by
+experiment is a sleeping slot wait or a different slot-thread pin, judged by P-core 0-3 vs 4-7 step cost. RESULT: see the slot-thread wait paragraph below. Process-wide counter rates are diluted by
 each design's spin style and are not an engine comparison.
+
+Slot-thread wait (14 Oct 08:00-08:12, sched_v11/v12, 5M/2048 cap 12 batched gather): spin 393.5/378.5K and 379.1/367.8K vs pool 368.8/350.1K and
+351.1/352.4K; condvar sleep 365.9/362.9K (round trip 372 -> 410 us, borrow 38 -> 43%); tpause C0.1 5 us 380.2/368.8K, 20 us 372.6/377.4K; moving
+the slot threads to the other four P-core siblings moves the ~5 us/step sibling penalty with them (368.1/378.1K). tpause leaves the per-core costs
+unchanged, so the sibling penalty is the slot threads' gather work sharing the core, not the spin. Closed: spin stays; +7-8% at 2048 is the final
+scheduler number on this box.

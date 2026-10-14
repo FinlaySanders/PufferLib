@@ -1,0 +1,29 @@
+{
+  "command": [
+    "./build.sh",
+    "nethack",
+    "puffer_sched_v10"
+  ],
+  "flags": "-DPUF_PERF_LOAD -DPUF_ENV_POOL -DPUF_HEAD_SAMPLER -DPUF_MUON_BATCH_NORM -DPUF_MINGRU_NOCOPY -DPUF_SKIP_UNUSED_LOGPS -DPUF_PPO_ZERO -DPUF_BYTE_OBS -DPUF_REUSE_ROLLOUT -DPUF_MUON_PARALLEL -lcublasLt -DPUF_MUON_OUTPLACE -lcuda ",
+  "rc": 0,
+  "seconds": 9.461084604263306,
+  "source_hashes": {
+    "ocean/nethack/embedding_reduce.cuh": "afb3ec2e1aa45dd797922366085813fdabe8863ac64167146d810c947ecd9947",
+    "ocean/nethack/nethack.cu": "34d321ff43fb20d88cc09c9fb3d587a72e2bac22633bd72daadaaf29002f0a43",
+    "ocean/nethack/pass_fast.cuh": "fb7c2ae47f7fada6af50bbb8a7cc41ca423283f5c0de352631224a19b79d32a0",
+    "ocean/nethack/pool_bwd.cuh": "a8cc95225eb0ecaa9d4e85c70bb54288faaff88019f72a1fdb3da24d91ff5ad7",
+    "ocean/nethack/sfeat_fast.cuh": "bf4f636ae073f23edeb0f296be1ca95675e2e95eb7f6501fced684b34d8b88b7",
+    "src/algo.cu": "733cab8e6c2c60f72a91c20c49bce1123d269fcd4b7934b42307107187217353",
+    "src/entity_fused.cuh": "acea1d4d1882287e67a4a1fc8c5699e8b2553120a4073b593f849d67e4155aae",
+    "src/entity_train_fused.cuh": "f76cfb93916b473857be7a01608be2861e5f44c24a4c624f2bb52b70942c4f99",
+    "src/env_pages.h": "ac7a3c366d52f6933a065e8530a741f8ac9ec2066232cdc7cd41248bc09d3fdb",
+    "src/env_pool.h": "6945ffde45023dd24b9baf131604835dc4b4191e87108c411ed02f5edab05726",
+    "src/inventory_fused.cuh": "091e5f5edbef16d3215648558cffe7756302d38a5a58de827af57f937d142500",
+    "src/pipeline_bench.cuh": "544667fc47c9dc5bac0f5820b2ea007719e92fa98dd20c0f3950523a04e45cda",
+    "src/pufferl.cu": "d5636f7329f119f0124d601a99581a156768bdc8817c2ff1a9c7416a96f7e081",
+    "src/rec_fused.cuh": "4bec067599a6cc8eeb9d2da01be8b935d2ef18da33184eb7a486f9a463bcbb18",
+    "src/rec_lt.cuh": "60fd47dfec0c94868c473c57d7a9e9baa7a793bcc31d00a634c6b7ac38b4a4ae",
+    "src/train_dw_lt.cuh": "0f5d6c30322533a4615f37b8a61b5a7d4bd51428b24c70b066816802f9ed0b54"
+  },
+  "binary_sha256": "e797bcb46eb06d4c46ed724323dbdea3eea5af75ecd9724217f69bc18cc24342"
+}
