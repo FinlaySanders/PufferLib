@@ -4,7 +4,7 @@ P=/puffertank/experiments/nethack-monster-turn-plan-20261014; E=$P/engines/mt2; 
 ACT=/puffertank/experiments/nethack-comprehensive-20261008/actions; L=$P/stage_k19.log
 echo "stage K19 waiting for K18 $(date -u +%T)" > $L
 while ! grep -q STAGEK18_DONE $P/stage_k18.log 2>/dev/null; do sleep 15; done
-if grep -q "should_see = (couldsee(omx, omy)" $E/source/src/monmove.c; then echo "v1.6 already applied" >> $L; else cd $P && python3 apply_mt2_v16_near.py >> $L 2>&1 || { echo "APPLY v1.6 FAILED" >> $L; echo "STAGEK19_DONE $(date -u +%T)" >> $L; exit 1; }; fi
+if grep -q "the original OR chain minus its excluded terms" $E/source/src/monmove.c; then echo "v1.6 already applied" >> $L; else cd $P && python3 apply_mt2_v16_near.py >> $L 2>&1 || { echo "APPLY v1.6 FAILED" >> $L; echo "STAGEK19_DONE $(date -u +%T)" >> $L; exit 1; }; fi
 for b in build build_trace build_cg; do cmake --build $E/$b --target nethack -j8 > $E/${b}_k19.log 2>&1; echo "$b rc=$? errors=$(grep -c ' error' $E/${b}_k19.log)" >> $L; done
 grep -q "^build rc=0 errors=0" $L || { echo "BUILD FAILED" >> $L; grep -n ' error' $E/build_k19.log | head -5 >> $L; echo "STAGEK19_DONE $(date -u +%T)" >> $L; exit 1; }
 export NETHACKDIR=/puffertank/experiments/nethack-perf-20260917/dat NH_ZT_MASK=0

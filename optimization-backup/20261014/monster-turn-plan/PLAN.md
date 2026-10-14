@@ -415,3 +415,21 @@ place_monster 39, find_defensive 38, can_carry 37, mintrap 34, find_offensive 34
 v1.6 (apply_mt2_v16_near.py, written): distmin >= 2 and could-see monsters join the fast path with the range-dependent originals kept
 (distfleeck, find_defensive/find_misc within dist2 36, wield + castmu blocks verbatim, lined_up for in_line, should_see for appr/track,
 hero/image cell in the 3x3 → mfndpos fallback, ALLOW_U / hero-cell / image-cell blocks verbatim after selection). Expected +5-6%.
+
+## v1.5b RESULT (21:47, stage_k20) — vision exact skip: EXACT (8-game, gates, rotation, corpus 0 diffs), ≈ +0.7-1.0% on both arms
+Independent of NH_MT2: old-path arm 28,180 → 28,468/28,481 (+1.0%), kernel arm 33,001 → 33,225/33,235 (+0.7%). The skipped recalcs are
+cheaper than average (Ir estimate was 1.4%). Kernel ladder vs old path now +16.7% (both arms carry the vision skip).
+NOTE: stage_k19's first run measured the same binary — the "already applied" marker matched the original m_move's should_see line; marker
+fixed (v1.6-specific comment), chain relaunched 21:55.
+
+## v1.6 NEAR KERNEL — two slips found by the 8-game hash + trace in minutes each (21:56-22:20)
+(1) Believed position adjacent to the monster: with Invis/Displaced the first set_apparxy() guess can land next to the monster although the
+real hero is 2+ away → the original's `nearby` is TRUE and it attacks the empty square instead of moving; my prelude assumed nearby = 0.
+Fix v1.6b: dochug_fast uses the ORIGINAL movement-phase condition and body verbatim (m_move → m_move_fast) plus the demonic-blackmail block.
+(2) Stale inrange: a monster that starts within bolt range of the believed position and steps beyond it; my out-of-range shortcut after the
+move drew distfleeck's rn2(5) but did not reset inrange/nearby/scared, so the stale inrange fired a ranged attack. Invisible in v1.4 (far
+monsters always start with inrange 0). Fix v1.6c: the shortcut sets all three results. Also fixed: the trace's NOTONL computation now
+includes monseeu (the old path leaves the bit unset when the monster cannot see the hero), and the trace carries the RNG index at dochug
+entry, after m_move and at dochugw exit — the bracketing that found slip (2) in two runs.
+8-game check: hash 948bc4a0d1ab2b7b restored, traces identical (39.96M lines), 30,979 → 36,342 (+17.3%; v1.2 on this set was +12.0%).
+Full chain = stage_k19 (gates, 128-game A/B, corpus).
