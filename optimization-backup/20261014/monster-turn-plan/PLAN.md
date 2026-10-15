@@ -488,3 +488,41 @@ E1 fixed-clock memo | E2 mt2_eligible as calibrated word masks | E3 lined_up laz
 bitmap + engr_at early-out | E5 next-monster prefetch in the four list walks | E6 padded nh_track_near (no clamps).
 NH_MT2=1 34,511 / 34,440 (v1.7 33,708 / 33,677) ; NH_MT2=0 29,117 / 29,082 (v1.7 28,422 / 28,553). CG oracle run (elig fast-vs-slow,
 engr bitmap): see stage_k23.log "CG oracle" line.
+
+## v1.9 RESULT (00:29, stage_k24) — EXACT (8-game, gates 5/5, rotation hash, corpus 0, CG oracle 0 mismatches incl. trap bitmap): NULL speed
+E7 t_at() trap-bitmap gate | E11 find_offensive() helmet after lined_up | E12 mt2_in_shop() at the two fast-move shop tests.
+NH_MT2=1 34,494 (rep1 clean; rep2 34,548 overlapped an E-core smoke test) vs v1.8 34,511 / 34,440 → within noise. Kept (exact, cheaper code).
+
+## RNG LEAN ARM (00:32; compile-time NH_RNG_LEAN, OFF in every exact build; apply_rng_lean.py; engines/mt2/build_lean) — NO GAIN, DROPPED
+wyrand-style generator behind the ISAAC64 API + Lemire multiply-shift RND() + mcalcmove dead-draw skip. Internal consistency: lean build
+NH_MT2=0/1 give the same (new) 8-game hash 74b025bacf5349a8; 128 games survive. Trainer A/B (5M/2048 sched_v22, 44 epochs from 32,
+plain builds): exact 408,197 / 406,356 vs lean 403,348 / 401,652 = -1.2% both reps. ISAAC's 3.3% of Ir is cheap straight-line refill
+code (high IPC) and the folded constant-divisor rn2() already avoids the divide, so the instruction saving did not become time; the
+divergent trajectories make the replay harness unusable for this arm. Not pursued further; code stays inert.
+
+## PACKER P2+P4 (00:37, stage_p; headers_p/source/ocean/nethack/nethack.h = harness C2 header + two exact slices) — +0.3%, hash identical
+P2 nethack_ray_target(): bounds test hoisted (k = 1 test kept; x, y monotone in k) | P4 one inventory pass instead of four.
+replay_sched6_C2ref 36,030 / 36,016 vs replay_sched6_P 36,119 / 36,159 (same mt2 exact engine, NH_MT2=1); 8-game and rotation obs hashes
+identical (948bc4a0d1ab2b7b / 7a111519e889cf75). NOTE: the harness C2 header carries the dirty-rows packer change (nle_glyph_dirty_rows,
+mon_bits/it_bits) that the backup worktree's committed header (c3b7dd5c, mask C2 only) does not; headers_p is the authoritative packer source.
+
+## VISION CAUSE CENSUS (00:38, CG build, 128 games x 16384 steps = 2,097,152 steps; executed recalcs after the exact skip)
+lights_only 854,959 (0.41/step, 31%) | hero tuple 1,779,016 (0.85/step, 65%) | level epoch 76,695 (2.8%) | other 29,100 (1.1%).
+Fresh cycle census (same run, per engine call): movemon 67.6% (dochugw 56.6%), vision 7.6% (view_from 3.7%, update loop 3.4%), domove 8.1%
+(prompt-contaminated), mcalcdistress 3.2%, newsym 2.7%, flush_screen 2.4%, mattacku 1.8%, dosearch 1.7%, nh_timeout 1.0%.
+NEXT EXACT LEVER (not started; user moved the box to the drone sweep): reuse the previous view_from() result when only lights changed
+(same level epoch + same hero tuple): COULD_SEE bits of viz_array + the saved view_from row extents replace view_from(); the xray/night
+blocks, do_light_sources and the update loop run as before. do_light_sources only ORs TEMP_LIT and widens extents, so viz_array's
+COULD_SEE bits equal view_from's output. Worth ≈ 0.41 x view_from (48% of vision time) ≈ 1.1% of engine cycles. Verify with the CG
+oracle (fresh view_from into a scratch array on every reuse) before the gates.
+
+## v1.9 CONSOLIDATION (00:51, stage_pgo; PGO engines/mt2pgo 3e4b8c0b…, PGO quick gates 5/5) — HEADLINE
+| landing-style, rotation-16, 128 games | landed fastnle_ade PGO | mt2 v1.9 PGO | gain |
+|---|---:|---:|---:|
+| P-core 2 | 31,218 / 31,204 | 37,906 / 37,917 | +21.5% |
+| E-core 16 | 21,690 | 24,992 | +15.2% |
+Trainer (information only; 5M/2048 scheduler sched_v22, plain PGO lib): NH_MT2=0 382,232 → NH_MT2=1 412,953 (+8.0%); live learning
+150 epochs digest 31e2e3deae720ef4 = reference (bit-exact including training). Day total since the morning engine ≈ +27% per step
+(engine A+D+E +4.8% landed earlier, kernel v1.9 +21.5% on top).
+ROUND CLOSED 2026-10-15 00:51 (user moved the box to the drone sweep). Not landed on fast-nle: landing = mt2_kernel.patch onto
+/puffertank/optimization-backup-20261008/fast-nle + the deferred live 1B seed under gdb (champion10 run_ade.sh recipe).

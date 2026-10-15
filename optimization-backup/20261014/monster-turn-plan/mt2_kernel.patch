@@ -449,6 +449,53 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  {
          int ux1 = u.ux, uy1 = u.uy;
  
+diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/isaac64.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/isaac64.c
+--- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/isaac64.c	2026-09-13 13:53:56.000000000 +0000
++++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/isaac64.c	2026-10-15 00:25:16.700080141 +0000
+@@ -42,6 +42,35 @@
+ 	return (y >> (ISAAC64_SZ_LOG+3)) & (ISAAC64_SZ-1);
+ }
+ 
++#ifdef NH_RNG_LEAN
++/* NH_RNG_LEAN: a 64-bit-state generator (wyrand construction) behind the ISAAC64 API; state in _ctx->a, _ctx->n unused */
++static uint64_t nh_lean_splitmix(uint64_t *s){
++  uint64_t z=(*s+=0x9E3779B97F4A7C15ULL);
++  z=(z^(z>>30))*0xBF58476D1CE4E5B9ULL;
++  z=(z^(z>>27))*0x94D049BB133111EBULL;
++  return z^(z>>31);
++}
++static uint64_t nh_lean_fold(const unsigned char *_seed,int _nseed,uint64_t s){
++  int i;
++  for(i=0;i<_nseed;i++)s=(s^(uint64_t)_seed[i])*0x100000001B3ULL;
++  return s;
++}
++void isaac64_init(isaac64_ctx *_ctx,const unsigned char *_seed,int _nseed){
++  uint64_t s=nh_lean_fold(_seed,_nseed,0x6A09E667F3BCC908ULL);
++  _ctx->a=nh_lean_splitmix(&s);
++  _ctx->b=_ctx->c=0;
++  _ctx->n=0;
++}
++void isaac64_reseed(isaac64_ctx *_ctx,const unsigned char *_seed,int _nseed){
++  uint64_t s=nh_lean_fold(_seed,_nseed,_ctx->a^0x510E527FADE682D1ULL);
++  _ctx->a^=nh_lean_splitmix(&s);
++}
++uint64_t isaac64_next_uint64(isaac64_ctx *_ctx){
++  uint64_t a=(_ctx->a+=0xA0761D6478BD642FULL);
++  unsigned __int128 t=(unsigned __int128)a*(a^0xE7037ED1A0B428DBULL);
++  return (uint64_t)(t>>64)^(uint64_t)t;
++}
++#else
+ static void isaac64_update(isaac64_ctx *_ctx){
+   uint64_t *m;
+   uint64_t *r;
+@@ -157,6 +186,7 @@
+   if(!_ctx->n)isaac64_update(_ctx);
+   return _ctx->r[--_ctx->n];
+ }
++#endif /* NH_RNG_LEAN */
+ 
+ uint64_t isaac64_next_uint(isaac64_ctx *_ctx,uint64_t _n){
+   uint64_t r;
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/light.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/light.c
 --- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/light.c	2026-09-13 13:53:56.000000000 +0000
 +++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/light.c	2026-10-14 23:31:01.969747031 +0000
@@ -517,7 +564,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
      made_branch = FALSE;
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/mon.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c
 --- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/mon.c	2026-10-14 09:30:39.834174512 +0000
-+++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c	2026-10-15 00:10:57.190321492 +0000
++++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/mon.c	2026-10-15 00:25:16.700973903 +0000
 @@ -1,3 +1,7 @@
 +#ifdef NH_MT2_CG
 +#include <valgrind/callgrind.h>
@@ -526,7 +573,19 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  /* NetHack 3.6	mon.c	$NHDT-Date: 1569276991 2019/09/23 22:16:31 $  $NHDT-Branch: NetHack-3.6 $:$NHDT-Revision: 1.297 $ */
  /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
  /*-Copyright (c) Derek S. Ray, 2015. */
-@@ -760,12 +764,16 @@
+@@ -751,7 +755,11 @@
+        a gap when fleeing a normal-speed monster, etc. */
+     mmove_adj = mmove % NORMAL_SPEED;
+     mmove -= mmove_adj;
++#ifdef NH_RNG_LEAN
++    if (mmove_adj && rn2(NORMAL_SPEED) < mmove_adj) /* a draw that cannot change anything is not taken */
++#else
+     if (rn2(NORMAL_SPEED) < mmove_adj)
++#endif
+         mmove += NORMAL_SPEED;
+ 
+     return mmove;
+@@ -760,12 +768,16 @@
  /* actions that happen once per ``turn'', regardless of each
     individual monster's metabolism; some of these might need to
     be reclassified to occur more in proportion with movement rate */
@@ -544,7 +603,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
          if (DEADMONSTER(mtmp))
              continue;
  
-@@ -775,7 +783,7 @@
+@@ -775,7 +787,7 @@
          if (mtmp->data->mmove == 0) {
              if (vision_full_recalc)
                  vision_recalc(0);
@@ -553,7 +612,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
                  continue;
          }
  
-@@ -802,13 +810,22 @@
+@@ -802,13 +814,22 @@
      }
  }
  
@@ -577,7 +636,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  
      /*
       * Some of you may remember the former assertion here that
-@@ -841,6 +858,7 @@
+@@ -841,6 +862,7 @@
              break;
          }
          nmtmp = mtmp->nmon;
@@ -585,7 +644,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
          /* one dead monster needs to perform a move after death: vault
             guard whose temporary corridor is still on the map; live
             guards who have led the hero back to civilization get moved
-@@ -873,7 +891,7 @@
+@@ -873,7 +895,7 @@
          if (context.bypasses)
              clear_bypasses();
          clear_splitobjs();
@@ -594,7 +653,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
              continue;
  
          /* after losing equipment, try to put on replacement */
-@@ -921,8 +939,25 @@
+@@ -921,8 +943,25 @@
                  && fightm(mtmp))
                  continue; /* mon might have died */
          }
@@ -620,7 +679,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
      }
  
      if (any_light_source())
-@@ -1678,6 +1713,8 @@
+@@ -1678,21 +1717,31 @@
      for (o = level.objs[x][y]; o; o = o->nexthere) f |= nh_move_pile(o->otyp);
      NH_SUMMARY(x, y).move_pile = f >> 13;
      NH_SUMMARY(x, y).move_obj_present = OBJ_AT(x, y);
@@ -629,8 +688,12 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  }
  void
  nh_trap_update(int x, int y)
-@@ -1687,12 +1724,19 @@
-     t = t_at(x, y);
+ {
+     struct trap *t;
++    extern struct trap *nh_trap_walk_ext(int, int);
+     if ((unsigned) x >= COLNO || (unsigned) y >= ROWNO) return;
+-    t = t_at(x, y);
++    t = nh_trap_walk_ext(x, y); /* v1.9: the raw walk; the bit is being (re)computed here */
      NH_SUMMARY(x, y).move_trap = t ? t->ttyp : 0;
      NH_SUMMARY(x, y).move_trap_present = t != 0;
 +    nh_move_set_col_bit(&level.move_columns[x + 1].trap, y, t != 0);
@@ -649,7 +712,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
      for (x = 0; x < COLNO; x++) for (y = 0; y < ROWNO; y++) {
          if (domains & NH_MOVE_PILES) {
              NH_SUMMARY(x, y).move_pile = 0;
-@@ -2180,6 +2224,7 @@
+@@ -2180,6 +2229,7 @@
      buf[0] = '\0';
      for (mtmp = &fmon; *mtmp;) {
          freetmp = *mtmp;
@@ -693,7 +756,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
          if (nohands(p)) w |= SPW_NOHANDS;
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/monmove.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c
 --- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/monmove.c	2026-10-14 09:30:39.834105567 +0000
-+++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c	2026-10-15 00:10:57.192279261 +0000
++++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/monmove.c	2026-10-15 00:21:29.150861938 +0000
 @@ -8,6 +8,22 @@
  
  #include "hack.h"
@@ -1651,7 +1714,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
 +                        unblock_point(mtmp->mx, mtmp->my); /* vision */
 +                    }
 +                    /* if it's a shop door, schedule repair */
-+                    if (*in_rooms(mtmp->mx, mtmp->my, SHOPBASE))
++                    if (mt2_in_shop(mtmp->mx, mtmp->my)) /* v1.9: same predicate */
 +                        add_damage(mtmp->mx, mtmp->my, 0L);
 +                }
 +            } else if (TYP_AT(mtmp->mx, mtmp->my) == IRONBARS) {
@@ -1705,7 +1768,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
 +                    return 2; /* it died */
 +            }
 +
-+            if (!*in_rooms(mtmp->mx, mtmp->my, SHOPBASE) || !rn2(25)) {
++            if (!mt2_in_shop(mtmp->mx, mtmp->my) || !rn2(25)) { /* v1.9: same predicate */
 +                boolean picked = FALSE;
 +
 +                if (likeobjs)
@@ -2135,7 +2198,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  /* check if a monster is carrying a particular item */
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/muse.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/muse.c
 --- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/muse.c	2026-10-10 14:50:16.090407385 +0000
-+++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/muse.c	2026-10-14 20:24:24.645006460 +0000
++++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/muse.c	2026-10-15 00:20:29.535251731 +0000
 @@ -67,6 +67,41 @@
      return (struct musable *) nh_cur->nh_lazy[25];
  }
@@ -2178,9 +2241,26 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  #define trapx (nh_cur->g_muse_c_trapx)
  #define trapy (nh_cur->g_muse_c_trapy)
  /* (zap_oseen migrated to nh_cur->g_muse_c_zap_oseen
+@@ -1107,7 +1142,7 @@
+ {
+     register struct obj *obj;
+     boolean reflection_skip = (Reflecting && rn2(2));
+-    struct obj *helmet = which_armor(mtmp, W_ARMH);
++    struct obj *helmet;
+ 
+     m.offensive = (struct obj *) 0;
+     m.has_offense = 0;
+@@ -1125,6 +1160,7 @@
+     /* all offensive items require orthogonal or diagonal targetting */
+     if (!lined_up(mtmp))
+         return FALSE;
++    helmet = which_armor(mtmp, W_ARMH); /* v1.9: pure, first read below */
+ 
+ #define nomore(x)       if (m.has_offense == x) continue;
+     /* this picks the last viable item rather than prioritizing choices */
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/nle.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/nle.c
 --- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/nle.c	2026-10-10 14:50:16.090976824 +0000
-+++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/nle.c	2026-10-14 23:31:01.973080840 +0000
++++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/nle.c	2026-10-15 00:37:11.508162829 +0000
 @@ -160,6 +160,7 @@
      nle->nh = nh_ctx_new();
      assert(nle->nh);
@@ -2189,7 +2269,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  
      /* Seed the per-env save/restore codec tables (they hold function
       * pointers, so they can't be zero-init or memcpy templates; the
-@@ -1122,9 +1123,49 @@
+@@ -1122,8 +1123,50 @@
      return nle;
  }
  
@@ -2205,6 +2285,8 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
 +      fprintf(f, "CYC steps %llu step %llu movemon %llu dochugw %llu mcalcdistress %llu vision %llu viewfrom %llu visupdate %llu lights %llu mapseen %llu newsym %llu flush %llu timeout %llu rhack %llu domove %llu dosearch %llu mattacku %llu\n",
 +              nh_cyc_steps, nh_cyc_step, nh_cyc_movemon, nh_cyc_dochugw, nh_cyc_mcalcdistress, nh_cyc_vision, nh_cyc_viewfrom, nh_cyc_visupdate, nh_cyc_lights, nh_cyc_mapseen, nh_cyc_newsym, nh_cyc_flush, nh_cyc_timeout, nh_cyc_rhack, nh_cyc_domove, nh_cyc_dosearch, nh_cyc_mattacku); }
 +    { extern unsigned long long nh_vis_c[8], nh_vis_comp_viol[8]; fprintf(f, "vision_recalcs %llu skipped %llu VIOLATIONS %llu missed %llu viol_hero %llu viol_vizclear %llu viol_typ %llu viol_lit %llu viol_seenv %llu viol_lights %llu\n", nh_vis_c[0], nh_vis_c[1], nh_vis_c[2], nh_vis_c[3], nh_vis_comp_viol[0], nh_vis_comp_viol[1], nh_vis_comp_viol[2], nh_vis_comp_viol[3], nh_vis_comp_viol[4], nh_vis_comp_viol[5]);
++      fprintf(f, "vision_executed_by_cause lights_only %llu hero %llu epoch %llu other %llu\n", nh_vis_c[4], nh_vis_c[5], nh_vis_c[6], nh_vis_c[7]); }
++    {
 +      { extern unsigned long long nh_vis_oracle_viol[6]; fprintf(f, "oracle_skips %llu ORACLE_VIOL viz %llu rminmax %llu seenv %llu waslit %llu glyph %llu\n", nh_vis_oracle_viol[5], nh_vis_oracle_viol[0], nh_vis_oracle_viol[1], nh_vis_oracle_viol[2], nh_vis_oracle_viol[3], nh_vis_oracle_viol[4]); } }
 +    { extern unsigned long long nh_mt2_why_sp[NUMMONS], nh_mt2_why_h[12]; static const char *hn[] = {"uswallow","Underwater","Invis","Displaced","Hallucination","Conflict","Upolyd","Reflecting","uundetected","U_AP_TYPE"};
 +      int w, i, top; for (w = 0; w < 10; w++) fprintf(f, "hero_%s %llu\n", hn[w], nh_mt2_why_h[w]);
@@ -2220,9 +2302,9 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
 +#ifdef NH_MT2_CG
 +static nle_ctx_t *FDECL(nle_step_impl, (nle_ctx_t *, nle_obs *));
 +unsigned long long nh_cyc_step, nh_cyc_steps;
- nle_ctx_t *
- nle_step(nle_ctx_t *nle, nle_obs *obs)
- {
++nle_ctx_t *
++nle_step(nle_ctx_t *nle, nle_obs *obs)
++{
 +    unsigned long long t0 = __builtin_ia32_rdtsc(); nle_ctx_t *r;
 +    if (nh_mt2_on) { CALLGRIND_TOGGLE_COLLECT; nh_mt2_on = 0; nh_mt2_resync++; }
 +    r = nle_step_impl(nle, obs); nh_cyc_step += __builtin_ia32_rdtsc() - t0; nh_cyc_steps++; return r;
@@ -2232,13 +2314,12 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
 +static nle_ctx_t *
 +nle_step_impl(nle_ctx_t *nle, nle_obs *obs)
 +#else
-+nle_ctx_t *
-+nle_step(nle_ctx_t *nle, nle_obs *obs)
+ nle_ctx_t *
+ nle_step(nle_ctx_t *nle, nle_obs *obs)
 +#endif
-+{
+ {
      if (nle->done) { /* dead games don't step; a stray macro key must not
                          resume the coroutine past its final yield */
-         obs->done = 1;
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/nlernd.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/nlernd.c
 --- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/nlernd.c	2026-09-13 13:53:56.000000000 +0000
 +++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/nlernd.c	2026-10-15 00:10:57.165965008 +0000
@@ -2310,6 +2391,21 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  #endif
  
  #define Is_IceBox(o) ((o)->otyp == ICE_BOX ? TRUE : FALSE)
+diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/rnd.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/rnd.c
+--- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/rnd.c	2026-09-13 13:53:56.000000000 +0000
++++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/rnd.c	2026-10-15 00:25:16.700271538 +0000
+@@ -89,7 +89,11 @@
+ static int
+ RND(int x)
+ {
++#ifdef NH_RNG_LEAN
++    int r = (int) (((unsigned __int128) isaac64_next_uint64(nle_rng_state(CORE)) * (unsigned long) x) >> 64);
++#else
+     int r = (int) (isaac64_next_uint64(nle_rng_state(CORE)) % x);
++#endif
+ 
+     return nle_rng_trace("RND", x, r);
+ }
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/save.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/save.c
 --- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/save.c	2026-10-09 16:51:04.876450673 +0000
 +++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/save.c	2026-10-14 19:24:31.276074770 +0000
@@ -2362,6 +2458,48 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
          return (coord *) 0;
      cnt = utcnt;
      for (tc = &utrack[utpnt]; cnt--;) {
+diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/trap.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/trap.c
+--- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/trap.c	2026-10-10 18:25:02.736324905 +0000
++++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/trap.c	2026-10-15 00:21:44.092778594 +0000
+@@ -5024,8 +5024,8 @@
+     return FALSE;
+ }
+ 
+-struct trap *
+-t_at(x, y)
++STATIC_OVL struct trap *
++nh_trap_walk(x, y)
+ register int x, y;
+ {
+     register struct trap *trap = ftrap;
+@@ -5038,6 +5038,27 @@
+     return (struct trap *) 0;
+ }
+ 
++struct trap *
++nh_trap_walk_ext(int x, int y)
++{
++    return nh_trap_walk(x, y);
++}
++
++/* v1.9: the per-column trap presence bits (maketrap/deltrap/restore/bubble moves keep them via nh_trap_update(), which walks)
++   answer "no trap here" without the walk; a set bit only says "walk the list" */
++struct trap *
++t_at(x, y)
++register int x, y;
++{
++    if ((unsigned) x < COLNO && (unsigned) y < ROWNO && !((level.move_columns[x + 1].trap >> y) & 1U)) {
++#ifdef NH_MT2_CG
++        if (nh_trap_walk(x, y)) fprintf(stderr, "TRAP_BITMAP_MISMATCH %d,%d\n", x, y);
++#endif
++        return (struct trap *) 0;
++    }
++    return nh_trap_walk(x, y);
++}
++
+ void
+ deltrap(trap)
+ register struct trap *trap;
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/vault.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/vault.c
 --- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/vault.c	2026-10-10 19:21:49.256530995 +0000
 +++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/vault.c	2026-10-14 21:20:30.000389547 +0000
@@ -2375,7 +2513,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
          }
 diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/engines/fastnle_ade/source/src/vision.c nethack-monster-turn-plan-20261014/engines/mt2/source/src/vision.c
 --- nethack-engine-lines-20261014/engines/fastnle_ade/source/src/vision.c	2026-10-09 18:12:39.936628676 +0000
-+++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/vision.c	2026-10-14 23:34:09.403549473 +0000
++++ nethack-monster-turn-plan-20261014/engines/mt2/source/src/vision.c	2026-10-15 00:37:11.507828352 +0000
 @@ -207,6 +207,8 @@
  void
  vision_reset()
@@ -2458,7 +2596,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  int control;
  {
      char **temp_array; /* points to the old vision array */
-@@ -538,6 +603,28 @@
+@@ -538,6 +603,48 @@
      vision_full_recalc = 0; /* reset flag */
      if (in_mklev || !iflags.vision_inited)
          return;
@@ -2480,6 +2618,26 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
 +            return;
 +        }
 +#endif
++#ifdef NH_MT2_CG
++        { /* census of executed recalcs by changed input group (per env slot) */
++            static unsigned long long cl_epoch[4096], cl_hero[4096], cl_light[4096]; static char cl_valid[4096];
++            unsigned slot = ((unsigned long) nh_cur >> 6) & 4095;
++            unsigned long long hh = 1469598103934665603ULL, lh;
++            extern unsigned long long nh_vis_light_hash(unsigned long long);
++#define NHVC(v) (hh = (hh ^ (unsigned long long) (v)) * 1099511628211ULL)
++            NHVC(u.ux); NHVC(u.uy); NHVC(!!Blind); NHVC(!!Underwater); NHVC(!!u.uswallow); NHVC(u.utrap); NHVC(u.utraptype);
++            NHVC(u.xray_range); NHVC(u.nv_range); NHVC(Is_rogue_level(&u.uz)); NHVC(Is_waterlevel(&u.uz));
++#undef NHVC
++            lh = nh_vis_light_hash(1469598103934665603ULL);
++            if (!cl_valid[slot]) nh_vis_c[7]++;
++            else if (control == 2) nh_vis_c[7]++;
++            else if (cl_epoch[slot] != nh_vis_epoch) nh_vis_c[6]++;
++            else if (cl_hero[slot] != hh) nh_vis_c[5]++;
++            else if (cl_light[slot] != lh) nh_vis_c[4]++;
++            else nh_vis_c[7]++; /* xray or other: fingerprint equal but not skipped */
++            cl_epoch[slot] = nh_vis_epoch; cl_hero[slot] = hh; cl_light[slot] = lh; cl_valid[slot] = 1;
++        }
++#endif
 +        nh_vis_last_valid = (control != 2);
 +        nh_vis_last_epoch = nh_vis_epoch;
 +        nh_vis_last_fp = fp;
@@ -2487,7 +2645,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  
      /*
       * Either the light sources have been taken care of, or we must
-@@ -562,9 +649,16 @@
+@@ -562,9 +669,16 @@
           *
           *      + Monsters can see you even when you're in a pit.
           */
@@ -2504,7 +2662,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  
          /*
           * Our own version of the update loop below.  We know we can't see
-@@ -627,9 +721,16 @@
+@@ -627,9 +741,16 @@
                      next_row[col] = IN_SIGHT | COULD_SEE;
              }
          } else
@@ -2521,7 +2679,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  
          /*
           * Set the IN_SIGHT bit for xray and night vision.
-@@ -729,6 +830,7 @@
+@@ -729,6 +850,7 @@
       *      Even so, that is not entirely correct.  But it seems close
       *      enough for now.
       */
@@ -2529,7 +2687,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
      colbump[u.ux] = colbump[u.ux + 1] = 1;
      for (row = 0; row < ROWNO; row++) {
          dy = u.uy - row;
-@@ -834,6 +936,12 @@
+@@ -834,6 +956,12 @@
          } /* end for col . . */
      }     /* end for row . .  */
      colbump[u.ux] = colbump[u.ux + 1] = 0;
@@ -2542,7 +2700,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  
  skip:
      /* This newsym() caused a crash delivering msg about failure to open
-@@ -849,6 +957,10 @@
+@@ -849,6 +977,10 @@
      viz_rmax = next_rmax;
  
      recalc_mapseen();
@@ -2553,7 +2711,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
  
      /* reveal_map knob is now applied as a render-time overlay on
       * the emitted observation in the rl window port (NetHackRL::fill_obs), never
-@@ -949,6 +1061,7 @@
+@@ -949,6 +1081,7 @@
  dig_point(row, col)
  int row, col;
  {
@@ -2561,7 +2719,7 @@ diff -ru -x OPTIMIZATION_BACKUP.md -x '*.orig' nethack-engine-lines-20261014/eng
      int i;
  
      if (viz_clear[row][col])
-@@ -1034,6 +1147,7 @@
+@@ -1034,6 +1167,7 @@
  fill_point(row, col)
  int row, col;
  {
