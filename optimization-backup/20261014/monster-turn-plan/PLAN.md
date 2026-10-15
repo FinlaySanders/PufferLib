@@ -473,3 +473,18 @@ memset, newsym calls, recalc_mapseen) ≈ 6K. A bitmap shadow-casting rewrite + 
 NH_MT2=0 28,422/28,553 (v1.6d 28,340), NH_MT2=1 33,708/33,677 (v1.6d 33,535). Kernel ladder vs old path: +18.4%.
 DAY TOTAL (plain same-binary, 128 games): old path 27,792 (morning) → 28,487 (vision skip + minliquid gate on both arms); kernel 33,692 →
 +21.2% over this morning's engine on the plain build; landing-style PGO +17.2% at v1.6d (v1.7 adds ~0.4%).
+
+## PROFILE RE-READ (2026-10-15 00:00; callgrind cache+branch sim on 8 games x 8192 steps + C2-header Ir run on 8 x 12288)
+Cycles (rdtsc census): movemon 66% of engine ticks, vision 7.7%, domove 8%, display ~5%. Mispredicts (callgrind model, pessimistic):
+3.6K/step; m_move_fast 19% of them, packer 7.6%, mfndpos 3.5%, vision rays ~10%. LL misses negligible; D1 misses ~1.5K/step, mostly the
+per-step cold start of each game's working set (interleaved games) and monster-list pointer chases. RNG ≈ 5.5% of Ir (ISAAC64 refill 3.3%,
+0.7 ISAAC re-seeds per step from the fixed clock!). lined_up+linedup 2.2%, mt2_eligible 2%, movemon header 3.7%, nh_newsym_moved_far 2.5%,
+engr_at walks 0.6%, settrack 0.7%, nle_weight+weight_cap 1.5%, packer (C2) 4.9%, fill_obs 1.5%. rn2() out of line = one 64-bit div per
+draw; inlined constant divisors fold (LTO). Fake clock: nle_fill_fixed_tm() re-ran isaac64_init() (68 mix rounds + 4 KB memset) 67,837x in
+98,304 steps because night()/midnight()/moon tests call getlt() every turn.
+
+## v1.8 RESULT (00:18, stage_k23) — EXACT (8-game, gates 5/5, rotation hash, corpus 16,777,216 / 0): +2.4% kernel arm, +2.1% old arm
+E1 fixed-clock memo | E2 mt2_eligible as calibrated word masks | E3 lined_up lazy boulder decision + appr!=1 skip | E4 engraving column
+bitmap + engr_at early-out | E5 next-monster prefetch in the four list walks | E6 padded nh_track_near (no clamps).
+NH_MT2=1 34,511 / 34,440 (v1.7 33,708 / 33,677) ; NH_MT2=0 29,117 / 29,082 (v1.7 28,422 / 28,553). CG oracle run (elig fast-vs-slow,
+engr bitmap): see stage_k23.log "CG oracle" line.

@@ -1,0 +1,111 @@
+=== src/monmove.c  total Bcm/step 1059  Ir/step 96832
+  L 1346 Bcm   67.1 Ir   967.7 D1   0.0 | && nidist > (couldsee(nix, niy) ? 144 : 36) && appr == 1)
+  L 1349 Bcm   59.4 Ir  1942.4 D1   0.0 | for (i = 0; i < cnt; i++) {
+  L 1291 Bcm   59.0 Ir   590.4 D1   0.0 | }
+  L 1901 Bcm   58.5 Ir  1520.8 D1  21.2 | if (nh_fobj_count < 0) return -1;
+  L  375 Bcm   35.2 Ir   824.5 D1   0.0 | * running into you by accident but possibly attacking the spot
+  L 1912 Bcm   32.1 Ir   931.4 D1  13.7 | }
+  L 1261 Bcm   30.2 Ir   424.9 D1   0.0 | }
+  L 1899 Bcm   28.0 Ir   886.5 D1   0.0 | struct obj *o, *t;
+  L 1396 Bcm   27.3 Ir   248.2 D1   0.0 | * Pets get taken care of above and shouldn't reach this code.
+  L  874 Bcm   23.3 Ir   237.1 D1   0.0 | static int
+  L  148 Bcm   21.2 Ir   889.7 D1   1.4 | register struct monst *mtmp;
+  L 1133 Bcm   16.0 Ir   307.0 D1   0.0 | }
+  L 1342 Bcm   15.0 Ir   450.8 D1   0.0 | trackmask |= nh_move_position_bit(omx, omy, mtmp->mtrack[j].x, mtmp->mtrack[j].y);
+  L  904 Bcm   14.4 Ir   198.6 D1   0.0 | if (m->mtame) return MT2WHY(0);
+  L 1910 Bcm   14.2 Ir   388.4 D1   0.0 | }
+  L  156 Bcm   13.9 Ir  1089.1 D1   0.0 | 
+=== src/mon.c  total Bcm/step 379  Ir/step 35523
+  L  872 Bcm   93.8 Ir   905.2 D1   0.0 | continue;
+  L  779 Bcm   44.8 Ir   512.7 D1  18.5 | /* must check non-moving monsters once/turn in case they managed
+  L 1965 Bcm   26.8 Ir   146.6 D1   0.0 | continue;
+  L 1285 Bcm   23.5 Ir   406.4 D1   0.2 | 
+  L 2216 Bcm   13.1 Ir   977.3 D1   0.0 | {
+  L  842 Bcm   11.2 Ir   639.6 D1   0.6 | * monsters can jump into traps, read cursed scrolls of teleportation,
+  L 1936 Bcm   11.2 Ir   105.6 D1   0.0 | /* Both hero positions stay on the original path. The old image may
+  L 1815 Bcm    9.9 Ir   122.0 D1   0.0 | }
+  L  860 Bcm    9.6 Ir   603.7 D1   0.0 | /* one dead monster needs to perform a move after death: vault
+  L 1961 Bcm    9.5 Ir   121.7 D1   0.0 | && (((cell->rmflags & D_CLOSED) && !(flag & OPENDOOR))
+  L 1774 Bcm    7.9 Ir   325.4 D1   0.0 | static inline boolean nh_cell_dig(const struct rm *c)
+  L  772 Bcm    7.4 Ir   579.0 D1   0.0 | {
+  L 1829 Bcm    6.9 Ir    81.4 D1   0.0 | if (NH_SUMMARY(x, y).move_pile & 4U) return TRUE;
+  L 1973 Bcm    5.4 Ir   159.9 D1   3.1 | || (IS_DOOR(origin_typ) && (origin->rmflags & ~D_BROKEN))
+  L 2047 Bcm    5.3 Ir    81.2 D1   0.0 | }
+  L 1943 Bcm    5.3 Ir    89.2 D1   0.0 | bit = __builtin_ctz(candidates);
+=== src/mthrowu.c  total Bcm/step 146  Ir/step 7603
+  L 1110 Bcm   65.7 Ir   184.3 D1   1.6 | || m_carrying(mtmp, WAN_STRIKING));
+  L 1123 Bcm   52.6 Ir   835.6 D1  44.8 | for (otmp = mtmp->minvent; otmp; otmp = otmp->nobj)
+  L 1062 Bcm   15.3 Ir   799.8 D1   0.0 | if ((!tbx || !tby || abs(tbx) == abs(tby)) /* straight line or diagonal */
+=== src/vision.c  total Bcm/step 398  Ir/step 21734
+  L 2781 Bcm   39.0 Ir  1457.8 D1   0.0 | /* Check for boundary conditions. */
+  L 2623 Bcm   38.4 Ir  1604.7 D1   0.2 | * wall (remember, we can see the spot above/below this one)
+  L 2569 Bcm   35.8 Ir  1342.6 D1   0.1 | : right_mark;
+  L 2749 Bcm   31.5 Ir  1135.8 D1   0.0 | /* Jump to the far side of a stone wall. */
+  L  843 Bcm   24.2 Ir   332.7 D1   0.0 | stop = max(viz_rmax[row], next_rmax[row]);
+  L 2567 Bcm   19.3 Ir   782.3 D1   0.0 | */
+  L 2747 Bcm   15.1 Ir   609.9 D1   0.0 | 
+  L  844 Bcm   14.8 Ir  1881.8 D1  14.7 | lev = &NH_TILE(start, row);
+  L 2621 Bcm   14.3 Ir   507.5 D1   0.0 | * (left == right_edge) or might not (left == right_edge+1) have
+  L  829 Bcm   12.8 Ir  1640.7 D1   0.2 | *      do you know?  You have to check the closest adjacent position.
+  L 2779 Bcm   10.7 Ir   378.1 D1   0.0 | }
+  L  849 Bcm    9.2 Ir   376.9 D1   0.2 | lev = &NH_TILE(col, row);
+  L  912 Bcm    8.8 Ir   422.3 D1   0.0 | lev->waslit = 0; /* remember lit condition */
+  L  831 Bcm    8.5 Ir   528.4 D1   0.0 | *      enough for now.
+  L 2717 Bcm    5.0 Ir   121.3 D1   0.0 | /* NLE vecenv: hard recursion bail (mirror of right_side). */
+=== src/display.c  total Bcm/step 204  Ir/step 24512
+  L 1621 Bcm   30.8 Ir  1175.9 D1  21.8 | goto full;
+  L  903 Bcm   17.9 Ir   539.1 D1   1.1 | show_glyph(x, y, lev->glyph = cmap_to_glyph(S_stone));
+  L  864 Bcm   16.1 Ir   706.3 D1   1.5 | display_self();
+  L  863 Bcm   14.2 Ir   642.3 D1   0.5 | if (canspotself())
+  L 1827 Bcm   10.8 Ir   626.2 D1   0.0 | flushing = 1;
+  L 1611 Bcm   10.4 Ir   495.7 D1   0.0 | 
+  L  871 Bcm    8.6 Ir   389.5 D1   0.0 | This also gets rid of any invisibility glyph. */
+  L 1828 Bcm    6.4 Ir   923.0 D1   2.0 | #ifdef HANGUPHANDLING
+=== ocean/nethack/nethack.h  total Bcm/step 324  Ir/step 26519
+  L  247 Bcm   64.0 Ir  1086.1 D1   0.0 | if (!(verb->item_classes & (1u << env->inv_oclasses[i]))) return 0;
+  L  682 Bcm   21.0 Ir   148.8 D1   0.0 | while (m) {
+  L  294 Bcm   15.4 Ir   300.1 D1   0.0 | if (!(env->inv_state[j * NLE_INV_STATE_FIELDS + 5] & 1)) continue;
+  L  313 Bcm   12.3 Ir   255.5 D1   0.0 | for (int k = 1; k <= 8; k++) {
+  L  425 Bcm   11.8 Ir  1104.9 D1   0.0 | for (int i = 0; i < inv_n; i++) {
+  L  654 Bcm    9.5 Ir   609.0 D1   0.0 | if (g >= NETHACK_GLYPH_CMAP_OFF && g < NETHACK_GLYPH_CMAP_OFF + 96) {
+  L  272 Bcm    9.3 Ir  1827.1 D1   0.0 | for (int j = 0; j < NETHACK_INV_SLOTS && env->inv_letters[j]; j++)
+  L  286 Bcm    8.4 Ir    87.6 D1   0.0 | if (worn) return 0;
+  L  315 Bcm    6.9 Ir  1258.8 D1   0.0 | if (x < 0 || x >= NH_COLS || y < 0 || y >= NH_ROWS) return 0;
+  L  419 Bcm    6.5 Ir    78.0 D1   4.6 | if (verb->head < 0) continue; // direct verb, no item argument
+=== win/rl/winrl.cc  total Bcm/step 113  Ir/step 8818
+  L  697 Bcm   21.3 Ir   276.0 D1  18.4 | || is_weptool(otmp) || object_defaults[otmp->otyp].oc_charged;
+  L  742 Bcm   15.7 Ir   186.6 D1   0.0 | (otmp->dknown && objects[otmp->otyp].oc_name_known)
+  L  691 Bcm    7.6 Ir   270.0 D1  19.7 | st[0] = (otmp->bknown && otmp->oclass != COIN_CLASS)
+  L  128 Bcm    6.3 Ir   604.7 D1   4.6 | if (!objects[obj].oc_name_known) return GLYPH_OBJ_OFF + gem_canon(objects[obj].oc_descr_idx)
+  L  699 Bcm    5.6 Ir    80.1 D1   0.0 | (otmp->known && shows_spe) ? otmp->spe : (signed char) -128;
+=== src/detect.c  total Bcm/step 76  Ir/step 4352
+  L 1743 Bcm   28.5 Ir   781.9 D1   0.0 | if (fund > 5)
+  L 1746 Bcm   19.4 Ir   213.6 D1   0.0 | for (y = u.uy - 1; y < u.uy + 2; y++) {
+  L 1742 Bcm    9.7 Ir   206.5 D1   0.0 | fund += 2; /* JDS: lenses help searching */
+  L 1749 Bcm    7.8 Ir   682.3 D1   1.8 | if (x == u.ux && y == u.uy)
+=== src/allmain.c  total Bcm/step 74  Ir/step 2970
+  L  128 Bcm   18.5 Ir   542.2 D1   0.0 | for (mtmp = fmon; mtmp; mtmp = mtmp->nmon)
+  L  135 Bcm   13.3 Ir    59.0 D1   4.6 | if (nle_spawn_monsters() && !rn2(u.uevent.udemigod ? 25
+  L  348 Bcm    6.3 Ir    16.9 D1   0.0 | else if (!u.umoved)
+=== src/track.c  total Bcm/step 29  Ir/step 2527
+  L   23 Bcm   22.1 Ir   398.0 D1   1.0 | for (x = max(0, position->x - 1); x <= min(COLNO - 1, position->x + 1); x++)
+=== src/timeout.c  total Bcm/step 19  Ir/step 4318
+  L  549 Bcm    8.2 Ir  2031.9 D1   0.0 | }
+=== src/muse.c  total Bcm/step 48  Ir/step 5293
+  L 2120 Bcm    7.2 Ir   207.1 D1   2.8 | switch (obj->oclass) {
+  L 1149 Bcm    5.5 Ir   113.3 D1   0.0 | if (mtmp->mpeaceful || is_animal(mtmp->data) || mindless(mtmp->data)
+=== src/weapon.c  total Bcm/step 32  Ir/step 1557
+  L  481 Bcm    9.7 Ir   433.2 D1   0.0 | for (otmp = mtmp->minvent; otmp; otmp = otmp->nobj) {
+  L  584 Bcm    5.7 Ir    54.6 D1   0.0 | switch (-prop) {
+  L  583 Bcm    5.6 Ir    47.5 D1   0.0 | if (prop < 0) {
+=== src/worn.c  total Bcm/step 26  Ir/step 701
+  L  689 Bcm   16.9 Ir   301.5 D1   0.7 | for (obj = mon->minvent; obj; obj = obj->nobj)
+=== src/hack.c  total Bcm/step 65  Ir/step 6203
+  L 2923 Bcm   10.0 Ir   225.6 D1   0.0 | /* Also see the similar check in dochugw() in monmove.c */
+  L 2921 Bcm    6.8 Ir   150.4 D1   0.0 | register struct monst *mtmp;
+  L 2358 Bcm    6.4 Ir   303.9 D1   1.4 | || (typefound = rooms[rno - ROOMOFFSET].rtype) == typewanted  \
+  L 3229 Bcm    6.1 Ir   364.7 D1   0.0 | money_cnt(otmp)
+=== src/invent.c  total Bcm/step 37  Ir/step 2300
+  L 1234 Bcm   17.4 Ir   615.5 D1   3.1 | for (otmp = level.objs[x][y]; otmp; otmp = otmp->nexthere)
+=== include/hack.h  total Bcm/step 28  Ir/step 4023
+  L  625 Bcm   20.9 Ir  1933.2 D1   0.0 | return x >= 1 && x <= COLNO - 1 && y >= 0 && y <= ROWNO - 1;
